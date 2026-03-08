@@ -1,0 +1,26 @@
+name: Release
+on:
+  workflow_dispatch:
+    inputs:
+      bump-level:
+        type: choice
+        required: true
+        description: Bump up to [auto / patch / minor / major]
+        options:
+          - auto
+          - patch
+          - minor
+          - major
+        default: auto
+
+concurrency: ${{ github.workflow }}
+
+permissions: {}
+
+jobs:
+  call:
+    uses: tmknom/release-workflows/.github/workflows/github-releases.yml@v0
+    with:
+      bump-level: ${{ inputs.bump-level }}
+    permissions:
+      contents: write

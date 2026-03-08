@@ -1,0 +1,17 @@
+name: Label
+on:
+  pull_request:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions: {}
+
+jobs:
+  call:
+    uses: tmknom/label-workflows/.github/workflows/conventional-commits.yml@v0
+    permissions:
+      contents: read
+      pull-requests: write
+      issues: write

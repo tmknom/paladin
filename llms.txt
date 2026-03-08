@@ -1,0 +1,68 @@
+# Documentation Index
+
+An index for discovering relevant documents during Plan and Explore execution
+
+## Usage
+
+Identify and read task-related sections below:
+
+- Modify `src/` or `tests/` → Read **Python Development** and **Specifications** sections
+- Modify `docs/specs/` → Read **Python Development** section and the target **Source Code** section
+- Modify `docs/design/` → Read **Python Development** and **Design Guide** sections
+
+## Python Development
+
+- [Architecture design](docs/design/architecture.md): Python application architecture based on Onion Architecture, Composition Root + Orchestrator pattern, Protocol-based DI, type design, error handling, and logging - Use when modifying `src/` or `tests/`, or when understanding component relationships, adding new features, evaluating design decisions, or implementing new packages
+- [Development workflow](docs/design/workflow.md): Tech stack, development commands, key principles (TDD, 100% coverage, type hints, test isolation), and step-by-step development flow (pre-implementation → TDD cycle → post-implementation) - Use when starting implementation tasks, understanding development rules, or reviewing the standard workflow
+
+## Specifications
+
+### Business Logic
+
+#### Transform feature
+
+- [Transform requirement](docs/specs/transform/requirements.md): Requirements for the transform package - Use when modifying `src/example/transform/` or understanding text file reading, line numbering, datetime header, and result statistics
+- [Transform design](docs/specs/transform/design.md): Design for the transform package - Use when modifying `src/example/transform/` or understanding component structure, processing flow, design decisions (thin wrappers, SrcText/DstText, Fake-based testing), and design rationale
+
+### CLI
+
+- [CLI requirement](docs/specs/cli/requirements.md): Requirements for the cli module - Use when modifying `src/example/cli.py` or understanding subcommand execution, global/subcommand-specific options, config priority, error handling, and exit codes
+- [CLI design](docs/specs/cli/design.md): Design for the cli module - Use when modifying `src/example/cli.py`, adding new subcommands, adding CLI options, or understanding component structure (app/main_callback/main), two-phase flow (callback→command), design decisions (no business logic, AppConfig in ctx.obj, top-level exception handling), guardrails, and design rationale
+
+### Config
+
+- [Config requirement](docs/specs/config/requirements.md): Requirements for the config package - Use when modifying `src/example/config/` or understanding environment variable loading, path construction, and runtime config composition
+- [Config design](docs/specs/config/design.md): Design for the config package - Use when modifying `src/example/config/`, adding new config fields, or understanding component structure (EnvVarConfig / PathConfig / AppConfig), processing flow, design decisions (3-layer separation, pydantic-settings validation, PathConfig as internal component), and design rationale
+
+## Source Code
+
+### Business Logic
+
+- [Transform feature](src/example/transform/): Reference feature package with Context, Orchestrator, OrchestratorProvider (Composition Root), Reader, Transformer, Writer, and Result types - Use when modifying `docs/specs/transform/`, adding new feature packages, understanding the Orchestrator-Provider-Context pattern, or reviewing the canonical package structure
+
+### CLI
+
+- [CLI entry point](src/example/cli.py): Typer-based CLI that assembles Config, Context, and OrchestratorProvider then delegates to Orchestrator - Use when modifying `docs/specs/cli/`, adding new commands, understanding the application startup flow, or reviewing how Config/Context/Provider are wired together
+
+### Foundation
+
+- [Filesystem abstraction](src/example/foundation/fs/): Protocol-based file I/O with TextFileSystemReader - Use when modifying `docs/specs/foundation/fs/`, adding new I/O operations, implementing Protocol adapters, or understanding the Port/Adapter pattern
+- [Error handling](src/example/foundation/error/): ApplicationError base class and ErrorHandler - Use when modifying `docs/specs/foundation/error/`, implementing custom errors, understanding exception flow, or modifying error logging
+- [Logging](src/example/foundation/log/): `@log` decorator (auto-records args and return values) and LogConfigurator - Use when modifying `docs/specs/foundation/log/`, adding logging to new components, understanding cross-cutting concern implementation, or configuring log output
+- [Base model](src/example/foundation/model/): CoreModel for external data mapping - Use when modifying `docs/specs/foundation/model/`, adding new data models for JSON/YAML input or understanding the boundary validation pattern
+
+## Coding Standards
+
+- [pyproject.toml design](docs/design/pyproject.md): Configuration rationale for build system, linter, and type checker - Use when modifying or reviewing `pyproject.toml` settings, understanding ruff/pyright rule choices, or reviewing tool configuration decisions
+- [Specification design](docs/design/specs.md): Purpose and design philosophy of specs/ documents for AI-assisted development, authoring guidelines, and operational workflow - Use when modifying or reviewing `docs/specs/` documents, understanding why `docs/specs/` exists, or reviewing synchronization requirements
+
+## Introduction
+
+- [Project overview](docs/intro/overview.md): Purpose, background, and what this project provides (reference implementation, design docs, specs, development workflow) - Use when understanding why this project exists or what it offers
+- [Design concept](docs/intro/concept.md): AI-driven development approach, Onion Architecture, Composition Root + Orchestrator pattern, document strategy, and reference implementation overview - Use when understanding the architectural philosophy or document organization rationale
+- [Repository structure](docs/intro/structure.md): Complete file layout with descriptions of each file and directory's role - Use when locating files, understanding project organization, or verifying the actual directory tree
+- [Glossary](docs/intro/glossary.md): Project-specific terminology for architecture and development process - Use when encountering unfamiliar terms or verifying correct usage
+
+---
+
+This file is inspired by [llms.txt](https://llmstxt.org/). Rather than being published on the web, it serves as an index for AI to understand the repository context.

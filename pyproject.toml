@@ -1,0 +1,141 @@
+[project]
+name = "example"
+version = "0.1.0"
+description = "CLIアプリケーション"
+requires-python = ">=3.13.0,<3.14"
+dependencies = [
+    "colorlog>=6.10.1",
+    "pydantic>=2.12.5",
+    "pydantic-settings>=2.13.0",
+    "typer>=0.21.1",
+]
+
+[dependency-groups]
+dev = [
+    "pytest>=9.0.2",
+    "pytest-mock>=3.15.1",
+    "pytest-asyncio>=1.3.0",
+    "pytest-cov>=7.0.0",
+    "vulture>=2.14",
+    "ruff>=0.15.0",
+    "pyright>=1.1.408",
+]
+
+[project.scripts]
+example = "example.cli:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/example"]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.pytest.ini_options]
+asyncio_mode = "strict"
+asyncio_default_fixture_loop_scope = "function"
+pythonpath = ["src", "."]
+testpaths = ["tests"]
+
+[tool.coverage.run]
+source = ["src"]  # 計測対象を src/ 配下に限定する
+patch = ["subprocess"]  # subprocess 経由の子プロセスも計測対象に含める
+
+[tool.ruff]
+line-length = 100
+target-version = "py313"
+exclude = [".git", ".venv", ".vscode", ".claude", "tmp"]
+
+[tool.ruff.lint]
+# 有効化するルール群
+select = [
+  "E",    # pycodestyle errors。基本的なスタイル/落とし穴を検出。
+  "W",    # pycodestyle warnings。軽微なスタイル警告。
+  "F",    # pyflakes。未使用/未定義など実害の大きい検出。
+  "I",    # isort。import 順序整列で差分を安定化。
+  "B",    # flake8-bugbear。バグの温床になりやすい典型を検出。
+  "SIM",  # flake8-simplify。冗長な表現の簡素化提案。
+  "UP",   # pyupgrade。モダン構文への安全な置換提案（自動修正が効くもの多数）。
+  "RUF",  # Ruff 独自ルール。実用的な補助検出が多い。
+  "PTH",  # flake8-use-pathlib。os.path から pathlib への移行を促す。
+  "D",    # pydocstyle。docstring の存在・体裁をチェック（Google 方式を後述で指定）。
+]
+
+# 日本語でのアプリケーション開発を阻害しがちなルールを抑制
+ignore = [
+  # 別ツールの責務は除外
+  "E501",   # 行長オーバーはフォーマッタ/レビューで対処（URL・日本語の自然な文も許容）。
+
+  # 日本語をコメントで扱えるように調整
+  "RUF001", # 文字列内の曖昧 Unicode（ASCII に見えるCyrillic/Greek文字等）。日本語文字列許容のため無視。
+  "RUF002", # docstring 内の曖昧 Unicode（全角記号等）。日本語 docstring 許容のため無視。
+  "RUF003", # コメント内の曖昧 Unicode。日本語コメント許容のため無視。
+
+  # 品質への寄与度が低い、コーディングスタイルの指摘は無効化
+  "SIM105", # try-except-pass → contextlib.suppress 提案は好み分岐のため無視。
+  "SIM108", # if-else ブロックを三項演算子に置き換える提案は可読性次第なので無視。
+  "SIM116", # 連続 if を dict マップ置換する提案は過度な抽象化を招くため無視。
+
+  # ルール競合（Google 方式）
+  "D203",   # クラス docstring 前の空行を要求（D211 と競合）。Google 方式では D211 が優先のため無視。
+  "D213",   # 要約行を2行目から始めるべきという指摘（D212 と競合）。Google 方式では D212 を採用するため無視。
+
+  # docstring は原則必須としつつ、日本語句読点に配慮
+  "D400",   # 1行目をピリオドで終わらせる指摘。日本語の「。」を許容するため無視。
+  "D415",   # 1行目の句読点（.?!）を要求。日本語句読点「。」を許容するため無視。
+]
+
+# パス/用途別に緩める（本番は厳しめ、周辺は緩めの運用を実現）
+[tool.ruff.lint.per-file-ignores]
+"**/__init__.py" = ["F401"]  # public API 再エクスポートの未使用 import を許容。
+"tests/**"            = ["D100", "D101", "D102", "D107"]  # テストでは docstring は不要。
+"tests/**/__init__.py" = ["D104"]  # テストの __init__.py は空ファイルのため、パッケージ docstring を免除。
+
+# docstring のスタイルを Google 方式に統一
+[tool.ruff.lint.pydocstyle]
+convention = "google" # pydocstyle で Google スタイル docstring をチェック（D212 を採用、D203/D213 は無視）。
+
+[tool.pyright]
+include = ["src", "tests"]
+exclude = [".git", ".venv", ".vscode", ".claude", "tmp", "build", "dist"]  # ruff はデフォルトで build/dist を除外するが pyright は明示が必要
+pythonVersion = "3.13"
+typeCheckingMode = "basic"
+
+executionEnvironments = [
+  { root = "src",   extraPaths = ["src"] }, # src配下からのimportを安定させる
+  { root = "tests", extraPaths = ["src", "."] }, # testsからsrc配下とtests/直下のヘルパーモジュールへのアクセスを許可（テスト間の直接依存は設計で防止）
+]
+
+# 診断レベルの最小調整（致命は止める・探索を止めない）
+reportMissingImports = "warning"            # 依存導入前の未解決importで開発を止めない（後にCIでerrorに格上げ可）。
+reportMissingModuleSource = "warning"       # 実体がない型スタブのみのモジュールも警告止まりにして開発を止めない。
+reportPrivateUsage = "warning"              # _privateな要素の外部使用を抑制。
+
+# 型ヒント必須の徹底
+reportUnknownVariableType = "error"         # 型ヒント必須: 推論できない変数型をエラーにする。
+reportUnknownParameterType = "error"        # 型ヒント必須: 推論できないパラメータ型をエラーにする。
+reportMissingTypeArgument = "error"         # 型ヒント必須: Generics型の型引数必須（例: list → list[str]）。
+reportUnknownMemberType = "none"            # 基本操作（append等）で頻発するため無効化。重要な属性エラーは別途検出。
+reportUnknownArgumentType = "warning"       # 推論できない引数型を警告。生成コードに多いためブロックしない。
+reportUnknownLambdaType = "warning"         # 推論できないラムダ型を警告。型付けを後から検討できるようにする。
+
+# 呼び出し可能性・属性アクセスは完全無効化せず警告（バグの芽は見える化）
+reportCallIssue = "warning"                 # 呼び出し不能なオブジェクト呼び出しを警告（無効化せず最低限の安全網）。
+reportAttributeAccessIssue = "warning"      # 存在しない属性アクセスを警告（型安全確保に重要なので無効化しない）。
+
+# バグ直結のものはエラーで早期検出
+reportIncompatibleMethodOverride = "error"   # メソッドオーバーライドの型不整合はバグ直結なのでエラーにする。
+reportIncompatibleVariableOverride = "error" # 変数オーバーライドの型不整合もバグ直結なのでエラーにする。
+reportOverlappingOverload = "error"          # オーバーロード定義が重複・矛盾している場合はエラーにする。
+reportUnusedCoroutine = "error"              # await忘れによるコルーチン未使用は実行不具合に直結するのでエラーにする。
+reportMatchNotExhaustive = "error"           # match文で網羅漏れがあるとバグになるためエラーにする。
+
+# 使われないものは開発中のノイズにならない程度に警告
+reportUnusedImport = "warning"               # 未使用importはノイズ防止に警告。Ruffと併用時の自動修正と両立できる。
+reportUnusedVariable = "warning"             # 未使用変数も警告に留め、生成コードでの一時変数を許容する。
+
+# 初期は足かせにしない
+reportMissingTypeStubs = "none"              # サードパーティの型スタブ不足は初期開発では無視してスピードを優先する。
+
+# 型スタブ不足時でも実装コードから型推論してIDE体験を良くする
+useLibraryCodeForTypes = true                # 型スタブが無い場合でも実装コードから型推論し、IDE補完精度を向上させる。

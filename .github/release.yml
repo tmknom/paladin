@@ -1,0 +1,11 @@
+changelog:
+  categories:
+    - title: Exciting New Features 🎉
+      labels:
+        - enhancement
+    - title: Bug Fixes 🛠
+      labels:
+        - bug
+    - title: Bump Dependencies 🔥
+      labels:
+        - dependencies

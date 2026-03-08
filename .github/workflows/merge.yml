@@ -1,0 +1,19 @@
+name: Merge
+on:
+  pull_request:
+    paths: ["action.yml", ".github/workflows/*.yml"]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions: {}
+
+jobs:
+  call:
+    uses: tmknom/merge-workflows/.github/workflows/github-actions.yml@v0
+    with:
+      pull-request: ${{ github.event.pull_request.number }}
+    permissions:
+      contents: write
+      pull-requests: write
