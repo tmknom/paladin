@@ -4,10 +4,13 @@
 
 ```
 .
-├── docs/          # ドキュメント（設計・仕様・イントロダクション）
+├── .github/       # GitHub 設定（CI/CD ワークフロー、依存管理等）
+├── docs/          # ドキュメント（イントロ・設計・仕様）
 ├── src/           # Python ソースコード
 ├── tests/         # Python テストコード
+├── tmp/           # 一時ファイル（.gitignore 対象）
 ├── CLAUDE.md      # Claude Code プロジェクトメモリ
+├── LICENSE        # ライセンス
 ├── llms.txt       # ドキュメントインデックス（AI エージェント向け）
 ├── Makefile       # 開発タスク定義
 ├── pyproject.toml # Python プロジェクト設定
@@ -27,11 +30,13 @@ src/
     │   ├── app.py                # AppConfig（設定の統合）
     │   ├── env_var.py            # EnvVarConfig（環境変数ロード）
     │   └── path.py               # PathConfig（パス構築）
-    ├── foundation/               # 基盤パッケージ（Shared Kernel・横断的共通部品）
+    ├── foundation/               # 基盤パッケージ（Shared Kernel・横断的共通部品・Adapter 実装）
     │   ├── error/                # エラーハンドリング
     │   ├── fs/                   # ファイルシステム抽象化
     │   ├── log/                  # ロギング
     │   └── model/                # 基底モデル
+    ├── protocol/                 # Protocol パッケージ（Shared Kernel・Port 定義）
+    │   └── fs.py                 # ファイルシステム Protocol
     └── transform/                # Transform 機能パッケージ（アーキテクチャパターンの雛形）
         ├── context.py            # TransformContext（実行コンテキスト）
         ├── orchestrator.py       # Orchestrator（処理フロー制御）
@@ -74,22 +79,25 @@ tests/
 
 ## docs/
 
-ドキュメントのリファレンス実装。設計・仕様・イントロダクションの3カテゴリで構成される。
+Paladin のドキュメントです。設計・仕様・イントロダクションの 3 カテゴリで構成されています。
 
 ```
 docs/
 ├── design/                       # 設計ドキュメント
+│   ├── README.md                 # 設計ドキュメント索引
 │   ├── architecture.md           # レイヤードアーキテクチャ・設計パターン
 │   ├── pyproject.md              # pyproject.toml 設定の根拠
 │   ├── specs.md                  # specs/ ドキュメントの設計方針
 │   └── workflow.md               # 技術スタック・開発コマンド・開発規律・開発フロー
-├── intro/                        # イントロダクション（オンボーディング用）
-│   ├── README.md                 # ドキュメント索引・推奨読書順序
-│   ├── concept.md                # 設計コンセプト
-│   ├── glossary.md               # 用語集
-│   ├── overview.md               # テンプレート概要
+├── intro/                        # イントロダクション
+│   ├── README.md                 # ドキュメント索引
+│   ├── concept.md                # 基本方針
+│   ├── interface.md              # CLI インターフェイス設計草案
+│   ├── requirements.md           # 要件定義
+│   ├── roadmap.md                # 開発ロードマップ
 │   └── structure.md              # プロジェクト構造（本ドキュメント）
 └── specs/                        # モジュール別仕様書
+    ├── README.md                 # 仕様書索引
     ├── cli/                      # CLI モジュール仕様
     ├── config/                   # config パッケージ仕様
     ├── foundation/               # foundation パッケージ仕様
@@ -97,6 +105,7 @@ docs/
     │   ├── fs/                   # ファイルシステム仕様
     │   ├── log/                  # ロギング仕様
     │   └── model/                # 基底モデル仕様
+    ├── protocol/                 # protocol パッケージ仕様
     └── transform/                # transform パッケージ仕様
         ├── design.md             # 基本設計書
         └── requirements.md       # 要件定義書

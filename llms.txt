@@ -58,10 +58,11 @@ Identify and read task-related sections below:
 
 ## Introduction
 
-- [Project overview](docs/intro/overview.md): Purpose, background, and what this project provides (reference implementation, design docs, specs, development workflow) - Use when understanding why this project exists or what it offers
-- [Design concept](docs/intro/concept.md): AI-driven development approach, Onion Architecture, Composition Root + Orchestrator pattern, document strategy, and reference implementation overview - Use when understanding the architectural philosophy or document organization rationale
+- [Design concept](docs/intro/concept.md): Tool positioning, background, target values, optimization priorities, diagnostic philosophy, and scope strategy - Use when understanding why Paladin exists, what it optimizes for, or how it relates to existing tools
+- [Requirements](docs/intro/requirements.md): Target scope, functional requirements, diagnostic output requirements, quality requirements, rule requirements, and constraints - Use when understanding what Paladin must satisfy or reviewing acceptance criteria
+- [CLI interface draft](docs/intro/interface.md): Command structure (check/rules/explain/version), check output contract, exit codes, JSON/text output format - Use when understanding the CLI design direction or reviewing command options
+- [Development roadmap](docs/intro/roadmap.md): Phased implementation plan from specification fixing through MVP to advanced analysis, milestones, and initial release scope - Use when understanding implementation priorities or the development sequence
 - [Repository structure](docs/intro/structure.md): Complete file layout with descriptions of each file and directory's role - Use when locating files, understanding project organization, or verifying the actual directory tree
-- [Glossary](docs/intro/glossary.md): Project-specific terminology for architecture and development process - Use when encountering unfamiliar terms or verifying correct usage
 
 ---
 
