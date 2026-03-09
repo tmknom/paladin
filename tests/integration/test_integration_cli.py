@@ -80,6 +80,49 @@ class TestIntegrationCLI:
         assert (cli_tmp_dir / "input.txt").exists()
         assert not (env_tmp_dir / "input.txt").exists()
 
+
+class TestIntegrationCheckCLI:
+    """check サブコマンドの統合テスト"""
+
+    def test_check_正常系_ディレクトリ指定でpyファイル一覧を出力すること(self, tmp_dir: Path):
+        # Arrange
+        src_dir = tmp_dir / "src"
+        src_dir.mkdir()
+        py_file = src_dir / "main.py"
+        py_file.write_text("")
+
+        # Act
+        cmd = [sys.executable, "-m", "paladin.cli", "check", str(src_dir)]
+        result = subprocess.run(cmd, cwd=tmp_dir, capture_output=True, text=True, timeout=10)
+
+        # Assert
+        assert result.returncode == 0
+        assert str(py_file.resolve()) in result.stdout
+
+    def test_check_正常系_ファイル指定で対象ファイルを出力すること(self, tmp_dir: Path):
+        # Arrange
+        py_file = tmp_dir / "target.py"
+        py_file.write_text("")
+
+        # Act
+        cmd = [sys.executable, "-m", "paladin.cli", "check", str(py_file)]
+        result = subprocess.run(cmd, cwd=tmp_dir, capture_output=True, text=True, timeout=10)
+
+        # Assert
+        assert result.returncode == 0
+        assert str(py_file.resolve()) in result.stdout
+
+    def test_check_異常系_存在しないパスでexit_code_1を返すこと(self, tmp_dir: Path):
+        # Arrange
+        non_existent = tmp_dir / "does_not_exist"
+
+        # Act
+        cmd = [sys.executable, "-m", "paladin.cli", "check", str(non_existent)]
+        result = subprocess.run(cmd, cwd=tmp_dir, capture_output=True, text=True, timeout=10)
+
+        # Assert
+        assert result.returncode == 1
+
     # このテストは main() の ErrorHandler が例外を捕捉して sys.exit(1) に変換する経路を検証する。
     # 未知のサブコマンドでは Typer が先に exit code 2 で終了し ErrorHandler に到達しないため、
     # 実在するサブコマンド経由で例外を発生させる必要がある。

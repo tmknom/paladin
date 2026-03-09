@@ -30,6 +30,7 @@ from typing import Annotated
 
 import typer
 
+from paladin.check import CheckContext, CheckOrchestratorProvider
 from paladin.config import AppConfig, EnvVarConfig
 from paladin.config.env_var import LogLevel
 from paladin.foundation.error import ErrorHandler
@@ -38,6 +39,18 @@ from paladin.transform import TransformContext, TransformOrchestratorProvider
 
 logger = logging.getLogger(__name__)
 app = typer.Typer(no_args_is_help=True)
+
+
+@app.command()
+def check(
+    ctx: typer.Context,
+    targets: Annotated[list[Path], typer.Argument(help="解析対象のファイルまたはディレクトリ")],
+) -> None:
+    """解析対象の .py ファイルを列挙して出力"""
+    context = CheckContext(targets=tuple(targets))
+    result = CheckOrchestratorProvider().provide().orchestrate(context)
+    for file in result.target_files:
+        typer.echo(file)
 
 
 @app.command()
