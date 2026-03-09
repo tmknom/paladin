@@ -3,19 +3,23 @@ from pathlib import Path
 from paladin.check.collector import FileCollector
 from paladin.check.context import CheckContext
 from paladin.check.orchestrator import CheckOrchestrator
+from paladin.check.parser import AstParser
 from paladin.check.types import CheckResult
+from tests.unit.test_check.fakes import InMemoryFsReader
 
 
 class TestCheckOrchestrator:
     """CheckOrchestratorクラスのテスト"""
 
-    def test_orchestrate_正常系_FileCollectorで列挙した結果をCheckResultとして返すこと(
+    def test_orchestrate_正常系_列挙とAST生成の結果をCheckResultとして返すこと(
         self, tmp_path: Path
     ):
         # Arrange
         py_file = tmp_path / "main.py"
-        py_file.write_text("")
-        orchestrator = CheckOrchestrator(collector=FileCollector())
+        py_file.write_text("x = 1\n")
+        reader = InMemoryFsReader(contents={str(py_file.resolve()): "x = 1\n"})
+        parser = AstParser(reader=reader)
+        orchestrator = CheckOrchestrator(collector=FileCollector(), parser=parser)
         context = CheckContext(targets=(tmp_path,))
 
         # Act
@@ -25,3 +29,4 @@ class TestCheckOrchestrator:
         assert isinstance(result, CheckResult)
         assert len(result.target_files) == 1
         assert py_file.resolve() in list(result.target_files)
+        assert len(result.parsed_files) == 1

@@ -46,7 +46,7 @@ def check(
     ctx: typer.Context,
     targets: Annotated[list[Path], typer.Argument(help="解析対象のファイルまたはディレクトリ")],
 ) -> None:
-    """解析対象の .py ファイルを列挙して出力"""
+    """解析対象の .py ファイルを列挙・AST解析して出力"""
     context = CheckContext(targets=tuple(targets))
     result = CheckOrchestratorProvider().provide().orchestrate(context)
     for file in result.target_files:

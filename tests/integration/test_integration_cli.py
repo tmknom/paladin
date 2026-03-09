@@ -89,7 +89,7 @@ class TestIntegrationCheckCLI:
         src_dir = tmp_dir / "src"
         src_dir.mkdir()
         py_file = src_dir / "main.py"
-        py_file.write_text("")
+        py_file.write_text("x = 1\n")
 
         # Act
         cmd = [sys.executable, "-m", "paladin.cli", "check", str(src_dir)]
@@ -102,7 +102,7 @@ class TestIntegrationCheckCLI:
     def test_check_正常系_ファイル指定で対象ファイルを出力すること(self, tmp_dir: Path):
         # Arrange
         py_file = tmp_dir / "target.py"
-        py_file.write_text("")
+        py_file.write_text("x = 1\n")
 
         # Act
         cmd = [sys.executable, "-m", "paladin.cli", "check", str(py_file)]
@@ -111,6 +111,18 @@ class TestIntegrationCheckCLI:
         # Assert
         assert result.returncode == 0
         assert str(py_file.resolve()) in result.stdout
+
+    def test_check_異常系_構文エラーのPythonファイルでexit_code_1を返すこと(self, tmp_dir: Path):
+        # Arrange
+        invalid_file = tmp_dir / "invalid.py"
+        invalid_file.write_text("def :\n")
+
+        # Act
+        cmd = [sys.executable, "-m", "paladin.cli", "check", str(invalid_file)]
+        result = subprocess.run(cmd, cwd=tmp_dir, capture_output=True, text=True, timeout=10)
+
+        # Assert
+        assert result.returncode == 1
 
     def test_check_異常系_存在しないパスでexit_code_1を返すこと(self, tmp_dir: Path):
         # Arrange
