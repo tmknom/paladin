@@ -5,9 +5,9 @@
 
 from pathlib import Path
 
-from example.foundation.log import log
-from example.protocol.fs import TextFileSystemWriterProtocol
-from example.transform.types import DstText
+from paladin.foundation.log import log
+from paladin.protocol.fs import TextFileSystemWriterProtocol
+from paladin.transform.types import DstText
 
 
 class TextWriter:

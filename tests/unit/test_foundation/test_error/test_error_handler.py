@@ -1,4 +1,4 @@
-"""example.foundation.error.ErrorHandler のテスト
+"""paladin.foundation.error.ErrorHandler のテスト
 
 エラーハンドラーのログ出力処理をテストします。
 sys.exit は含まれず、エラーメッセージのログ出力のみを担当します。
@@ -8,7 +8,7 @@ import logging
 
 import pytest
 
-from example.foundation.error import ApplicationError, ErrorHandler
+from paladin.foundation.error import ApplicationError, ErrorHandler
 
 
 class TestErrorHandler:

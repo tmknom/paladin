@@ -5,9 +5,9 @@
 
 from pathlib import Path
 
-from example.foundation.log import log
-from example.protocol.fs import TextFileSystemReaderProtocol
-from example.transform.types import SrcText
+from paladin.foundation.log import log
+from paladin.protocol.fs import TextFileSystemReaderProtocol
+from paladin.transform.types import SrcText
 
 
 class TextReader:

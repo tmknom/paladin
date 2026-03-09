@@ -2,7 +2,7 @@ from pathlib import Path
 
 import pytest
 
-from example.config import AppConfig, EnvVarConfig
+from paladin.config import AppConfig, EnvVarConfig
 
 
 class TestAppConfig:

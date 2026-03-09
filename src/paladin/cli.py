@@ -18,8 +18,8 @@ Docs:
     - docs/specs/cli/design.md
 
 Usage:
-    uv run example transform xxxx.md
-    uv run example --help
+    uv run paladin transform xxxx.md
+    uv run paladin --help
 """
 
 import logging
@@ -30,11 +30,11 @@ from typing import Annotated
 
 import typer
 
-from example.config import AppConfig, EnvVarConfig
-from example.config.env_var import LogLevel
-from example.foundation.error import ErrorHandler
-from example.foundation.log import LogConfigurator, log
-from example.transform import TransformContext, TransformOrchestratorProvider
+from paladin.config import AppConfig, EnvVarConfig
+from paladin.config.env_var import LogLevel
+from paladin.foundation.error import ErrorHandler
+from paladin.foundation.log import LogConfigurator, log
+from paladin.transform import TransformContext, TransformOrchestratorProvider
 
 logger = logging.getLogger(__name__)
 app = typer.Typer(no_args_is_help=True)

@@ -4,7 +4,7 @@
 ファイルの読み書き、パス操作などのエラーを処理します。
 """
 
-from example.foundation.error import ApplicationError
+from paladin.foundation.error import ApplicationError
 
 
 class FileSystemError(ApplicationError):

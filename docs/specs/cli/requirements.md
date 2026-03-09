@@ -20,7 +20,7 @@
 
 ### コマンド実行
 
-- `uv run example <subcommand>` の形式でサブコマンドを実行できる
+- `uv run paladin <subcommand>` の形式でサブコマンドを実行できる
 - サブコマンドなしで実行した場合はヘルプを表示する
 - 設定オプションの優先順位は「CLI引数 > 環境変数 > デフォルト値」とする
 - エラーが発生した場合は、エラーログを出力して異常終了させる
@@ -50,13 +50,13 @@
 ### コマンド形式
 
 ```
-uv run example [OPTIONS] COMMAND [ARGS]...
+uv run paladin [OPTIONS] COMMAND [ARGS]...
 ```
 
 ### transform サブコマンド仕様
 
 ```
-uv run example transform [OPTIONS] TARGET_FILE
+uv run paladin transform [OPTIONS] TARGET_FILE
 ```
 
 | パラメータ | 種別 | 必須 | 説明 |

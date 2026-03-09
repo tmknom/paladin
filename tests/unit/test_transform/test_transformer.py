@@ -1,7 +1,7 @@
 from datetime import datetime
 
-from example.transform.transformer import TextTransformer
-from example.transform.types import DstText, SrcText, TransformedDatetime
+from paladin.transform.transformer import TextTransformer
+from paladin.transform.types import DstText, SrcText, TransformedDatetime
 
 
 class TestTextTransformer:

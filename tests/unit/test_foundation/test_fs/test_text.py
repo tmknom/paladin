@@ -8,7 +8,7 @@ from pathlib import Path
 
 import pytest
 
-from example.foundation.fs import (
+from paladin.foundation.fs import (
     FileSystemError,
     TextFileSystemReader,
     TextFileSystemWriter,

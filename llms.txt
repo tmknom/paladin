@@ -21,35 +21,35 @@ Identify and read task-related sections below:
 
 #### Transform feature
 
-- [Transform requirement](docs/specs/transform/requirements.md): Requirements for the transform package - Use when modifying `src/example/transform/` or understanding text file reading, line numbering, datetime header, and result statistics
-- [Transform design](docs/specs/transform/design.md): Design for the transform package - Use when modifying `src/example/transform/` or understanding component structure, processing flow, design decisions (thin wrappers, SrcText/DstText, Fake-based testing), and design rationale
+- [Transform requirement](docs/specs/transform/requirements.md): Requirements for the transform package - Use when modifying `src/paladin/transform/` or understanding text file reading, line numbering, datetime header, and result statistics
+- [Transform design](docs/specs/transform/design.md): Design for the transform package - Use when modifying `src/paladin/transform/` or understanding component structure, processing flow, design decisions (thin wrappers, SrcText/DstText, Fake-based testing), and design rationale
 
 ### CLI
 
-- [CLI requirement](docs/specs/cli/requirements.md): Requirements for the cli module - Use when modifying `src/example/cli.py` or understanding subcommand execution, global/subcommand-specific options, config priority, error handling, and exit codes
-- [CLI design](docs/specs/cli/design.md): Design for the cli module - Use when modifying `src/example/cli.py`, adding new subcommands, adding CLI options, or understanding component structure (app/main_callback/main), two-phase flow (callback→command), design decisions (no business logic, AppConfig in ctx.obj, top-level exception handling), guardrails, and design rationale
+- [CLI requirement](docs/specs/cli/requirements.md): Requirements for the cli module - Use when modifying `src/paladin/cli.py` or understanding subcommand execution, global/subcommand-specific options, config priority, error handling, and exit codes
+- [CLI design](docs/specs/cli/design.md): Design for the cli module - Use when modifying `src/paladin/cli.py`, adding new subcommands, adding CLI options, or understanding component structure (app/main_callback/main), two-phase flow (callback→command), design decisions (no business logic, AppConfig in ctx.obj, top-level exception handling), guardrails, and design rationale
 
 ### Config
 
-- [Config requirement](docs/specs/config/requirements.md): Requirements for the config package - Use when modifying `src/example/config/` or understanding environment variable loading, path construction, and runtime config composition
-- [Config design](docs/specs/config/design.md): Design for the config package - Use when modifying `src/example/config/`, adding new config fields, or understanding component structure (EnvVarConfig / PathConfig / AppConfig), processing flow, design decisions (3-layer separation, pydantic-settings validation, PathConfig as internal component), and design rationale
+- [Config requirement](docs/specs/config/requirements.md): Requirements for the config package - Use when modifying `src/paladin/config/` or understanding environment variable loading, path construction, and runtime config composition
+- [Config design](docs/specs/config/design.md): Design for the config package - Use when modifying `src/paladin/config/`, adding new config fields, or understanding component structure (EnvVarConfig / PathConfig / AppConfig), processing flow, design decisions (3-layer separation, pydantic-settings validation, PathConfig as internal component), and design rationale
 
 ## Source Code
 
 ### Business Logic
 
-- [Transform feature](src/example/transform/): Reference feature package with Context, Orchestrator, OrchestratorProvider (Composition Root), Reader, Transformer, Writer, and Result types - Use when modifying `docs/specs/transform/`, adding new feature packages, understanding the Orchestrator-Provider-Context pattern, or reviewing the canonical package structure
+- [Transform feature](src/paladin/transform/): Reference feature package with Context, Orchestrator, OrchestratorProvider (Composition Root), Reader, Transformer, Writer, and Result types - Use when modifying `docs/specs/transform/`, adding new feature packages, understanding the Orchestrator-Provider-Context pattern, or reviewing the canonical package structure
 
 ### CLI
 
-- [CLI entry point](src/example/cli.py): Typer-based CLI that assembles Config, Context, and OrchestratorProvider then delegates to Orchestrator - Use when modifying `docs/specs/cli/`, adding new commands, understanding the application startup flow, or reviewing how Config/Context/Provider are wired together
+- [CLI entry point](src/paladin/cli.py): Typer-based CLI that assembles Config, Context, and OrchestratorProvider then delegates to Orchestrator - Use when modifying `docs/specs/cli/`, adding new commands, understanding the application startup flow, or reviewing how Config/Context/Provider are wired together
 
 ### Foundation
 
-- [Filesystem abstraction](src/example/foundation/fs/): Protocol-based file I/O with TextFileSystemReader - Use when modifying `docs/specs/foundation/fs/`, adding new I/O operations, implementing Protocol adapters, or understanding the Port/Adapter pattern
-- [Error handling](src/example/foundation/error/): ApplicationError base class and ErrorHandler - Use when modifying `docs/specs/foundation/error/`, implementing custom errors, understanding exception flow, or modifying error logging
-- [Logging](src/example/foundation/log/): `@log` decorator (auto-records args and return values) and LogConfigurator - Use when modifying `docs/specs/foundation/log/`, adding logging to new components, understanding cross-cutting concern implementation, or configuring log output
-- [Base model](src/example/foundation/model/): CoreModel for external data mapping - Use when modifying `docs/specs/foundation/model/`, adding new data models for JSON/YAML input or understanding the boundary validation pattern
+- [Filesystem abstraction](src/paladin/foundation/fs/): Protocol-based file I/O with TextFileSystemReader - Use when modifying `docs/specs/foundation/fs/`, adding new I/O operations, implementing Protocol adapters, or understanding the Port/Adapter pattern
+- [Error handling](src/paladin/foundation/error/): ApplicationError base class and ErrorHandler - Use when modifying `docs/specs/foundation/error/`, implementing custom errors, understanding exception flow, or modifying error logging
+- [Logging](src/paladin/foundation/log/): `@log` decorator (auto-records args and return values) and LogConfigurator - Use when modifying `docs/specs/foundation/log/`, adding logging to new components, understanding cross-cutting concern implementation, or configuring log output
+- [Base model](src/paladin/foundation/model/): CoreModel for external data mapping - Use when modifying `docs/specs/foundation/model/`, adding new data models for JSON/YAML input or understanding the boundary validation pattern
 
 ## Coding Standards
 

@@ -6,7 +6,7 @@ from typing import NewType
 
 from pydantic import Field
 
-from example.foundation.model import CoreModel
+from paladin.foundation.model import CoreModel
 
 TransformedDatetime = NewType("TransformedDatetime", datetime)
 """テキスト変換日時"""

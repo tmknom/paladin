@@ -1,5 +1,5 @@
 [project]
-name = "example"
+name = "paladin"
 version = "0.1.0"
 description = "CLIアプリケーション"
 requires-python = ">=3.13.0,<3.14"
@@ -22,10 +22,10 @@ dev = [
 ]
 
 [project.scripts]
-example = "example.cli:main"
+paladin = "paladin.cli:main"
 
 [tool.hatch.build.targets.wheel]
-packages = ["src/example"]
+packages = ["src/paladin"]
 
 [build-system]
 requires = ["hatchling"]

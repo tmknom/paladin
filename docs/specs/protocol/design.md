@@ -21,7 +21,7 @@
 #### プロダクションコード
 
 ```text
-src/example/protocol/
+src/paladin/protocol/
 ├── __init__.py    # 公開 API の定義（TextFileSystemReaderProtocol / TextFileSystemWriterProtocol を __all__ で明示）
 └── fs.py          # TextFileSystemReaderProtocol / TextFileSystemWriterProtocol
 ```

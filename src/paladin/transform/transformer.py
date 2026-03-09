@@ -3,8 +3,8 @@
 行番号付与と日時ヘッダー追加を担当する。
 """
 
-from example.foundation.log import log
-from example.transform.types import DstText, SrcText, TransformedDatetime
+from paladin.foundation.log import log
+from paladin.transform.types import DstText, SrcText, TransformedDatetime
 
 
 class TextTransformer:

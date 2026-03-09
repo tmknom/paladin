@@ -1,4 +1,4 @@
-"""example.foundation.log.configurator のテスト
+"""paladin.foundation.log.configurator のテスト
 
 ログ設定機能のテストを実装します。
 """
@@ -6,7 +6,7 @@
 import logging
 from pathlib import Path
 
-from example.foundation.log.configurator import LogConfigurator
+from paladin.foundation.log.configurator import LogConfigurator
 
 
 class TestLogConfigurator:

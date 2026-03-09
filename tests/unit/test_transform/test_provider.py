@@ -1,5 +1,5 @@
-from example.transform import TransformOrchestratorProvider
-from example.transform.orchestrator import TransformOrchestrator
+from paladin.transform import TransformOrchestratorProvider
+from paladin.transform.orchestrator import TransformOrchestrator
 
 
 class TestTransformOrchestratorProvider:

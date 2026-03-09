@@ -1,11 +1,11 @@
 from datetime import datetime
 from pathlib import Path
 
-from example.transform.context import TransformContext
-from example.transform.orchestrator import TransformOrchestrator
-from example.transform.reader import TextReader
-from example.transform.transformer import TextTransformer
-from example.transform.writer import TextWriter
+from paladin.transform.context import TransformContext
+from paladin.transform.orchestrator import TransformOrchestrator
+from paladin.transform.reader import TextReader
+from paladin.transform.transformer import TextTransformer
+from paladin.transform.writer import TextWriter
 from tests.unit.test_transform.fakes import InMemoryFsReader, InMemoryFsWriter
 
 

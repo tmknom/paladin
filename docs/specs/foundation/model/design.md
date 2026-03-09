@@ -20,7 +20,7 @@
 #### プロダクションコード
 
 ```bash
-src/example/foundation/model/
+src/paladin/foundation/model/
 ├── __init__.py    # 公開 API の定義（CoreModel）
 └── base.py        # CoreModel（共通モデル基底クラス）
 ```
@@ -76,7 +76,7 @@ tests/unit/test_foundation/test_model/
 
 ### 公開 API の制限
 
-公開 API は `CoreModel` のみ（`__init__.py` の `__all__` で明示）。内部モジュールからの直接 import は行わず、`example.foundation.model` パッケージから import すること。
+公開 API は `CoreModel` のみ（`__init__.py` の `__all__` で明示）。内部モジュールからの直接 import は行わず、`paladin.foundation.model` パッケージから import すること。
 
 ### frozen インスタンスの変更
 

@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from example.config.path import PathConfig
+from paladin.config.path import PathConfig
 
 
 class TestPathConfig:
