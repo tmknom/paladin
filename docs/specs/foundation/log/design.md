@@ -23,7 +23,7 @@
 #### プロダクションコード
 
 ```bash
-src/example/foundation/log/
+src/paladin/foundation/log/
 ├── __init__.py        # 公開 API: LogConfigurator, log
 ├── configurator.py    # ログ設定管理: LogConfigurator クラス
 └── decorator.py       # トレースデコレータ: log デコレータ, _format_value 関数

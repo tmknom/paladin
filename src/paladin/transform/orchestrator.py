@@ -3,12 +3,12 @@
 変換パイプライン全体を制御し、入力・変換・出力の流れを調整する。
 """
 
-from example.foundation.log import log
-from example.transform.context import TransformContext
-from example.transform.reader import TextReader
-from example.transform.transformer import TextTransformer
-from example.transform.types import TransformedDatetime, TransformResult
-from example.transform.writer import TextWriter
+from paladin.foundation.log import log
+from paladin.transform.context import TransformContext
+from paladin.transform.reader import TextReader
+from paladin.transform.transformer import TextTransformer
+from paladin.transform.types import TransformedDatetime, TransformResult
+from paladin.transform.writer import TextWriter
 
 
 class TransformOrchestrator:

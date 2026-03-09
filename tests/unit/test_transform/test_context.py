@@ -1,7 +1,7 @@
 from datetime import datetime
 from pathlib import Path
 
-from example.transform.context import TransformContext
+from paladin.transform.context import TransformContext
 
 
 class TestTransformContext:

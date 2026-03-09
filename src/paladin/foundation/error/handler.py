@@ -6,7 +6,7 @@ sys.exitは実行せず、ログ出力のみを担当する。
 
 import logging
 
-from example.foundation.error.error import ApplicationError
+from paladin.foundation.error.error import ApplicationError
 
 
 class ErrorHandler:

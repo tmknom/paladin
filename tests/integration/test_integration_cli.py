@@ -30,7 +30,7 @@ class TestIntegrationCLI:
         tmp_output_dir.mkdir()
 
         # Act
-        cmd = [sys.executable, "-m", "example.cli", "transform", str(input_file)]
+        cmd = [sys.executable, "-m", "paladin.cli", "transform", str(input_file)]
         result = subprocess.run(cmd, cwd=tmp_dir, capture_output=True, text=True, timeout=10)
 
         # Assert
@@ -58,7 +58,7 @@ class TestIntegrationCLI:
         cmd = [
             sys.executable,
             "-m",
-            "example.cli",
+            "paladin.cli",
             "transform",
             str(input_file),
             "--tmp-dir",
@@ -89,7 +89,7 @@ class TestIntegrationCLI:
         non_existent_file = tmp_dir / "non_existent.txt"
 
         # Act
-        cmd = [sys.executable, "-m", "example.cli", "transform", str(non_existent_file)]
+        cmd = [sys.executable, "-m", "paladin.cli", "transform", str(non_existent_file)]
         result = subprocess.run(cmd, cwd=tmp_dir, capture_output=True, text=True, timeout=10)
 
         # Assert

@@ -2,8 +2,8 @@
 
 from pathlib import Path
 
-from example.foundation.fs.error import FileSystemError
-from example.protocol.fs import TextFileSystemReaderProtocol, TextFileSystemWriterProtocol
+from paladin.foundation.fs.error import FileSystemError
+from paladin.protocol.fs import TextFileSystemReaderProtocol, TextFileSystemWriterProtocol
 
 
 class TextFileSystemReader(TextFileSystemReaderProtocol):

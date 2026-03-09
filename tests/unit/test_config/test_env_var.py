@@ -3,7 +3,7 @@ from pathlib import Path
 import pytest
 from pydantic import ValidationError
 
-from example.config import EnvVarConfig
+from paladin.config import EnvVarConfig
 
 
 class TestEnvVarConfig:
@@ -59,10 +59,10 @@ class TestEnvVarConfig:
         self, monkeypatch: pytest.MonkeyPatch
     ):
         # Arrange
-        monkeypatch.setenv("EXAMPLE_TMP_DIR", "/tmp/example")
+        monkeypatch.setenv("EXAMPLE_TMP_DIR", "/tmp/paladin")
 
         # Act
         result = EnvVarConfig()
 
         # Assert
-        assert result.tmp_dir == Path("/tmp/example")
+        assert result.tmp_dir == Path("/tmp/paladin")

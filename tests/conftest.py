@@ -9,7 +9,7 @@ from typing import Any
 
 import pytest
 
-from example.config.path import PathConfig
+from paladin.config.path import PathConfig
 
 
 def pytest_configure(config: Any) -> None:

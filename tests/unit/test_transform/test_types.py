@@ -1,6 +1,6 @@
 import json
 
-from example.transform.types import DstText, SrcText, TransformResult
+from paladin.transform.types import DstText, SrcText, TransformResult
 
 
 class TestTransformResult:

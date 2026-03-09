@@ -3,7 +3,7 @@
 import pytest
 from pydantic import Field, ValidationError
 
-from example.foundation.model import CoreModel
+from paladin.foundation.model import CoreModel
 
 
 class SampleCoreModel(CoreModel):

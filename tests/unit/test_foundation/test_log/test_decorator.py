@@ -4,7 +4,7 @@ import logging
 
 import pytest
 
-from example.foundation.log.decorator import log
+from paladin.foundation.log.decorator import log
 
 
 class TestLogDecorator:

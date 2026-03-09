@@ -12,9 +12,9 @@
 
 `project.scripts` はコマンド名とエントリーポイント関数のマッピングを定義する。
 
-記法は `コマンド名 = "モジュールパス:関数名"` という形式を取る。`example.cli:main` は「`example.cli` モジュール内の `main` 関数をエントリーポイントとして登録する」という意味である。パッケージのインストール後、`example` コマンドを実行すると `example.cli.main()` が呼ばれる仕組みである。
+記法は `コマンド名 = "モジュールパス:関数名"` という形式を取る。`paladin.cli:main` は「`paladin.cli` モジュール内の `main` 関数をエントリーポイントとして登録する」という意味である。パッケージのインストール後、`paladin` コマンドを実行すると `paladin.cli.main()` が呼ばれる仕組みである。
 
-`uv run example` のように実行できるのは、この設定によって実行可能スクリプトが生成されるためである。
+`uv run paladin` のように実行できるのは、この設定によって実行可能スクリプトが生成されるためである。
 
 ## ビルドシステム（build-system / tool.hatch）
 
@@ -28,7 +28,7 @@
 
 ### packages の明示指定
 
-`src` レイアウトを採用する場合、`packages = ["src/example"]` を明示的に指定している。
+`src` レイアウトを採用する場合、`packages = ["src/paladin"]` を明示的に指定している。
 
 自動検出に任せると `src/` 配下の意図しないディレクトリ（`src/tool/` 等）を拾う可能性がある。明示することでビルド成果物に含まれるパッケージを確実に制御できる。
 
@@ -73,13 +73,13 @@
 
 `patch = ["subprocess"]` はサブプロセス内のコードをカバレッジ計測対象に含めるための設定である。
 
-インテグレーションテスト（`tests/integration/`）では、CLI アプリを `subprocess.run()` で子プロセスとして起動して end-to-end の動作を検証する。この子プロセス内で実行されるアプリコード（`src/example/` 配下）は、通常の状態では pytest の計測範囲に含まれない。`patch = ["subprocess"]` を設定することで、この問題を解決する。
+インテグレーションテスト（`tests/integration/`）では、CLI アプリを `subprocess.run()` で子プロセスとして起動して end-to-end の動作を検証する。この子プロセス内で実行されるアプリコード（`src/paladin/` 配下）は、通常の状態では pytest の計測範囲に含まれない。`patch = ["subprocess"]` を設定することで、この問題を解決する。
 
 仕組みは以下のとおりである。
 
 1. **環境変数の伝播**: coverage.py が `COVERAGE_PROCESS_CONFIG` 環境変数にカバレッジ設定をシリアライズして保存し、`subprocess.run()` で起動する子プロセスに自動的に引き継がれる。
 2. **`.pth` ファイルによる自動ロード**: pytest-cov はインストール時に仮想環境の `site-packages/` に `.pth` ファイルを生成する。子プロセスの Python 起動時にこのファイルが自動読み込まれ、`COVERAGE_PROCESS_CONFIG` が存在すれば `coverage.process_startup()` を呼び出す。
-3. **子プロセスでの計測開始**: `coverage.process_startup()` により、子プロセス内でも `src/example/` 配下のコードが計測対象になる。
+3. **子プロセスでの計測開始**: `coverage.process_startup()` により、子プロセス内でも `src/paladin/` 配下のコードが計測対象になる。
 4. **並列モードの自動有効化**: `patch = ["subprocess"]` を設定すると `parallel = true` が自動的に有効になる。各プロセスが独立した `.coverage.<pid>` ファイルに書き込み、pytest-cov がテスト終了後に全ファイルを統合してレポートを生成する。
 
 `patch = ["subprocess"]` がない場合、`subprocess.run()` で起動した子プロセス内のアプリコードはカバレッジ計測対象外となる。インテグレーションテストが実行されても、その中で走ったコードパスがカバレッジレポートに反映されない。

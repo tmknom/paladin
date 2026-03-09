@@ -21,7 +21,7 @@
 #### プロダクションコード
 
 ```bash
-src/example/foundation/error/
+src/paladin/foundation/error/
 ├── __init__.py    # 公開 API の定義（ApplicationError, ErrorHandler）
 ├── error.py       # ApplicationError（アプリケーション例外の基底クラス）
 └── handler.py     # ErrorHandler（エラーハンドリング）
@@ -88,7 +88,7 @@ foundation/error パッケージはロギング設定（ハンドラ・フォー
 
 ### 公開 API の制限
 
-公開 API は `ApplicationError` と `ErrorHandler` のみ（`__init__.py` の `__all__` で明示）。内部モジュールからの直接 import は行わず、`example.foundation.error` パッケージから import すること。
+公開 API は `ApplicationError` と `ErrorHandler` のみ（`__init__.py` の `__all__` で明示）。内部モジュールからの直接 import は行わず、`paladin.foundation.error` パッケージから import すること。
 
 ## 外部依存と拡張性
 

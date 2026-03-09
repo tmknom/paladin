@@ -8,8 +8,8 @@ from __future__ import annotations
 from dataclasses import dataclass
 from pathlib import Path
 
-from example.config.env_var import EnvVarConfig, LogLevel
-from example.config.path import PathConfig
+from paladin.config.env_var import EnvVarConfig, LogLevel
+from paladin.config.path import PathConfig
 
 
 @dataclass(frozen=True)

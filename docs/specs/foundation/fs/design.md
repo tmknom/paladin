@@ -23,7 +23,7 @@
 #### プロダクションコード
 
 ```bash
-src/example/foundation/fs/
+src/paladin/foundation/fs/
 ├── __init__.py    # 公開 API の定義（3 シンボルを __all__ で明示）
 ├── error.py       # FileSystemError（ファイルシステム固有の業務例外）
 └── text.py        # TextFileSystemReader / TextFileSystemWriter（実装クラス）
@@ -98,7 +98,7 @@ tests/unit/test_foundation/test_fs/
 
 ### 公開 API の制限
 
-公開 API は `__init__.py` の `__all__` で定義された 3 シンボルのみ（`FileSystemError`, `TextFileSystemReader`, `TextFileSystemWriter`）。Protocol の定義は `example.protocol.fs` から import すること。内部モジュールからの直接 import は行わず、`example.foundation.fs` パッケージから import すること。
+公開 API は `__init__.py` の `__all__` で定義された 3 シンボルのみ（`FileSystemError`, `TextFileSystemReader`, `TextFileSystemWriter`）。Protocol の定義は `paladin.protocol.fs` から import すること。内部モジュールからの直接 import は行わず、`paladin.foundation.fs` パッケージから import すること。
 
 ### FileSystemError の例外チェーン
 

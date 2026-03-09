@@ -3,12 +3,12 @@
 具象クラスへの依存を隠蔽し、Transform層の生成ロジックを一元化する。
 """
 
-from example.foundation.fs import TextFileSystemReader, TextFileSystemWriter
-from example.foundation.log import log
-from example.transform.orchestrator import TransformOrchestrator
-from example.transform.reader import TextReader
-from example.transform.transformer import TextTransformer
-from example.transform.writer import TextWriter
+from paladin.foundation.fs import TextFileSystemReader, TextFileSystemWriter
+from paladin.foundation.log import log
+from paladin.transform.orchestrator import TransformOrchestrator
+from paladin.transform.reader import TextReader
+from paladin.transform.transformer import TextTransformer
+from paladin.transform.writer import TextWriter
 
 
 class TransformOrchestratorProvider:
