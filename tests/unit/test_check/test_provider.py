@@ -1,5 +1,6 @@
 from paladin.check import CheckOrchestratorProvider
 from paladin.check.orchestrator import CheckOrchestrator
+from paladin.check.parser import AstParser
 
 
 class TestCheckOrchestratorProvider:
@@ -11,3 +12,10 @@ class TestCheckOrchestratorProvider:
 
         # Assert
         assert isinstance(result, CheckOrchestrator)
+
+    def test_provide_正常系_AstParserが注入されたOrchestratorを返すこと(self):
+        # Act
+        result = CheckOrchestratorProvider().provide()
+
+        # Assert
+        assert isinstance(result.parser, AstParser)
