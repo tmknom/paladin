@@ -8,13 +8,15 @@
     ├── AstParser(reader=TextFileSystemReader)
     ├── FileCollector
     ├── RequireAllExportRule
-    ├── RuleRunner(rules=(RequireAllExportRule,))
+    ├── NoRelativeImportRule
+    ├── RuleRunner(rules=(RequireAllExportRule, NoRelativeImportRule))
     └── CheckOrchestrator(collector=FileCollector, parser=AstParser, runner=RuleRunner)
 """
 
 from paladin.check.collector import FileCollector
 from paladin.check.orchestrator import CheckOrchestrator
 from paladin.check.parser import AstParser
+from paladin.check.rule.no_relative_import import NoRelativeImportRule
 from paladin.check.rule.require_all_export import RequireAllExportRule
 from paladin.check.rule.runner import RuleRunner
 from paladin.foundation.fs.text import TextFileSystemReader
@@ -41,5 +43,6 @@ class CheckOrchestratorProvider:
         reader = TextFileSystemReader()
         parser = AstParser(reader=reader)
         require_all_export_rule = RequireAllExportRule()
-        runner = RuleRunner(rules=(require_all_export_rule,))
+        no_relative_import_rule = NoRelativeImportRule()
+        runner = RuleRunner(rules=(require_all_export_rule, no_relative_import_rule))
         return CheckOrchestrator(collector=FileCollector(), parser=parser, runner=runner)
