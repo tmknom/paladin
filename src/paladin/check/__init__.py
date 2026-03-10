@@ -8,12 +8,24 @@ Docs:
 """
 
 from paladin.check.context import CheckContext
+from paladin.check.formatter import CheckReportFormatter
 from paladin.check.provider import CheckOrchestratorProvider
-from paladin.check.types import RuleMeta, Violation, Violations
+from paladin.check.types import (
+    CheckReport,
+    CheckStatus,
+    CheckSummary,
+    RuleMeta,
+    Violation,
+    Violations,
+)
 
 __all__ = [
     "CheckContext",
     "CheckOrchestratorProvider",
+    "CheckReport",
+    "CheckReportFormatter",
+    "CheckStatus",
+    "CheckSummary",
     "RuleMeta",
     "Violation",
     "Violations",

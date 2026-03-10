@@ -84,7 +84,7 @@ class TestIntegrationCLI:
 class TestIntegrationCheckCLI:
     """check サブコマンドの統合テスト"""
 
-    def test_check_正常系_ディレクトリ指定でpyファイル一覧を出力すること(self, tmp_dir: Path):
+    def test_check_正常系_違反なしでexit_code_0とOKサマリーを出力すること(self, tmp_dir: Path):
         # Arrange
         src_dir = tmp_dir / "src"
         src_dir.mkdir()
@@ -97,22 +97,28 @@ class TestIntegrationCheckCLI:
 
         # Assert
         assert result.returncode == 0
-        assert str(py_file.resolve()) in result.stdout
+        assert "status: ok" in result.stdout
 
-    def test_check_正常系_ファイル指定で対象ファイルを出力すること(self, tmp_dir: Path):
-        # Arrange
-        py_file = tmp_dir / "target.py"
-        py_file.write_text("x = 1\n")
+    def test_check_正常系_違反ありでexit_code_1と診断レポートを出力すること(self, tmp_dir: Path):
+        # Arrange: __init__.py に __all__ なし（require-all-export 違反）
+        src_dir = tmp_dir / "src"
+        src_dir.mkdir()
+        init_file = src_dir / "__init__.py"
+        init_file.write_text("x = 1\n")
 
         # Act
-        cmd = [sys.executable, "-m", "paladin.cli", "check", str(py_file)]
+        cmd = [sys.executable, "-m", "paladin.cli", "check", str(src_dir)]
         result = subprocess.run(cmd, cwd=tmp_dir, capture_output=True, text=True, timeout=10)
 
         # Assert
-        assert result.returncode == 0
-        assert str(py_file.resolve()) in result.stdout
+        assert result.returncode == 1
+        assert "require-all-export" in result.stdout
+        assert "概要:" in result.stdout
+        assert "理由:" in result.stdout
+        assert "修正方向:" in result.stdout
+        assert "status: violations" in result.stdout
 
-    def test_check_異常系_構文エラーのPythonファイルでexit_code_1を返すこと(self, tmp_dir: Path):
+    def test_check_異常系_構文エラーのPythonファイルでexit_code_2を返すこと(self, tmp_dir: Path):
         # Arrange
         invalid_file = tmp_dir / "invalid.py"
         invalid_file.write_text("def :\n")
@@ -122,9 +128,9 @@ class TestIntegrationCheckCLI:
         result = subprocess.run(cmd, cwd=tmp_dir, capture_output=True, text=True, timeout=10)
 
         # Assert
-        assert result.returncode == 1
+        assert result.returncode == 2
 
-    def test_check_異常系_存在しないパスでexit_code_1を返すこと(self, tmp_dir: Path):
+    def test_check_異常系_存在しないパスでexit_code_2を返すこと(self, tmp_dir: Path):
         # Arrange
         non_existent = tmp_dir / "does_not_exist"
 
@@ -133,13 +139,13 @@ class TestIntegrationCheckCLI:
         result = subprocess.run(cmd, cwd=tmp_dir, capture_output=True, text=True, timeout=10)
 
         # Assert
-        assert result.returncode == 1
+        assert result.returncode == 2
 
-    # このテストは main() の ErrorHandler が例外を捕捉して sys.exit(1) に変換する経路を検証する。
+    # このテストは main() の ErrorHandler が例外を捕捉して sys.exit(2) に変換する経路を検証する。
     # 未知のサブコマンドでは Typer が先に exit code 2 で終了し ErrorHandler に到達しないため、
     # 実在するサブコマンド経由で例外を発生させる必要がある。
     # 使用するサブコマンド自体のロジックは、このテストの関心事ではない。
-    def test_例外発生時_ErrorHandlerがexit_code_1で終了すること(self, tmp_dir: Path):
+    def test_例外発生時_ErrorHandlerがexit_code_2で終了すること(self, tmp_dir: Path):
         # Arrange
         non_existent_file = tmp_dir / "non_existent.txt"
 
@@ -148,6 +154,6 @@ class TestIntegrationCheckCLI:
         result = subprocess.run(cmd, cwd=tmp_dir, capture_output=True, text=True, timeout=10)
 
         # Assert
-        assert result.returncode == 1
+        assert result.returncode == 2
         # エラーメッセージが出力されることを確認（標準エラー出力に表示される）
         assert result.stderr or "Error" in result.stdout

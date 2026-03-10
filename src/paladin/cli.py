@@ -30,7 +30,7 @@ from typing import Annotated
 
 import typer
 
-from paladin.check import CheckContext, CheckOrchestratorProvider
+from paladin.check import CheckContext, CheckOrchestratorProvider, CheckReportFormatter
 from paladin.config import AppConfig, EnvVarConfig
 from paladin.config.env_var import LogLevel
 from paladin.foundation.error import ErrorHandler
@@ -46,11 +46,12 @@ def check(
     ctx: typer.Context,
     targets: Annotated[list[Path], typer.Argument(help="解析対象のファイルまたはディレクトリ")],
 ) -> None:
-    """解析対象の .py ファイルを列挙・AST解析して出力"""
+    """解析対象の .py ファイルを診断し、違反レポートを出力する"""
     context = CheckContext(targets=tuple(targets))
     result = CheckOrchestratorProvider().provide().orchestrate(context)
-    for file in result.target_files:
-        typer.echo(file)
+    report = CheckReportFormatter().format(result)
+    typer.echo(report.text)
+    raise typer.Exit(code=report.exit_code)
 
 
 @app.command()
@@ -126,7 +127,7 @@ def main() -> None:
         app()
     except Exception as e:
         ErrorHandler().handle(e)
-        sys.exit(1)
+        sys.exit(2)
 
 
 if __name__ == "__main__":
