@@ -9,7 +9,6 @@
 
 | ルール名 | 概要 |
 |----------|------|
-| [require-all-export](require-all-export.md) | `__init__.py` に `__all__` の定義を要求する |
 | [no-direct-internal-import](no-direct-internal-import.md) | 他パッケージの内部モジュールへの直接参照を禁止する |
 | [no-relative-import](no-relative-import.md) | 相対インポートを禁止する |
 | [no-local-import](no-local-import.md) | ファイル冒頭以外の場所での import を禁止する |

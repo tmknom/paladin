@@ -9,4 +9,4 @@
 
 | ルール名 | 概要 |
 |------------|------|
-| [ルール名](xxxx.md) | ルールの概要説明を書く |
+| [require-all-export](require-all-export.md) | `__init__.py` に `__all__` の定義を要求する |
