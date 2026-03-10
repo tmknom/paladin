@@ -2,8 +2,8 @@
 
 ## 現在地
 
-- Active milestone: M3 (診断器 MVP 成立)
-- Current item: R-040
+- Active milestone: M4 (ルール資産の拡充)
+- Current item: R-051
 - Updated: 2026-03-10
 
 ## 状態一覧
@@ -14,8 +14,8 @@
 | R-010 | Python ファイルを再帰列挙する | Done | |
 | R-020 | AST を生成する | Done | |
 | R-030 | ルール実行基盤を作る | Done | コミット 7526a43 |
-| R-040 | `check` コマンドの text 出力と終了コードを実装する | Not Started | |
-| R-050 | 単一ファイルルールを追加する (1本目) | Not Started | |
+| R-040 | `check` コマンドの text 出力と終了コードを実装する | Done | |
+| R-050 | `no-relative-import` を実装する | Done | |
 | R-051 | 単一ファイルルールを追加する (2本目) | Not Started | |
 | R-052 | 単一ファイルルールを追加する (3本目) | Not Started | |
 | R-053 | 単一ファイルルールを追加する (4本目) | Not Started | |
