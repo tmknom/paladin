@@ -9,8 +9,12 @@ Docs:
 
 from paladin.check.context import CheckContext
 from paladin.check.provider import CheckOrchestratorProvider
+from paladin.check.types import RuleMeta, Violation, Violations
 
 __all__ = [
     "CheckContext",
     "CheckOrchestratorProvider",
+    "RuleMeta",
+    "Violation",
+    "Violations",
 ]
