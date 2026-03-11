@@ -17,7 +17,7 @@
 | R-040 | `check` コマンドの text 出力と終了コードを実装する | Done | |
 | R-050 | `no-relative-import` を実装する | Done | |
 | R-051 | 単一ファイルルールを追加する (2本目) | Done | no-local-import |
-| R-052 | 単一ファイルルールを追加する (3本目) | Not Started | |
+| R-052 | 単一ファイルルールを追加する (3本目) | Done | require-qualified-third-party |
 | R-060 | `rules` コマンドの最小実装 | Not Started | |
 | R-061 | `version` コマンドの実装 | Not Started | |
 | R-062 | `rules --rule <RULE_ID>` の対応 | Not Started | |
