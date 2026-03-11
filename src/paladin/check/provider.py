@@ -9,13 +9,15 @@
     ├── FileCollector
     ├── RequireAllExportRule
     ├── NoRelativeImportRule
-    ├── RuleRunner(rules=(RequireAllExportRule, NoRelativeImportRule))
+    ├── NoLocalImportRule
+    ├── RuleRunner(rules=(RequireAllExportRule, NoRelativeImportRule, NoLocalImportRule))
     └── CheckOrchestrator(collector=FileCollector, parser=AstParser, runner=RuleRunner)
 """
 
 from paladin.check.collector import FileCollector
 from paladin.check.orchestrator import CheckOrchestrator
 from paladin.check.parser import AstParser
+from paladin.check.rule.no_local_import import NoLocalImportRule
 from paladin.check.rule.no_relative_import import NoRelativeImportRule
 from paladin.check.rule.require_all_export import RequireAllExportRule
 from paladin.check.rule.runner import RuleRunner
@@ -40,5 +42,8 @@ class CheckOrchestratorProvider:
         parser = AstParser(reader=reader)
         require_all_export_rule = RequireAllExportRule()
         no_relative_import_rule = NoRelativeImportRule()
-        runner = RuleRunner(rules=(require_all_export_rule, no_relative_import_rule))
+        no_local_import_rule = NoLocalImportRule()
+        runner = RuleRunner(
+            rules=(require_all_export_rule, no_relative_import_rule, no_local_import_rule)
+        )
         return CheckOrchestrator(collector=FileCollector(), parser=parser, runner=runner)

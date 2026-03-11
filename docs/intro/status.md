@@ -3,8 +3,8 @@
 ## 現在地
 
 - Active milestone: M4 (ルール資産の拡充)
-- Current item: R-051
-- Updated: 2026-03-10
+- Current item: R-052
+- Updated: 2026-03-11
 
 ## 状態一覧
 
@@ -16,10 +16,8 @@
 | R-030 | ルール実行基盤を作る | Done | コミット 7526a43 |
 | R-040 | `check` コマンドの text 出力と終了コードを実装する | Done | |
 | R-050 | `no-relative-import` を実装する | Done | |
-| R-051 | 単一ファイルルールを追加する (2本目) | Not Started | |
+| R-051 | 単一ファイルルールを追加する (2本目) | Done | no-local-import |
 | R-052 | 単一ファイルルールを追加する (3本目) | Not Started | |
-| R-053 | 単一ファイルルールを追加する (4本目) | Not Started | |
-| R-054 | 単一ファイルルールを追加する (5本目) | Not Started | |
 | R-060 | `rules` コマンドの最小実装 | Not Started | |
 | R-061 | `version` コマンドの実装 | Not Started | |
 | R-062 | `rules --rule <RULE_ID>` の対応 | Not Started | |
