@@ -4,18 +4,22 @@ import ast
 
 from paladin.check.types import ParsedFile, RuleMeta, Violation
 
-_RULE_ID = "require-all-export"
-_RULE_NAME = "Require __all__ Export"
-_SUMMARY = "__init__.py に __all__ の定義を要求する"
-
 
 class RequireAllExportRule:
     """__init__.py に __all__ が定義されているかを AST で判定するルール"""
 
+    def __init__(self) -> None:
+        """ルールを初期化する"""
+        self._meta = RuleMeta(
+            rule_id="require-all-export",
+            rule_name="Require __all__ Export",
+            summary="__init__.py に __all__ の定義を要求する",
+        )
+
     @property
     def meta(self) -> RuleMeta:
         """ルールのメタ情報を返す"""
-        return RuleMeta(rule_id=_RULE_ID, rule_name=_RULE_NAME, summary=_SUMMARY)
+        return self._meta
 
     def check(self, parsed_file: ParsedFile) -> tuple[Violation, ...]:
         """単一ファイルに対する違反判定を行う"""
@@ -30,8 +34,8 @@ class RequireAllExportRule:
                 file=parsed_file.file_path,
                 line=1,
                 column=0,
-                rule_id=_RULE_ID,
-                rule_name=_RULE_NAME,
+                rule_id=self._meta.rule_id,
+                rule_name=self._meta.rule_name,
                 message="__init__.py に __all__ が定義されていない",
                 reason="__all__ が未定義の場合、パッケージの公開インタフェースが不明確になり、意図しないシンボルが外部に露出するリスクがある",
                 suggestion="__all__ リストを定義し、公開するシンボルを明示的に列挙する",

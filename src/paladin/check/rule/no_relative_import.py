@@ -4,18 +4,22 @@ import ast
 
 from paladin.check.types import ParsedFile, RuleMeta, Violation
 
-_RULE_ID = "no-relative-import"
-_RULE_NAME = "No Relative Import"
-_SUMMARY = "相対インポートの使用を禁止する"
-
 
 class NoRelativeImportRule:
     """相対インポート（from . import ...）の使用を AST で検出するルール"""
 
+    def __init__(self) -> None:
+        """ルールを初期化する"""
+        self._meta = RuleMeta(
+            rule_id="no-relative-import",
+            rule_name="No Relative Import",
+            summary="相対インポートの使用を禁止する",
+        )
+
     @property
     def meta(self) -> RuleMeta:
         """ルールのメタ情報を返す"""
-        return RuleMeta(rule_id=_RULE_ID, rule_name=_RULE_NAME, summary=_SUMMARY)
+        return self._meta
 
     def check(self, parsed_file: ParsedFile) -> tuple[Violation, ...]:
         """単一ファイルに対する違反判定を行う"""
@@ -29,8 +33,8 @@ class NoRelativeImportRule:
                         file=parsed_file.file_path,
                         line=node.lineno,
                         column=node.col_offset,
-                        rule_id=_RULE_ID,
-                        rule_name=_RULE_NAME,
+                        rule_id=self._meta.rule_id,
+                        rule_name=self._meta.rule_name,
                         message=f"相対インポートが使用されている（from {level_dots}{module} import ...）",
                         reason="相対インポートは依存関係を不透明にし、モジュール移動時にインポートパスの修正が必要になる",
                         suggestion="プロジェクトルートからの絶対インポートに書き換える（例：from myapp.services.data import DataLoader）",

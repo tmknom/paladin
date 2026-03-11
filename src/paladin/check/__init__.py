@@ -1,4 +1,4 @@
-"""対象列挙システムの公開API(Check層)
+"""静的解析システムの公開API（Check層）
 
 公開APIは `paladin.check` から import すること(`__all__` のみ互換性対象)。
 
