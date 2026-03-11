@@ -29,10 +29,6 @@ class CheckOrchestratorProvider:
     具象クラスの選択と依存注入を一箇所に集約する。
     """
 
-    def __init__(self) -> None:
-        """Providerを初期化"""
-        pass
-
     @log
     def provide(self) -> CheckOrchestrator:
         """CheckOrchestratorを構築

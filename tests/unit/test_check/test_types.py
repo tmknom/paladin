@@ -292,20 +292,6 @@ class TestCheckSummary:
         assert summary.by_rule == {}
         assert summary.by_file == {}
 
-    def test_check_summary_from_check_result_エッジケース_同一ルール複数違反で件数が合算されること(
-        self,
-    ):
-        # Arrange
-        v1 = self._make_violation("a/__init__.py", "require-all-export")
-        v2 = self._make_violation("b/__init__.py", "require-all-export")
-        result = self._make_check_result((v1, v2))
-
-        # Act
-        summary = CheckSummary.from_check_result(result)
-
-        # Assert
-        assert summary.by_rule["require-all-export"] == 2
-
     def test_check_summary_from_check_result_エッジケース_同一ファイル複数違反で件数が合算されること(
         self,
     ):

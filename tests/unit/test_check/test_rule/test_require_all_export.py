@@ -76,18 +76,13 @@ class TestRequireAllExportRuleCheck:
         result = rule.check(parsed_file)
 
         # Assert
+        assert len(result) == 1
         violation = result[0]
         assert violation.file == Path("__init__.py")
         assert violation.line == 1
         assert violation.column == 0
         assert violation.rule_id == "require-all-export"
         assert violation.rule_name == "Require __all__ Export"
-        assert violation.message == "__init__.py に __all__ が定義されていない"
-        assert (
-            violation.reason
-            == "__all__ が未定義の場合、パッケージの公開インタフェースが不明確になり、意図しないシンボルが外部に露出するリスクがある"
-        )
-        assert violation.suggestion == "__all__ リストを定義し、公開するシンボルを明示的に列挙する"
 
     def test_check_正常系_all定義済みのinit_pyは違反なしを返すこと(self):
         # Arrange

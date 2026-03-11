@@ -58,19 +58,11 @@ class TargetFiles:
     """重複排除・ソート済みの .py ファイルパス群"""
 
     def __len__(self) -> int:
-        """ファイル数を返す
-
-        Returns:
-            列挙されたファイルの件数
-        """
+        """ファイル数を返す"""
         return len(self.files)
 
     def __iter__(self) -> Iterator[Path]:
-        """ファイルパスをイテレーションする
-
-        Returns:
-            ファイルパスのイテレータ
-        """
+        """ファイルパスをイテレーションする"""
         return iter(self.files)
 
 
@@ -99,11 +91,7 @@ class ParsedFiles:
 
 @dataclass(frozen=True)
 class CheckResult:
-    """Check処理の実行結果を保持する不変オブジェクト
-
-    Constraints:
-        - インスタンス生成後は変更不可（frozen=True）
-    """
+    """Check処理の実行結果を保持する不変オブジェクト"""
 
     target_files: TargetFiles
     """列挙された解析対象ファイル群"""
