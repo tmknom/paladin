@@ -20,7 +20,7 @@
 | R-052 | 単一ファイルルールを追加する (3本目) | Done | require-qualified-third-party |
 | R-060 | `rules` コマンドの最小実装 | Done | |
 | R-061 | `version` コマンドの実装 | Done | |
-| R-062 | `rules --rule <RULE_ID>` の対応 | Not Started | |
+| R-062 | `rules --rule <RULE_ID>` の対応 | Done | |
 | R-063 | `explain` 導入の再判断 | Not Started | |
 | R-064 | `explain` の text 出力実装 | Not Started | |
 | R-070 | `--format json` を正式対応する | Not Started | |

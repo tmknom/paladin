@@ -35,7 +35,7 @@ from paladin.config import AppConfig, EnvVarConfig
 from paladin.config.env_var import LogLevel
 from paladin.foundation.error import ErrorHandler
 from paladin.foundation.log import LogConfigurator, log
-from paladin.rules import RulesOrchestratorProvider
+from paladin.rules import RulesContext, RulesOrchestratorProvider
 from paladin.transform import TransformContext, TransformOrchestratorProvider
 from paladin.version import VersionOrchestratorProvider
 
@@ -56,9 +56,12 @@ def check(
 
 
 @app.command()
-def rules() -> None:
+def rules(
+    rule: Annotated[str | None, typer.Option("--rule", help="特定ルールの詳細を表示")] = None,
+) -> None:
     """利用可能なルールの一覧を表示する"""
-    text = RulesOrchestratorProvider().provide().orchestrate()
+    context = RulesContext(rule_id=rule)
+    text = RulesOrchestratorProvider().provide().orchestrate(context)
     typer.echo(text)
 
 

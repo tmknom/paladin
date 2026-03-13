@@ -96,6 +96,32 @@ class TestIntegrationRulesCLI:
         assert "no-local-import" in result.stdout
         assert "require-qualified-third-party" in result.stdout
 
+    def test_rules_正常系_rule_idオプション指定で対象ルールの詳細を出力しexit_code_0で終了すること(
+        self,
+    ):
+        # Act
+        cmd = [sys.executable, "-m", "paladin.cli", "rules", "--rule", "require-all-export"]
+        result = subprocess.run(cmd, capture_output=True, text=True, timeout=10)
+
+        # Assert
+        assert result.returncode == 0
+        assert "require-all-export" in result.stdout
+        assert "Rule ID:" in result.stdout
+        assert "Name:" in result.stdout
+        assert "Summary:" in result.stdout
+
+    def test_rules_エッジケース_存在しないrule_idでエラーメッセージを出力しexit_code_0で終了すること(
+        self,
+    ):
+        # Act
+        cmd = [sys.executable, "-m", "paladin.cli", "rules", "--rule", "nonexistent"]
+        result = subprocess.run(cmd, capture_output=True, text=True, timeout=10)
+
+        # Assert
+        assert result.returncode == 0
+        assert "nonexistent" in result.stdout
+        assert "Error" in result.stdout
+
 
 class TestIntegrationVersionCLI:
     """version サブコマンドの統合テスト"""

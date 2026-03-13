@@ -29,3 +29,28 @@ class TestRuleRegistry:
 
         # Assert
         assert result == ()
+
+    def test_find_rule_正常系_登録済みrule_idに一致するRuleMetaを返すこと(self):
+        # Arrange
+        rule = FakeRule(rule_id="PAL001", rule_name="Fake Rule", summary="Fake summary")
+        registry = RuleRegistry(rules=(rule,))
+
+        # Act
+        result = registry.find_rule("PAL001")
+
+        # Assert
+        assert result is not None
+        assert isinstance(result, RuleMeta)
+        assert result.rule_id == "PAL001"
+        assert result.rule_name == "Fake Rule"
+
+    def test_find_rule_エッジケース_存在しないrule_idでNoneを返すこと(self):
+        # Arrange
+        rule = FakeRule(rule_id="PAL001")
+        registry = RuleRegistry(rules=(rule,))
+
+        # Act
+        result = registry.find_rule("nonexistent")
+
+        # Assert
+        assert result is None
