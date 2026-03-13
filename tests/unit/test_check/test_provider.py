@@ -1,4 +1,5 @@
 from paladin.check import CheckOrchestratorProvider
+from paladin.check.formatter import CheckReportFormatter
 from paladin.check.orchestrator import CheckOrchestrator
 from paladin.check.parser import AstParser
 from paladin.check.rule.runner import RuleRunner
@@ -27,3 +28,10 @@ class TestCheckOrchestratorProvider:
 
         # Assert
         assert isinstance(result.runner, RuleRunner)
+
+    def test_provide_正常系_CheckReportFormatterが注入されたOrchestratorを返すこと(self):
+        # Act
+        result = CheckOrchestratorProvider().provide()
+
+        # Assert
+        assert isinstance(result.formatter, CheckReportFormatter)

@@ -30,7 +30,7 @@ from typing import Annotated
 
 import typer
 
-from paladin.check import CheckContext, CheckOrchestratorProvider, CheckReportFormatter
+from paladin.check import CheckContext, CheckOrchestratorProvider
 from paladin.config import AppConfig, EnvVarConfig
 from paladin.config.env_var import LogLevel
 from paladin.foundation.error import ErrorHandler
@@ -48,8 +48,7 @@ def check(
 ) -> None:
     """解析対象の .py ファイルを診断し、違反レポートを出力する"""
     context = CheckContext(targets=tuple(targets))
-    result = CheckOrchestratorProvider().provide().orchestrate(context)
-    report = CheckReportFormatter().format(result)
+    report = CheckOrchestratorProvider().provide().orchestrate(context)
     typer.echo(report.text)
     raise typer.Exit(code=report.exit_code)
 
