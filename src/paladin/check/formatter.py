@@ -1,6 +1,6 @@
 """CheckReportFormatterの実装"""
 
-from paladin.check.types import CheckReport, CheckResult, CheckStatus, CheckSummary
+from paladin.check.result import CheckReport, CheckResult, CheckStatus, CheckSummary
 
 
 class CheckReportFormatter:

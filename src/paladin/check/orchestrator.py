@@ -7,8 +7,8 @@ from paladin.check.collector import FileCollector
 from paladin.check.context import CheckContext
 from paladin.check.formatter import CheckReportFormatter
 from paladin.check.parser import AstParser
+from paladin.check.result import CheckReport, CheckResult
 from paladin.check.rule.runner import RuleRunner
-from paladin.check.types import CheckReport, CheckResult
 from paladin.foundation.log import log
 
 

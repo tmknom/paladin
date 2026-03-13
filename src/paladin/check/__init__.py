@@ -9,14 +9,8 @@ Docs:
 
 from paladin.check.context import CheckContext
 from paladin.check.provider import CheckOrchestratorProvider
-from paladin.check.types import (
-    CheckReport,
-    CheckStatus,
-    CheckSummary,
-    RuleMeta,
-    Violation,
-    Violations,
-)
+from paladin.check.result import CheckReport, CheckStatus, CheckSummary
+from paladin.check.rule.types import RuleMeta, Violation, Violations
 
 __all__ = [
     "CheckContext",

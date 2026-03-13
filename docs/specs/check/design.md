@@ -41,9 +41,11 @@ src/paladin/check/
 ├── collector.py          # FileCollector
 ├── parser.py             # AstParser
 ├── formatter.py          # CheckReportFormatter
-├── types.py              # 値オブジェクト群（CheckResult / Violation / CheckReport 等）
+├── result.py             # CheckResult / CheckStatus / CheckSummary / CheckReport
+├── types.py              # TargetFiles / ParsedFile / ParsedFiles
 └── rule/
     ├── __init__.py                          # rule サブパッケージの公開 API
+    ├── types.py                             # Violation / Violations / RuleMeta
     ├── protocol.py                          # Rule Protocol
     ├── registry.py                          # RuleRegistry
     ├── runner.py                            # RuleRunner
@@ -65,6 +67,7 @@ tests/unit/test_check/
 ├── test_orchestrator.py
 ├── test_parser.py
 ├── test_provider.py
+├── test_result.py
 ├── test_types.py
 └── test_rule/
     ├── __init__.py
@@ -74,7 +77,8 @@ tests/unit/test_check/
     ├── test_require_all_export.py
     ├── test_no_relative_import.py
     ├── test_no_local_import.py
-    └── test_require_qualified_third_party.py
+    ├── test_require_qualified_third_party.py
+    └── test_types.py
 ```
 
 ## 処理フロー
@@ -191,7 +195,7 @@ class Rule(Protocol):
 | ルールのチェックロジックを変更 | 対象ルールの `.py` | 他コンポーネントへの影響なし |
 | 実行時パラメータを追加 | `context.py`（`CheckContext`） | 追加フィールドは呼び出し元（CLI 層）が組み立てて渡す |
 | レポート出力形式を変更 | `formatter.py`（`CheckReportFormatter`） | `CheckOrchestrator` の変更は不要 |
-| 値オブジェクトにフィールドを追加 | `types.py` | 参照元のコンポーネントも合わせて更新する |
+| 値オブジェクトにフィールドを追加 | `types.py` / `result.py` / `rule/types.py` | 参照元のコンポーネントも合わせて更新する |
 | 公開 API を追加 | `__init__.py` の `__all__` | 内部コンポーネントの公開は原則行わない |
 
 ## 影響範囲

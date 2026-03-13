@@ -3,13 +3,9 @@
 from pathlib import Path
 
 from paladin.check.formatter import CheckReportFormatter
-from paladin.check.types import (
-    CheckResult,
-    ParsedFiles,
-    TargetFiles,
-    Violation,
-    Violations,
-)
+from paladin.check.result import CheckResult
+from paladin.check.rule.types import Violation, Violations
+from paladin.check.types import ParsedFiles, TargetFiles
 
 
 def _make_violation(

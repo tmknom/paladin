@@ -2,7 +2,8 @@ import ast
 from pathlib import Path
 
 from paladin.check.rule.no_local_import import NoLocalImportRule
-from paladin.check.types import ParsedFile, RuleMeta
+from paladin.check.rule.types import RuleMeta
+from paladin.check.types import ParsedFile
 
 
 def _make_parsed_file(source: str, filename: str = "example.py") -> ParsedFile:

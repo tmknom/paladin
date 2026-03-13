@@ -2,7 +2,8 @@
 
 from pathlib import Path
 
-from paladin.check.types import ParsedFile, RuleMeta, Violation
+from paladin.check.rule.types import RuleMeta, Violation
+from paladin.check.types import ParsedFile
 
 
 class FakeRule:
