@@ -14,3 +14,10 @@ class RuleRegistry:
     def list_rules(self) -> tuple[RuleMeta, ...]:
         """登録済みルールのメタ情報一覧を返す"""
         return tuple(rule.meta for rule in self._rules)
+
+    def find_rule(self, rule_id: str) -> RuleMeta | None:
+        """指定した rule_id に一致する RuleMeta を返す。存在しない場合は None を返す"""
+        for rule in self._rules:
+            if rule.meta.rule_id == rule_id:
+                return rule.meta
+        return None
