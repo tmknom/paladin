@@ -7,11 +7,12 @@
     ├── TextFileSystemReader
     ├── AstParser(reader=TextFileSystemReader)
     ├── FileCollector
-    ├── RequireAllExportRule
-    ├── NoRelativeImportRule
-    ├── NoLocalImportRule
-    ├── RequireQualifiedThirdPartyRule(root_packages=("paladin",))
-    ├── RuleRunner(rules=(RequireAllExportRule, NoRelativeImportRule, NoLocalImportRule, RequireQualifiedThirdPartyRule))
+    ├── _create_runner()
+    │   ├── RequireAllExportRule
+    │   ├── NoRelativeImportRule
+    │   ├── NoLocalImportRule
+    │   ├── RequireQualifiedThirdPartyRule(root_packages=("paladin",))
+    │   └── RuleRunner(rules=(...))
     ├── CheckReportFormatter
     └── CheckOrchestrator(collector=FileCollector, parser=AstParser, runner=RuleRunner, formatter=CheckReportFormatter)
 """
@@ -44,23 +45,26 @@ class CheckOrchestratorProvider:
         """
         reader = TextFileSystemReader()
         parser = AstParser(reader=reader)
+        runner = self._create_runner()
+        return CheckOrchestrator(
+            collector=FileCollector(),
+            parser=parser,
+            runner=runner,
+            formatter=CheckReportFormatter(),
+        )
+
+    def _create_runner(self) -> RuleRunner:
         require_all_export_rule = RequireAllExportRule()
         no_relative_import_rule = NoRelativeImportRule()
         no_local_import_rule = NoLocalImportRule()
         require_qualified_third_party_rule = RequireQualifiedThirdPartyRule(
             root_packages=("paladin",)
         )
-        runner = RuleRunner(
+        return RuleRunner(
             rules=(
                 require_all_export_rule,
                 no_relative_import_rule,
                 no_local_import_rule,
                 require_qualified_third_party_rule,
             )
-        )
-        return CheckOrchestrator(
-            collector=FileCollector(),
-            parser=parser,
-            runner=runner,
-            formatter=CheckReportFormatter(),
         )

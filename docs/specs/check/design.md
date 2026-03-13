@@ -155,7 +155,7 @@ class Rule(Protocol):
 新しいルールを追加する際は、次の手順を踏むこと。
 
 1. `rule/` サブパッケージに `Rule` Protocol を満たすクラスを実装する
-2. `CheckOrchestratorProvider.provide()` の `rules` タプルに追加する
+2. `CheckOrchestratorProvider._create_runner()` の `rules` タプルに追加する
 
 `RuleRunner` や `CheckOrchestrator` の変更は不要である。
 
@@ -172,7 +172,7 @@ class Rule(Protocol):
 
 ### 想定される拡張ポイント
 
-- **新しいルールの追加**: `Rule` Protocol を実装したクラスを `rule/` に追加し、`CheckOrchestratorProvider` に登録する
+- **新しいルールの追加**: `Rule` Protocol を実装したクラスを `rule/` に追加し、`CheckOrchestratorProvider._create_runner()` に登録する
 - **複数ファイルにまたがるルール**: `Rule.check()` のシグネチャを `ParsedFiles` を受け取る形に拡張するか、新しい Protocol を定義する
 - **ルール選択機能**: `RuleRunner` が適用するルールを実行時に絞り込める仕組みを追加する
 - **エラーファイルのスキップ**: `AstParser` でエラーを捕捉してスキップし、`CheckResult` に解析失敗情報を追加する
@@ -187,7 +187,7 @@ class Rule(Protocol):
 
 | 変更内容 | 主な変更対象 | 備考 |
 |---|---|---|
-| 新しいルールを追加 | `rule/` に新ファイル、`provider.py` | `RuleRunner` / `CheckOrchestrator` の変更は不要 |
+| 新しいルールを追加 | `rule/` に新ファイル、`provider.py`（`_create_runner()`） | `RuleRunner` / `CheckOrchestrator` の変更は不要 |
 | ルールのチェックロジックを変更 | 対象ルールの `.py` | 他コンポーネントへの影響なし |
 | 実行時パラメータを追加 | `context.py`（`CheckContext`） | 追加フィールドは呼び出し元（CLI 層）が組み立てて渡す |
 | レポート出力形式を変更 | `formatter.py`（`CheckReportFormatter`） | `CheckOrchestrator` の変更は不要 |
