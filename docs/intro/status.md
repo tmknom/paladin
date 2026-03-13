@@ -3,8 +3,8 @@
 ## 現在地
 
 - Active milestone: M4 (ルール資産の拡充)
-- Current item: R-052
-- Updated: 2026-03-11
+- Current item: R-060
+- Updated: 2026-03-13
 
 ## 状態一覧
 
@@ -18,7 +18,7 @@
 | R-050 | `no-relative-import` を実装する | Done | |
 | R-051 | 単一ファイルルールを追加する (2本目) | Done | no-local-import |
 | R-052 | 単一ファイルルールを追加する (3本目) | Done | require-qualified-third-party |
-| R-060 | `rules` コマンドの最小実装 | Not Started | |
+| R-060 | `rules` コマンドの最小実装 | Done | |
 | R-061 | `version` コマンドの実装 | Not Started | |
 | R-062 | `rules --rule <RULE_ID>` の対応 | Not Started | |
 | R-063 | `explain` 導入の再判断 | Not Started | |
