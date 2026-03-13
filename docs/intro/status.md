@@ -3,8 +3,8 @@
 ## 現在地
 
 - Active milestone: M4 (ルール資産の拡充)
-- Current item: R-061
-- Updated: 2026-03-13
+- Current item: R-065
+- Updated: 2026-03-14
 
 ## 状態一覧
 
@@ -21,9 +21,10 @@
 | R-060 | `rules` コマンドの最小実装 | Done | |
 | R-061 | `version` コマンドの実装 | Done | |
 | R-062 | `rules --rule <RULE_ID>` の対応 | Done | |
-| R-063 | `explain` 導入の再判断 | Not Started | |
-| R-064 | `explain` の text 出力実装 | Not Started | |
-| R-070 | `--format json` を正式対応する | Not Started | |
+| R-063 | `explain` 導入の再判断 | Done | `explain` は導入しない。`rules --rule` 拡張（R-065）で代替 |
+| R-064 | `explain` の text 出力実装 | Skipped | R-063 の判断によりスキップ |
+| R-065 | `rules --rule` の詳細出力を拡張する | Not Started | |
+| R-070 | `--format json` を正式対応する | Done | |
 | R-080 | ファイル単位の Ignore を実装する | Not Started | |
 | R-081 | 直前コメントによる Ignore を実装する | Not Started | |
 | R-082 | 設定ファイルによる全体 Ignore を実装する | Not Started | |

@@ -20,13 +20,16 @@
 | AST パーサー | `AstParser` | Python ファイルの読み込みと AST 生成 |
 | ルール実行器 | `RuleRunner` | 全ルールを全ファイルへ適用し、違反を集約 |
 | ルールレジストリ | `RuleRegistry` | 登録済みルールのメタ情報一覧の管理 |
-| レポートフォーマッター | `CheckReportFormatter` | `CheckResult` を text 形式の `CheckReport` に変換 |
+| レポートフォーマッター（text） | `CheckReportFormatter` | `CheckResult` を text 形式の `CheckReport` に変換 |
+| レポートフォーマッター（JSON） | `CheckJsonFormatter` | `CheckResult` を JSON 形式の `CheckReport` に変換 |
+| フォーマッターファクトリー | `CheckFormatterFactory` | `OutputFormat` に応じたフォーマッターへ委譲する |
+| 出力形式 | `OutputFormat` | `text` / `json` を表す列挙型 |
 | ルール Protocol | `Rule` | ルール実装が満たすべき契約の定義 |
 | 全エクスポート要求ルール | `RequireAllExportRule` | `__init__.py` への `__all__` 定義を要求する |
 | 相対インポート禁止ルール | `NoRelativeImportRule` | 相対インポートの使用を禁止する |
 | ローカルインポート禁止ルール | `NoLocalImportRule` | 関数・クラス・メソッド内の import を禁止する |
 | サードパーティ修飾インポート要求ルール | `RequireQualifiedThirdPartyRule` | サードパーティの直接インポートとエイリアスインポートを禁止する |
-| 実行コンテキスト | `CheckContext` | 実行時パラメータ（解析対象パス群）を保持する値オブジェクト |
+| 実行コンテキスト | `CheckContext` | 実行時パラメータ（解析対象パス群・出力形式）を保持する値オブジェクト |
 
 ### ファイルレイアウト
 
@@ -40,9 +43,9 @@ src/paladin/check/
 ├── provider.py           # CheckOrchestratorProvider
 ├── collector.py          # FileCollector
 ├── parser.py             # AstParser
-├── formatter.py          # CheckReportFormatter
+├── formatter.py          # CheckReportFormatter / CheckJsonFormatter / CheckFormatterFactory
 ├── result.py             # CheckResult / CheckStatus / CheckSummary / CheckReport
-├── types.py              # TargetFiles / ParsedFile / ParsedFiles
+├── types.py              # TargetFiles / ParsedFile / ParsedFiles / OutputFormat
 └── rule/
     ├── __init__.py                          # rule サブパッケージの公開 API
     ├── types.py                             # Violation / Violations / RuleMeta
@@ -91,7 +94,7 @@ tests/unit/test_check/
 2. `AstParser` が各ファイルを読み込み AST を生成する（`ParsedFiles`）
 3. `RuleRunner` が全ルールを全ファイルへ適用し、違反を集約する（`Violations`）
 4. `CheckResult`（`TargetFiles` + `ParsedFiles` + `Violations`）を組み立てる
-5. `CheckReportFormatter` が `CheckResult` を text 形式の `CheckReport` に変換して返す
+5. `CheckFormatterFactory` が `CheckContext.format`（`OutputFormat`）に応じて `CheckReportFormatter`（text）または `CheckJsonFormatter`（JSON）へ委譲し、`CheckReport` を生成して返す
 
 ### ルール適用ロジック
 
@@ -124,15 +127,15 @@ class Rule(Protocol):
 
 **トレードオフ**: `rules` / `explain` コマンドを実装する際に、それらのコマンドが `check` パッケージに依存する形になる可能性がある。**再検討のトリガーは `rules` / `explain` コマンドの設計・実装着手時とする。**
 
-### CheckReportFormatter の責務分離
+### フォーマッター群の責務分離
 
-**設計の意図**: `CheckOrchestrator` のパイプライン処理とテキストフォーマットの責務を `CheckReportFormatter` に分離する。
+**設計の意図**: `CheckOrchestrator` のパイプライン処理とフォーマットの責務を分離し、`CheckFormatterFactory` が `OutputFormat` に応じて `CheckReportFormatter`（text）または `CheckJsonFormatter`（JSON）へ委譲する。
 
-**なぜそう設計したか**: フォーマット形式（text / JSON 等）は出力先によって異なりうる関心事であり、パイプライン処理とは変更理由が異なる。`CheckReportFormatter` を別クラスに分離することで、フォーマット変更を `formatter.py` のみに局所化できる。
+**なぜそう設計したか**: フォーマット形式は出力先によって異なりうる関心事であり、パイプライン処理とは変更理由が異なる。`CheckFormatterFactory` を DI で注入することで、フォーマット変更を `formatter.py` のみに局所化できる。
 
-**呼び出し場所**: `CheckReportFormatter` は `CheckOrchestrator.orchestrate()` の末尾で呼び出される。CLI 層が直接依存するのは `CheckOrchestratorProvider` のみであり、`CheckReportFormatter` は check パッケージ内部の詳細となる。
+**呼び出し場所**: `CheckFormatterFactory` は `CheckOrchestrator.orchestrate()` の末尾で `self.formatter.format(result, context.format)` として呼び出される。CLI 層が直接依存するのは `CheckOrchestratorProvider` のみであり、フォーマッター群は check パッケージ内部の詳細となる。
 
-**トレードオフ**: `CheckOrchestrator` が `CheckReportFormatter` に依存するため、フォーマット形式の切り替えには `CheckOrchestrator` または `CheckOrchestratorProvider` の変更が必要になる。
+**トレードオフ**: 新しい出力形式を追加する場合は、`OutputFormat` への値追加・新しいフォーマッタークラスの実装・`CheckFormatterFactory` の `format()` メソッド拡張の3箇所を変更する必要がある。
 
 ### テストコード: Fake による副作用の分離
 
@@ -148,7 +151,7 @@ class Rule(Protocol):
 
 外部（CLI 層等）は `paladin.check` からのみインポートすること。内部コンポーネント（`collector`・`parser`・`orchestrator` 等）を直接インポートしてはならない。`__init__.py` の `__all__` が互換性対象である。
 
-現在の公開 API: `CheckContext`, `CheckOrchestratorProvider`, `CheckReport`, `CheckStatus`, `CheckSummary`, `RuleMeta`, `Violation`, `Violations`
+現在の公開 API: `CheckContext`, `CheckOrchestratorProvider`, `CheckReport`, `CheckStatus`, `CheckSummary`, `OutputFormat`, `RuleMeta`, `Violation`, `Violations`
 
 ### ファイル順序の安定性
 
@@ -194,7 +197,8 @@ class Rule(Protocol):
 | 新しいルールを追加 | `rule/` に新ファイル、`provider.py`（`_create_runner()`） | `RuleRunner` / `CheckOrchestrator` の変更は不要 |
 | ルールのチェックロジックを変更 | 対象ルールの `.py` | 他コンポーネントへの影響なし |
 | 実行時パラメータを追加 | `context.py`（`CheckContext`） | 追加フィールドは呼び出し元（CLI 層）が組み立てて渡す |
-| レポート出力形式を変更 | `formatter.py`（`CheckReportFormatter`） | `CheckOrchestrator` の変更は不要 |
+| レポート出力形式を変更 | `formatter.py`（`CheckReportFormatter` / `CheckJsonFormatter`） | `CheckOrchestrator` の変更は不要 |
+| 新しい出力形式を追加 | `types.py`（`OutputFormat`）、`formatter.py`（新フォーマッタークラス・`CheckFormatterFactory`） | `CheckOrchestrator` の変更は不要 |
 | 値オブジェクトにフィールドを追加 | `types.py` / `result.py` / `rule/types.py` | 参照元のコンポーネントも合わせて更新する |
 | 公開 API を追加 | `__init__.py` の `__all__` | 内部コンポーネントの公開は原則行わない |
 

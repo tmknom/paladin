@@ -17,11 +17,10 @@
 ```text
 uv run paladin check [TARGET ...] [OPTIONS]
 uv run paladin rules [OPTIONS]
-uv run paladin explain <RULE_ID> [OPTIONS]
 uv run paladin version
 ```
 
-このうち、MVP の中心は `check` である。`rules` と `explain` は、診断結果を理解しやすくし、ルールを継続的に育てるための補助コマンドとして位置づける。
+このうち、MVP の中心は `check` である。`rules` は、診断結果を理解しやすくし、ルールを継続的に育てるための補助コマンドとして位置づける。
 
 ## 3. 各コマンドの役割
 
@@ -65,26 +64,7 @@ uv run paladin rules --rule PAL001
 - 必要に応じて、各ルールの概要や対象範囲を返す
 - AI や人間が「今どのルールが有効な世界か」を確認できるようにする
 
-### 3.3 `explain`
-
-特定ルールの意図や違反時の解釈を表示するコマンド。
-
-想定例:
-
-```text
-uv run paladin explain PAL001
-uv run paladin explain PAL001 --format json
-```
-
-責務は次の通り。
-
-- ルールの概要を返す
-- なぜそのルールが存在するかを返す
-- 違反時にどの方向へ修正すべきかを返す
-
-これは、要件で求められている「違反理由」「修正の方向性」と整合する補助機能である
-
-### 3.4 `version`
+### 3.3 `version`
 
 バージョン情報を返すコマンド。
 
@@ -340,40 +320,7 @@ PAL003  declaration-order      宣言順に関するルール
 }
 ```
 
-## 9. `explain` コマンドの出力草案
-
-### 9.1 text 例
-
-```text
-PAL001 public-boundary
-
-概要:
-  非公開要素を公開境界へ露出させないためのルール
-
-意図:
-  利用側が内部実装へ依存することを防ぎ、公開 API を安定化するため
-
-違反時の見方:
-  本来公開すべきでない名前が公開対象に含まれていないか確認する
-
-修正方向:
-  公開対象を明示的に整理し、不要な露出を避ける
-```
-
-### 9.2 json 例
-
-```json
-{
-  "rule_id": "PAL001",
-  "rule_name": "public-boundary",
-  "summary": "非公開要素を公開境界へ露出させないためのルール",
-  "intent": "利用側が内部実装へ依存することを防ぎ、公開 API を安定化するため",
-  "guidance": "本来公開すべきでない名前が公開対象に含まれていないか確認する",
-  "suggestion": "公開対象を明示的に整理し、不要な露出を避ける"
-}
-```
-
-## 10. 初期リリースに含める範囲
+## 9. 初期リリースに含める範囲
 
 初期リリースでは、次を含めるのが妥当である。
 
@@ -381,15 +328,12 @@ PAL001 public-boundary
 - `rules`
 - `version`
 
-`explain` は初期から入れてもよいが、MVP としては後続でも成立する。
-
 理由は次の通り。
 
 - 必須要件の中心は `check` に集約されている
 - ルールを継続的に育てる運用上、`rules` は早期に価値がある
-- `explain` は便利だが、最初の価値成立には必須ではない
 
-## 11. 初期リリースで入れないもの
+## 10. 初期リリースで入れないもの
 
 初期段階では、次は CLI の前面に出さない。
 
@@ -410,7 +354,7 @@ PAL001 public-boundary
 
 この判断は、Paladin が最初から完成形を目指すのではなく、小さく始めて段階的に育てる前提に沿っている
 
-## 12. 最終提案
+## 11. 最終提案
 
 現時点のインターフェイス設計草案としては、以下を推奨する。
 
@@ -427,9 +371,6 @@ uv run paladin check [TARGET ...]
 uv run paladin rules
   [--format <text|json>]
   [--rule <RULE_ID>]
-
-uv run paladin explain <RULE_ID>
-  [--format <text|json>]
 
 uv run paladin version
 ```

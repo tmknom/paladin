@@ -212,3 +212,116 @@ class TestIntegrationCheckCLI:
         assert result.returncode == 2
         # エラーメッセージが出力されることを確認（標準エラー出力に表示される）
         assert result.stderr or "Error" in result.stdout
+
+    def test_check_正常系_format_json指定で違反なしのJSON出力とexit_code_0を返すこと(
+        self, tmp_dir: Path
+    ):
+        # Arrange
+        src_dir = tmp_dir / "src"
+        src_dir.mkdir()
+        py_file = src_dir / "main.py"
+        py_file.write_text("x = 1\n")
+
+        # Act
+        cmd = [sys.executable, "-m", "paladin.cli", "check", str(src_dir), "--format", "json"]
+        result = subprocess.run(cmd, cwd=tmp_dir, capture_output=True, text=True, timeout=10)
+
+        # Assert
+        assert result.returncode == 0
+        data = json.loads(result.stdout)
+        assert data["status"] == "ok"
+
+    def test_check_正常系_format_json指定で違反ありのJSON出力とexit_code_1を返すこと(
+        self, tmp_dir: Path
+    ):
+        # Arrange: __init__.py に __all__ なし（require-all-export 違反）
+        src_dir = tmp_dir / "src"
+        src_dir.mkdir()
+        init_file = src_dir / "__init__.py"
+        init_file.write_text("x = 1\n")
+
+        # Act
+        cmd = [sys.executable, "-m", "paladin.cli", "check", str(src_dir), "--format", "json"]
+        result = subprocess.run(cmd, cwd=tmp_dir, capture_output=True, text=True, timeout=10)
+
+        # Assert
+        assert result.returncode == 1
+        data = json.loads(result.stdout)
+        assert data["status"] == "violations"
+        assert isinstance(data["diagnostics"], list)
+        assert len(data["diagnostics"]) > 0
+
+    def test_check_正常系_format_json指定でdiagnosticsに必須フィールドが含まれること(
+        self, tmp_dir: Path
+    ):
+        # Arrange: __init__.py に __all__ なし（require-all-export 違反）
+        src_dir = tmp_dir / "src"
+        src_dir.mkdir()
+        init_file = src_dir / "__init__.py"
+        init_file.write_text("x = 1\n")
+
+        # Act
+        cmd = [sys.executable, "-m", "paladin.cli", "check", str(src_dir), "--format", "json"]
+        result = subprocess.run(cmd, cwd=tmp_dir, capture_output=True, text=True, timeout=10)
+
+        # Assert
+        data = json.loads(result.stdout)
+        diagnostic = data["diagnostics"][0]
+        assert "file" in diagnostic
+        assert "line" in diagnostic
+        assert "column" in diagnostic
+        assert "rule_id" in diagnostic
+        assert "rule_name" in diagnostic
+        assert "message" in diagnostic
+        assert "reason" in diagnostic
+        assert "suggestion" in diagnostic
+
+    def test_check_正常系_format_json指定でsummaryにtotal_violationsとby_ruleとby_fileが含まれること(
+        self, tmp_dir: Path
+    ):
+        # Arrange: __init__.py に __all__ なし（require-all-export 違反）
+        src_dir = tmp_dir / "src"
+        src_dir.mkdir()
+        init_file = src_dir / "__init__.py"
+        init_file.write_text("x = 1\n")
+
+        # Act
+        cmd = [sys.executable, "-m", "paladin.cli", "check", str(src_dir), "--format", "json"]
+        result = subprocess.run(cmd, cwd=tmp_dir, capture_output=True, text=True, timeout=10)
+
+        # Assert
+        data = json.loads(result.stdout)
+        summary = data["summary"]
+        assert "total_violations" in summary
+        assert "by_rule" in summary
+        assert "by_file" in summary
+
+    def test_check_正常系_format_text指定で既存のtext出力が維持されること(self, tmp_dir: Path):
+        # Arrange
+        src_dir = tmp_dir / "src"
+        src_dir.mkdir()
+        py_file = src_dir / "main.py"
+        py_file.write_text("x = 1\n")
+
+        # Act
+        cmd = [sys.executable, "-m", "paladin.cli", "check", str(src_dir), "--format", "text"]
+        result = subprocess.run(cmd, cwd=tmp_dir, capture_output=True, text=True, timeout=10)
+
+        # Assert
+        assert result.returncode == 0
+        assert "status: ok" in result.stdout
+
+    def test_check_正常系_format未指定でデフォルトのtext出力が維持されること(self, tmp_dir: Path):
+        # Arrange
+        src_dir = tmp_dir / "src"
+        src_dir.mkdir()
+        py_file = src_dir / "main.py"
+        py_file.write_text("x = 1\n")
+
+        # Act
+        cmd = [sys.executable, "-m", "paladin.cli", "check", str(src_dir)]
+        result = subprocess.run(cmd, cwd=tmp_dir, capture_output=True, text=True, timeout=10)
+
+        # Assert
+        assert result.returncode == 0
+        assert "status: ok" in result.stdout

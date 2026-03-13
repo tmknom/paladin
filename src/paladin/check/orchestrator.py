@@ -5,7 +5,7 @@
 
 from paladin.check.collector import FileCollector
 from paladin.check.context import CheckContext
-from paladin.check.formatter import CheckReportFormatter
+from paladin.check.formatter import CheckFormatterFactory
 from paladin.check.parser import AstParser
 from paladin.check.result import CheckReport, CheckResult
 from paladin.check.rule.runner import RuleRunner
@@ -30,7 +30,7 @@ class CheckOrchestrator:
         collector: FileCollector,
         parser: AstParser,
         runner: RuleRunner,
-        formatter: CheckReportFormatter,
+        formatter: CheckFormatterFactory,
     ) -> None:
         """CheckOrchestratorを初期化
 
@@ -61,4 +61,4 @@ class CheckOrchestrator:
         result = CheckResult(
             target_files=target_files, parsed_files=parsed_files, violations=violations
         )
-        return self.formatter.format(result)
+        return self.formatter.format(result, context.format)
