@@ -2,7 +2,8 @@ import ast
 from pathlib import Path
 
 from paladin.check.rule.require_qualified_third_party import RequireQualifiedThirdPartyRule
-from paladin.check.types import ParsedFile, RuleMeta
+from paladin.check.rule.types import RuleMeta
+from paladin.check.types import ParsedFile
 
 
 def _make_parsed_file(source: str, filename: str = "example.py") -> ParsedFile:

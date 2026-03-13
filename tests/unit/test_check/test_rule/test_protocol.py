@@ -1,5 +1,6 @@
 from paladin.check.rule.protocol import Rule
-from paladin.check.types import ParsedFile, RuleMeta, Violation
+from paladin.check.rule.types import RuleMeta, Violation
+from paladin.check.types import ParsedFile
 
 
 class TestRuleProtocol:

@@ -3,7 +3,8 @@
 import ast
 import sys
 
-from paladin.check.types import ParsedFile, RuleMeta, Violation
+from paladin.check.rule.types import RuleMeta, Violation
+from paladin.check.types import ParsedFile
 
 
 class RequireQualifiedThirdPartyRule:

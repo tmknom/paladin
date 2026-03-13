@@ -5,9 +5,9 @@ from paladin.check.context import CheckContext
 from paladin.check.formatter import CheckReportFormatter
 from paladin.check.orchestrator import CheckOrchestrator
 from paladin.check.parser import AstParser
+from paladin.check.result import CheckReport
 from paladin.check.rule.require_all_export import RequireAllExportRule
 from paladin.check.rule.runner import RuleRunner
-from paladin.check.types import CheckReport
 from tests.unit.test_check.fakes import InMemoryFsReader
 
 

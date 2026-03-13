@@ -1,7 +1,7 @@
 """RuleRegistryの実装"""
 
 from paladin.check.rule.protocol import Rule
-from paladin.check.types import RuleMeta
+from paladin.check.rule.types import RuleMeta
 
 
 class RuleRegistry:

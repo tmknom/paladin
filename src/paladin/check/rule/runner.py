@@ -1,7 +1,8 @@
 """RuleRunnerの実装"""
 
 from paladin.check.rule.protocol import Rule
-from paladin.check.types import ParsedFiles, Violation, Violations
+from paladin.check.rule.types import Violation, Violations
+from paladin.check.types import ParsedFiles
 
 
 class RuleRunner:
