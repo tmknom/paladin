@@ -35,6 +35,7 @@ from paladin.config import AppConfig, EnvVarConfig
 from paladin.config.env_var import LogLevel
 from paladin.foundation.error import ErrorHandler
 from paladin.foundation.log import LogConfigurator, log
+from paladin.rules import RulesOrchestratorProvider
 from paladin.transform import TransformContext, TransformOrchestratorProvider
 
 logger = logging.getLogger(__name__)
@@ -51,6 +52,13 @@ def check(
     report = CheckOrchestratorProvider().provide().orchestrate(context)
     typer.echo(report.text)
     raise typer.Exit(code=report.exit_code)
+
+
+@app.command()
+def rules() -> None:
+    """利用可能なルールの一覧を表示する"""
+    text = RulesOrchestratorProvider().provide().orchestrate()
+    typer.echo(text)
 
 
 @app.command()
