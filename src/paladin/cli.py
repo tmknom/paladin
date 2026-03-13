@@ -37,6 +37,7 @@ from paladin.foundation.error import ErrorHandler
 from paladin.foundation.log import LogConfigurator, log
 from paladin.rules import RulesOrchestratorProvider
 from paladin.transform import TransformContext, TransformOrchestratorProvider
+from paladin.version import VersionOrchestratorProvider
 
 logger = logging.getLogger(__name__)
 app = typer.Typer(no_args_is_help=True)
@@ -58,6 +59,13 @@ def check(
 def rules() -> None:
     """利用可能なルールの一覧を表示する"""
     text = RulesOrchestratorProvider().provide().orchestrate()
+    typer.echo(text)
+
+
+@app.command()
+def version() -> None:
+    """パッケージのバージョン文字列を表示する"""
+    text = VersionOrchestratorProvider().provide().orchestrate()
     typer.echo(text)
 
 
