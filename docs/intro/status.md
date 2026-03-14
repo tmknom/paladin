@@ -3,7 +3,7 @@
 ## 現在地
 
 - Active milestone: M4 (ルール資産の拡充)
-- Current item: R-082
+- Current item: R-083
 - Updated: 2026-03-14
 
 ## 状態一覧
@@ -26,7 +26,7 @@
 | R-080 | ファイル単位の Ignore を実装する | Done | |
 | R-081 | 直前コメントによる Ignore を実装する | Done | |
 | R-082 | 設定ファイルによる全体 Ignore を実装する | Done | |
-| R-083 | ディレクトリ単位の Ignore を実装する | Not Started | |
+| R-083 | ディレクトリ単位の Ignore を実装する | Done | |
 | R-090 | ルール ON/OFF の設定ファイルを実装する | Not Started | |
 | R-091 | 解析対象パスの include/exclude を実装する | Not Started | |
 | R-092 | ルール個別設定を実装する | Not Started | `root_packages` の上書き。デフォルト値は R-094 |

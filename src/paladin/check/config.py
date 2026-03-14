@@ -96,7 +96,12 @@ class ProjectConfigLoader:
 
 
 class ConfigIgnoreResolver:
-    """ProjectConfig のパターンと file_paths を照合して FileIgnoreDirective を生成するリゾルバー"""
+    """ProjectConfig のパターンと file_paths を照合して FileIgnoreDirective を生成するリゾルバー
+
+    glob パターンの照合には PurePath.full_match() を使用する。
+    ディレクトリ単位のパターン（例: "tests/**"）が絶対パスに対しても
+    正しくマッチするよう、相対パターンには自動的に "**/" を前置する。
+    """
 
     def resolve(
         self,
@@ -120,7 +125,7 @@ class ConfigIgnoreResolver:
             matched_entries: list[PerFileIgnoreEntry] = [
                 entry
                 for entry in config.per_file_ignores
-                if PurePath(str(file_path)).match(entry.pattern)
+                if PurePath(str(file_path)).full_match(self._normalize_pattern(entry.pattern))
             ]
             if not matched_entries:
                 continue
@@ -145,3 +150,20 @@ class ConfigIgnoreResolver:
                     )
                 )
         return tuple(result)
+
+    def _normalize_pattern(self, pattern: str) -> str:
+        """相対 glob パターンに **/ を前置し、絶対パスにもマッチできるようにする
+
+        PurePath.full_match() は相対パターンを先頭固定で照合するため、
+        絶対パスに対して "tests/**" のような相対パターンはマッチしない。
+        "**/" を前置することで、パスのどの位置でもマッチするようになる。
+
+        Args:
+            pattern: glob パターン
+
+        Returns:
+            正規化済みの glob パターン
+        """
+        if pattern.startswith("/") or pattern.startswith("**/"):
+            return pattern
+        return "**/" + pattern
