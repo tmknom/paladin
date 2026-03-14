@@ -42,5 +42,5 @@ class RulesOrchestratorProvider:
             RequireAllExportRule(),
             NoRelativeImportRule(),
             NoLocalImportRule(),
-            RequireQualifiedThirdPartyRule(root_packages=("paladin",)),
+            RequireQualifiedThirdPartyRule(root_packages=("paladin", "tests")),
         )

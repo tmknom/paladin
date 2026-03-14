@@ -46,7 +46,7 @@ class CheckOrchestratorProvider:
         no_relative_import_rule = NoRelativeImportRule()
         no_local_import_rule = NoLocalImportRule()
         require_qualified_third_party_rule = RequireQualifiedThirdPartyRule(
-            root_packages=("paladin",)
+            root_packages=("paladin", "tests")
         )
         return RuleRunner(
             rules=(

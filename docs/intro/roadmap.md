@@ -247,6 +247,18 @@
 
 ---
 
+### R-094 `root_packages` のデフォルト値を動的に取得する
+
+- **目的**: `require-qualified-third-party` の `root_packages` ハードコードを排除し、`pyproject.toml` の `[project] name` から動的に取得する
+- **完了条件**:
+    - `pyproject.toml` の `[project] name` からプロジェクト名を取得し、`root_packages` のデフォルト値として使用できる
+    - `tests` パッケージがデフォルトで内部パッケージとして扱われる
+    - Provider のハードコード `("paladin", "tests")` が解消されている
+- **今回やらないこと**: R-092 の設定ファイルによる上書き機能
+- **関連 milestone**: M6
+
+---
+
 ### R-100 複数ファイル解析基盤と `no-direct-internal-import` を実装する
 
 - **目的**: 具体的なルール実装を通じて、複数ファイルにまたがる解析の基盤を作る
