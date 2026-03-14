@@ -109,6 +109,9 @@ class TestIntegrationRulesCLI:
         assert "Rule ID:" in result.stdout
         assert "Name:" in result.stdout
         assert "Summary:" in result.stdout
+        assert "Intent:" in result.stdout
+        assert "Guidance:" in result.stdout
+        assert "Suggestion:" in result.stdout
 
     def test_rules_エッジケース_存在しないrule_idでエラーメッセージを出力しexit_code_0で終了すること(
         self,

@@ -44,3 +44,6 @@ class RuleMeta:
     rule_id: str
     rule_name: str
     summary: str
+    intent: str
+    guidance: str
+    suggestion: str

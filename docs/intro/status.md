@@ -21,7 +21,7 @@
 | R-060 | `rules` コマンドの最小実装 | Done | |
 | R-061 | `version` コマンドの実装 | Done | |
 | R-062 | `rules --rule <RULE_ID>` の対応 | Done | |
-| R-065 | `rules --rule` の詳細出力を拡張する | Not Started | |
+| R-065 | `rules --rule` の詳細出力を拡張する | Done | |
 | R-070 | `--format json` を正式対応する | Done | |
 | R-080 | ファイル単位の Ignore を実装する | Not Started | |
 | R-081 | 直前コメントによる Ignore を実装する | Not Started | |

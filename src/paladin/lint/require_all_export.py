@@ -18,6 +18,9 @@ class RequireAllExportRule:
             rule_id="require-all-export",
             rule_name="Require __all__ Export",
             summary="__init__.py に __all__ の定義を要求する",
+            intent="パッケージの公開インターフェースを明示し、意図しないシンボルの露出を防ぐ",
+            guidance="__init__.py に __all__ が定義されているかを確認する",
+            suggestion="__all__ リストを定義し、公開するシンボルを明示的に列挙する",
         )
 
     @property

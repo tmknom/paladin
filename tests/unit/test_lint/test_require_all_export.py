@@ -146,3 +146,7 @@ class TestRequireAllExportRuleMeta:
         assert isinstance(result, RuleMeta)
         assert result.rule_id == "require-all-export"
         assert result.rule_name == "Require __all__ Export"
+        assert result.summary == "__init__.py に __all__ の定義を要求する"
+        assert result.intent != ""
+        assert result.guidance != ""
+        assert result.suggestion != ""

@@ -25,6 +25,9 @@ class TestNoRelativeImportRuleMeta:
         assert result.rule_id == "no-relative-import"
         assert result.rule_name == "No Relative Import"
         assert result.summary == "相対インポートの使用を禁止する"
+        assert result.intent != ""
+        assert result.guidance != ""
+        assert result.suggestion != ""
 
 
 class TestNoRelativeImportRuleCheck:

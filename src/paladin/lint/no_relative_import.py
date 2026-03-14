@@ -18,6 +18,9 @@ class NoRelativeImportRule:
             rule_id="no-relative-import",
             rule_name="No Relative Import",
             summary="相対インポートの使用を禁止する",
+            intent="依存関係を明示的にし、モジュール移動時の影響を局所化する",
+            guidance="from .xxx import ... の形式が使われている箇所を確認する",
+            suggestion="プロジェクトルートからの絶対インポートに書き換える",
         )
 
     @property
