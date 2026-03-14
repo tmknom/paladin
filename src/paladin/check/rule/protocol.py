@@ -1,4 +1,7 @@
-"""Rule Protocolの定義"""
+"""ルール判定の抽象インターフェイス
+
+ルール具象クラスへの直接依存を排除し、新規ルール追加時の変更を局所化する。
+"""
 
 from typing import Protocol, runtime_checkable
 

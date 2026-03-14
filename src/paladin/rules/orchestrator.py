@@ -1,4 +1,7 @@
-"""RulesOrchestratorの実装"""
+"""Rules層の中核
+
+ルール一覧取得とフォーマットの処理フロー全体を制御する。
+"""
 
 from paladin.check.rule.registry import RuleRegistry
 from paladin.foundation.log import log

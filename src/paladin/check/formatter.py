@@ -1,4 +1,7 @@
-"""CheckReportFormatterの実装"""
+"""Check結果のフォーマット変換
+
+CheckResult を text / JSON 形式の診断レポートに変換する。
+"""
 
 import json
 

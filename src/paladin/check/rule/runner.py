@@ -1,4 +1,7 @@
-"""RuleRunnerの実装"""
+"""Check層のルール適用
+
+パイプライン第3段階として、全ルールを全ファイルへ適用し違反を集約する。
+"""
 
 from paladin.check.rule.protocol import Rule
 from paladin.check.rule.types import Violation, Violations

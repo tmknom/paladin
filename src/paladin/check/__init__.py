@@ -3,8 +3,8 @@
 公開APIは `paladin.check` から import すること(`__all__` のみ互換性対象)。
 
 Docs:
-    - docs/intro/requirements.md
-    - docs/intro/roadmap.md
+    - docs/specs/check/requirements.md
+    - docs/specs/check/design.md
 """
 
 from paladin.check.context import CheckContext

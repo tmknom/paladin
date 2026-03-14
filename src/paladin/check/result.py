@@ -1,4 +1,7 @@
-"""Check処理の結果・レポート型定義"""
+"""Check層の結果・レポート型定義
+
+パイプライン実行結果の集約とフォーマット済み出力を保持する値オブジェクトを定義する。
+"""
 
 import enum
 from dataclasses import dataclass

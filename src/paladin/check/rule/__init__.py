@@ -1,4 +1,10 @@
-"""ルール実装サブパッケージの公開API"""
+"""ルール実装サブパッケージの公開API
+
+公開APIは `paladin.check.rule` から import すること(`__all__` のみ互換性対象)。
+
+Docs:
+    - docs/specs/check/design.md
+"""
 
 from paladin.check.rule.no_local_import import NoLocalImportRule
 from paladin.check.rule.no_relative_import import NoRelativeImportRule

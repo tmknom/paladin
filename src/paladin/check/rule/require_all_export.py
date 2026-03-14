@@ -1,4 +1,7 @@
-"""require-all-export ルールの実装"""
+"""__all__ エクスポート要求ルール
+
+仕様は docs/rules/require-all-export.md を参照。
+"""
 
 import ast
 

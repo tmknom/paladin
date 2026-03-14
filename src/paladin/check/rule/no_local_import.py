@@ -1,4 +1,7 @@
-"""no-local-import ルールの実装"""
+"""ローカルインポート禁止ルール
+
+仕様は docs/rules/no-local-import.md を参照。
+"""
 
 import ast
 
