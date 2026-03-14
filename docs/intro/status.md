@@ -3,7 +3,7 @@
 ## 現在地
 
 - Active milestone: M4 (ルール資産の拡充)
-- Current item: R-080
+- Current item: R-081
 - Updated: 2026-03-14
 
 ## 状態一覧
@@ -24,7 +24,7 @@
 | R-065 | `rules --rule` の詳細出力を拡張する | Done | |
 | R-070 | `--format json` を正式対応する | Done | |
 | R-080 | ファイル単位の Ignore を実装する | Done | |
-| R-081 | 直前コメントによる Ignore を実装する | Not Started | |
+| R-081 | 直前コメントによる Ignore を実装する | Done | |
 | R-082 | 設定ファイルによる全体 Ignore を実装する | Not Started | |
 | R-083 | ディレクトリ単位の Ignore を実装する | Not Started | |
 | R-090 | ルール ON/OFF の設定ファイルを実装する | Not Started | |
