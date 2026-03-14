@@ -668,3 +668,80 @@ class TestViolationFilterLineIgnore:
 
         # Assert
         assert len(result) == 1
+
+
+class TestViolationFilterIgnoreRules:
+    """ViolationFilter の ignore_rules パラメータのテスト"""
+
+    def test_filter_正常系_ignore_rulesで指定ルールの全ファイル違反が除外されること(self):
+        # Arrange
+        file_path = Path("example.py")
+        violation = _make_violation(file_path, "rule-a")
+        violations = Violations(items=(violation,))
+        vf = ViolationFilter()
+
+        # Act
+        result = vf.filter(violations, (), ignore_rules=frozenset({"rule-a"}))
+
+        # Assert
+        assert len(result) == 0
+
+    def test_filter_正常系_ignore_rulesで複数ルールの違反が除外されること(self):
+        # Arrange
+        file_path = Path("example.py")
+        v_a = _make_violation(file_path, "rule-a")
+        v_b = _make_violation(file_path, "rule-b")
+        violations = Violations(items=(v_a, v_b))
+        vf = ViolationFilter()
+
+        # Act
+        result = vf.filter(violations, (), ignore_rules=frozenset({"rule-a", "rule-b"}))
+
+        # Assert
+        assert len(result) == 0
+
+    def test_filter_正常系_ignore_rulesに含まれないルールの違反は保持されること(self):
+        # Arrange
+        file_path = Path("example.py")
+        v_a = _make_violation(file_path, "rule-a")
+        v_b = _make_violation(file_path, "rule-b")
+        violations = Violations(items=(v_a, v_b))
+        vf = ViolationFilter()
+
+        # Act
+        result = vf.filter(violations, (), ignore_rules=frozenset({"rule-a"}))
+
+        # Assert
+        assert len(result) == 1
+        assert next(iter(result)).rule_id == "rule-b"
+
+    def test_filter_正常系_ignore_rulesとfile_directivesが同時に適用されること(self):
+        # Arrange
+        file_a = Path("a.py")
+        file_b = Path("b.py")
+        v_a = _make_violation(file_a, "rule-a")
+        v_b = _make_violation(file_b, "rule-b")
+        violations = Violations(items=(v_a, v_b))
+        file_directive = FileIgnoreDirective(
+            file_path=file_a, ignore_all=True, ignored_rules=frozenset()
+        )
+        vf = ViolationFilter()
+
+        # Act
+        result = vf.filter(violations, (file_directive,), ignore_rules=frozenset({"rule-b"}))
+
+        # Assert
+        assert len(result) == 0
+
+    def test_filter_エッジケース_空のignore_rulesで既存動作が維持されること(self):
+        # Arrange
+        file_path = Path("example.py")
+        violation = _make_violation(file_path, "rule-a")
+        violations = Violations(items=(violation,))
+        vf = ViolationFilter()
+
+        # Act
+        result = vf.filter(violations, (), ignore_rules=frozenset())
+
+        # Assert
+        assert len(result) == 1

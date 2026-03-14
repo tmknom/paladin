@@ -2,6 +2,7 @@ import json
 from pathlib import Path
 
 from paladin.check.collector import FileCollector
+from paladin.check.config import ProjectConfigLoader
 from paladin.check.context import CheckContext
 from paladin.check.formatter import CheckFormatterFactory
 from paladin.check.ignore import ViolationFilter
@@ -9,6 +10,7 @@ from paladin.check.orchestrator import CheckOrchestrator
 from paladin.check.parser import AstParser
 from paladin.check.result import CheckReport
 from paladin.check.types import OutputFormat
+from paladin.foundation.fs.error import FileSystemError
 from paladin.lint import RequireAllExportRule, RuleRunner
 from paladin.lint.types import Violation
 from tests.unit.test_check.fakes import FakeRule, InMemoryFsReader
@@ -26,12 +28,18 @@ class TestCheckOrchestrator:
         reader = InMemoryFsReader(contents={str(py_file.resolve()): "x = 1\n"})
         parser = AstParser(reader=reader)
         runner = RuleRunner(rules=(RequireAllExportRule(),))
+        config_loader = ProjectConfigLoader(
+            reader=InMemoryFsReader(
+                error=FileSystemError(message="not found", cause=Exception("not found"))
+            )
+        )
         orchestrator = CheckOrchestrator(
             collector=FileCollector(),
             parser=parser,
             runner=runner,
             formatter=CheckFormatterFactory(),
             violation_filter=ViolationFilter(),
+            config_loader=config_loader,
         )
         context = CheckContext(targets=(tmp_path,))
 
@@ -49,12 +57,18 @@ class TestCheckOrchestrator:
         reader = InMemoryFsReader(contents={str(init_file.resolve()): "from foo import bar\n"})
         parser = AstParser(reader=reader)
         runner = RuleRunner(rules=(RequireAllExportRule(),))
+        config_loader = ProjectConfigLoader(
+            reader=InMemoryFsReader(
+                error=FileSystemError(message="not found", cause=Exception("not found"))
+            )
+        )
         orchestrator = CheckOrchestrator(
             collector=FileCollector(),
             parser=parser,
             runner=runner,
             formatter=CheckFormatterFactory(),
             violation_filter=ViolationFilter(),
+            config_loader=config_loader,
         )
         context = CheckContext(targets=(tmp_path,))
 
@@ -72,12 +86,18 @@ class TestCheckOrchestrator:
         reader = InMemoryFsReader(contents={str(py_file.resolve()): "x = 1\n"})
         parser = AstParser(reader=reader)
         runner = RuleRunner(rules=(RequireAllExportRule(),))
+        config_loader = ProjectConfigLoader(
+            reader=InMemoryFsReader(
+                error=FileSystemError(message="not found", cause=Exception("not found"))
+            )
+        )
         orchestrator = CheckOrchestrator(
             collector=FileCollector(),
             parser=parser,
             runner=runner,
             formatter=CheckFormatterFactory(),
             violation_filter=ViolationFilter(),
+            config_loader=config_loader,
         )
         context = CheckContext(targets=(tmp_path,), format=OutputFormat.JSON)
 
@@ -96,12 +116,18 @@ class TestCheckOrchestrator:
         reader = InMemoryFsReader(contents={str(py_file.resolve()): "x = 1\n"})
         parser = AstParser(reader=reader)
         runner = RuleRunner(rules=(RequireAllExportRule(),))
+        config_loader = ProjectConfigLoader(
+            reader=InMemoryFsReader(
+                error=FileSystemError(message="not found", cause=Exception("not found"))
+            )
+        )
         orchestrator = CheckOrchestrator(
             collector=FileCollector(),
             parser=parser,
             runner=runner,
             formatter=CheckFormatterFactory(),
             violation_filter=ViolationFilter(),
+            config_loader=config_loader,
         )
         context = CheckContext(targets=(tmp_path,), format=OutputFormat.TEXT)
 
@@ -123,12 +149,18 @@ class TestCheckOrchestrator:
         )
         parser = AstParser(reader=reader)
         runner = RuleRunner(rules=(RequireAllExportRule(),))
+        config_loader = ProjectConfigLoader(
+            reader=InMemoryFsReader(
+                error=FileSystemError(message="not found", cause=Exception("not found"))
+            )
+        )
         orchestrator = CheckOrchestrator(
             collector=FileCollector(),
             parser=parser,
             runner=runner,
             formatter=CheckFormatterFactory(),
             violation_filter=ViolationFilter(),
+            config_loader=config_loader,
         )
         context = CheckContext(targets=(tmp_path,))
 
@@ -154,12 +186,18 @@ class TestCheckOrchestrator:
         )
         parser = AstParser(reader=reader)
         runner = RuleRunner(rules=(RequireAllExportRule(),))
+        config_loader = ProjectConfigLoader(
+            reader=InMemoryFsReader(
+                error=FileSystemError(message="not found", cause=Exception("not found"))
+            )
+        )
         orchestrator = CheckOrchestrator(
             collector=FileCollector(),
             parser=parser,
             runner=runner,
             formatter=CheckFormatterFactory(),
             violation_filter=ViolationFilter(),
+            config_loader=config_loader,
         )
         context = CheckContext(targets=(tmp_path,))
 
@@ -189,12 +227,18 @@ class TestCheckOrchestrator:
         )
         rule = FakeRule(violations=(violation,))
         runner = RuleRunner(rules=(rule,))
+        config_loader = ProjectConfigLoader(
+            reader=InMemoryFsReader(
+                error=FileSystemError(message="not found", cause=Exception("not found"))
+            )
+        )
         orchestrator = CheckOrchestrator(
             collector=FileCollector(),
             parser=parser,
             runner=runner,
             formatter=CheckFormatterFactory(),
             violation_filter=ViolationFilter(),
+            config_loader=config_loader,
         )
         context = CheckContext(targets=(tmp_path,))
 
@@ -226,12 +270,18 @@ class TestCheckOrchestrator:
         )
         rule = FakeRule(violations=(violation,))
         runner = RuleRunner(rules=(rule,))
+        config_loader = ProjectConfigLoader(
+            reader=InMemoryFsReader(
+                error=FileSystemError(message="not found", cause=Exception("not found"))
+            )
+        )
         orchestrator = CheckOrchestrator(
             collector=FileCollector(),
             parser=parser,
             runner=runner,
             formatter=CheckFormatterFactory(),
             violation_filter=ViolationFilter(),
+            config_loader=config_loader,
         )
         context = CheckContext(targets=(tmp_path,))
 
@@ -239,5 +289,142 @@ class TestCheckOrchestrator:
         result = orchestrator.orchestrate(context)
 
         # Assert: # paladin: ignore[fake-rule] の直後行 (line=2) の該当ルール違反が除外される
+        assert isinstance(result, CheckReport)
+        assert result.exit_code == 0
+
+    def test_orchestrate_正常系_設定ファイルのper_file_ignoresで違反が除外されること(
+        self, tmp_path: Path
+    ):
+        # Arrange
+        py_file = tmp_path / "example.py"
+        py_file.write_text("x = 1\n")
+        reader = InMemoryFsReader(contents={str(py_file.resolve()): "x = 1\n"})
+        parser = AstParser(reader=reader)
+        violation = Violation(
+            file=py_file.resolve(),
+            line=1,
+            column=0,
+            rule_id="fake-rule",
+            rule_name="Fake Rule",
+            message="violation",
+            reason="reason",
+            suggestion="suggestion",
+        )
+        rule = FakeRule(violations=(violation,))
+        runner = RuleRunner(rules=(rule,))
+        toml_content = '[tool.paladin.per-file-ignores]\n"example.py" = ["fake-rule"]\n'
+        config_loader = ProjectConfigLoader(reader=InMemoryFsReader(content=toml_content))
+        orchestrator = CheckOrchestrator(
+            collector=FileCollector(),
+            parser=parser,
+            runner=runner,
+            formatter=CheckFormatterFactory(),
+            violation_filter=ViolationFilter(),
+            config_loader=config_loader,
+        )
+        context = CheckContext(targets=(tmp_path,))
+
+        # Act
+        result = orchestrator.orchestrate(context)
+
+        # Assert: 設定ファイルの per-file-ignores で違反が除外される
+        assert isinstance(result, CheckReport)
+        assert result.exit_code == 0
+
+    def test_orchestrate_正常系_ignore_rulesで指定ルールの違反が除外されること(
+        self, tmp_path: Path
+    ):
+        # Arrange
+        py_file = tmp_path / "example.py"
+        py_file.write_text("x = 1\n")
+        reader = InMemoryFsReader(contents={str(py_file.resolve()): "x = 1\n"})
+        parser = AstParser(reader=reader)
+        violation = Violation(
+            file=py_file.resolve(),
+            line=1,
+            column=0,
+            rule_id="fake-rule",
+            rule_name="Fake Rule",
+            message="violation",
+            reason="reason",
+            suggestion="suggestion",
+        )
+        rule = FakeRule(violations=(violation,))
+        runner = RuleRunner(rules=(rule,))
+        config_loader = ProjectConfigLoader(
+            reader=InMemoryFsReader(
+                error=FileSystemError(message="not found", cause=Exception("not found"))
+            )
+        )
+        orchestrator = CheckOrchestrator(
+            collector=FileCollector(),
+            parser=parser,
+            runner=runner,
+            formatter=CheckFormatterFactory(),
+            violation_filter=ViolationFilter(),
+            config_loader=config_loader,
+        )
+        context = CheckContext(targets=(tmp_path,), ignore_rules=frozenset({"fake-rule"}))
+
+        # Act
+        result = orchestrator.orchestrate(context)
+
+        # Assert: ignore_rules で指定したルールの違反が除外される
+        assert isinstance(result, CheckReport)
+        assert result.exit_code == 0
+
+    def test_orchestrate_正常系_設定ファイルignoreとコメントignoreが同時に適用されること(
+        self, tmp_path: Path
+    ):
+        # Arrange
+        py_file1 = tmp_path / "config_ignored.py"
+        py_file1.write_text("x = 1\n")
+        py_file2 = tmp_path / "comment_ignored.py"
+        py_file2.write_text("# paladin: ignore-file\nx = 1\n")
+        reader = InMemoryFsReader(
+            contents={
+                str(py_file1.resolve()): "x = 1\n",
+                str(py_file2.resolve()): "# paladin: ignore-file\nx = 1\n",
+            }
+        )
+        parser = AstParser(reader=reader)
+        violation1 = Violation(
+            file=py_file1.resolve(),
+            line=1,
+            column=0,
+            rule_id="fake-rule",
+            rule_name="Fake Rule",
+            message="violation",
+            reason="reason",
+            suggestion="suggestion",
+        )
+        violation2 = Violation(
+            file=py_file2.resolve(),
+            line=1,
+            column=0,
+            rule_id="fake-rule",
+            rule_name="Fake Rule",
+            message="violation",
+            reason="reason",
+            suggestion="suggestion",
+        )
+        rule = FakeRule(violations=(violation1, violation2))
+        runner = RuleRunner(rules=(rule,))
+        toml_content = '[tool.paladin.per-file-ignores]\n"config_ignored.py" = ["fake-rule"]\n'
+        config_loader = ProjectConfigLoader(reader=InMemoryFsReader(content=toml_content))
+        orchestrator = CheckOrchestrator(
+            collector=FileCollector(),
+            parser=parser,
+            runner=runner,
+            formatter=CheckFormatterFactory(),
+            violation_filter=ViolationFilter(),
+            config_loader=config_loader,
+        )
+        context = CheckContext(targets=(tmp_path,))
+
+        # Act
+        result = orchestrator.orchestrate(context)
+
+        # Assert: 設定ファイル由来と コメント由来の両方の ignore が適用されて両違反が除外される
         assert isinstance(result, CheckReport)
         assert result.exit_code == 0

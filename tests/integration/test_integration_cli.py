@@ -328,3 +328,66 @@ class TestIntegrationCheckCLI:
         # Assert
         assert result.returncode == 0
         assert "status: ok" in result.stdout
+
+    def test_check_正常系_ignore_ruleで指定ルールの違反が除外されること(self, tmp_dir: Path):
+        # Arrange: __init__.py に __all__ なし（require-all-export 違反）
+        src_dir = tmp_dir / "src"
+        src_dir.mkdir()
+        init_file = src_dir / "__init__.py"
+        init_file.write_text("x = 1\n")
+
+        # Act
+        cmd = [
+            sys.executable,
+            "-m",
+            "paladin.cli",
+            "check",
+            str(src_dir),
+            "--ignore-rule",
+            "require-all-export",
+        ]
+        result = subprocess.run(cmd, cwd=tmp_dir, capture_output=True, text=True, timeout=10)
+
+        # Assert: 違反が除外されて exit_code=0
+        assert result.returncode == 0
+        assert "status: ok" in result.stdout
+
+    def test_check_正常系_ignore_ruleを複数回指定で複数ルールが除外されること(self, tmp_dir: Path):
+        # Arrange: __init__.py に __all__ なし（require-all-export 違反）
+        src_dir = tmp_dir / "src"
+        src_dir.mkdir()
+        init_file = src_dir / "__init__.py"
+        init_file.write_text("x = 1\n")
+
+        # Act
+        cmd = [
+            sys.executable,
+            "-m",
+            "paladin.cli",
+            "check",
+            str(src_dir),
+            "--ignore-rule",
+            "require-all-export",
+            "--ignore-rule",
+            "no-relative-import",
+        ]
+        result = subprocess.run(cmd, cwd=tmp_dir, capture_output=True, text=True, timeout=10)
+
+        # Assert: 指定した両ルールの違反が除外される
+        assert result.returncode == 0
+        assert "status: ok" in result.stdout
+
+    def test_check_エッジケース_ignore_rule未指定で全ルールが適用されること(self, tmp_dir: Path):
+        # Arrange: __init__.py に __all__ なし（require-all-export 違反）
+        src_dir = tmp_dir / "src"
+        src_dir.mkdir()
+        init_file = src_dir / "__init__.py"
+        init_file.write_text("x = 1\n")
+
+        # Act: --ignore-rule を指定しない
+        cmd = [sys.executable, "-m", "paladin.cli", "check", str(src_dir)]
+        result = subprocess.run(cmd, cwd=tmp_dir, capture_output=True, text=True, timeout=10)
+
+        # Assert: 違反が検出されて exit_code=1
+        assert result.returncode == 1
+        assert "require-all-export" in result.stdout
