@@ -60,7 +60,7 @@ Identify and read task-related sections below:
 
 - [Design concept](docs/intro/concept.md): Tool positioning, background, target values, optimization priorities, diagnostic philosophy, and scope strategy - Use when understanding why Paladin exists, what it optimizes for, or how it relates to existing tools
 - [Requirements](docs/intro/requirements.md): Target scope, functional requirements, diagnostic output requirements, quality requirements, rule requirements, and constraints - Use when understanding what Paladin must satisfy or reviewing acceptance criteria
-- [CLI interface draft](docs/intro/interface.md): Command structure (check/rules/explain/version), check output contract, exit codes, JSON/text output format - Use when understanding the CLI design direction or reviewing command options
+- [CLI interface draft](docs/intro/interface.md): Command structure (check/rules/version), check output contract, exit codes, JSON/text output format - Use when understanding the CLI design direction or reviewing command options
 - [Development roadmap](docs/intro/roadmap.md): Session-unit implementation plan with ordered items (R-000 onwards), operating rules, and per-item completion conditions - Use when understanding the next implementation item or the development sequence
 - [Milestones](docs/intro/milestones.md): Value-establishment milestones (M1–M7) with completion conditions - Use when understanding large-scale development stages or milestone boundaries
 - [Implementation status](docs/intro/status.md): Current item, active milestone, and per-item status (Done/In Progress/Not Started/Blocked) - Use when checking current progress or which item to work on next

@@ -150,34 +150,13 @@
 - **目的**: 特定ルールのメタ情報を `rules` コマンドで確認できるようにする
 - **完了条件**:
     - `uv run paladin rules --rule <RULE_ID>` が対象ルールの詳細を返せる
-- **今回やらないこと**: `explain` コマンド
-- **関連 milestone**: M4
-
----
-
-### R-063 `explain` 導入の再判断
-
-- **目的**: `explain` コマンドを初期リリースに含めるかを判断する
-- **完了条件**:
-    - `explain` の必要性を `rules --rule` との役割分担を踏まえて判断する
-    - 導入する場合は R-064 へ進む、しない場合はスキップする
-- **備考**: `interface.md` では MVP 必須ではないと位置づけられている
-- **判断結果**: `explain` コマンドは導入しない。`rules --rule` と同一の責務を持ち、2 コマンドに分ける合理的な境界がないため。代わりに `rules --rule` の出力を拡張して `explain` 相当の情報（intent / guidance / suggestion）を含める（R-065）
-- **関連 milestone**: M4
-
----
-
-### R-064 `explain` の text 出力実装
-
-- **目的**: 特定ルールの意図や違反時の解釈を表示できるようにする
-- **備考**: R-063 の判断結果により **スキップ**。`rules --rule` の拡張（R-065）で代替する
 - **関連 milestone**: M4
 
 ---
 
 ### R-065 `rules --rule` の詳細出力を拡張する
 
-- **目的**: `rules --rule <RULE_ID>` で `explain` 相当の情報（意図・違反時の見方・修正方向）を表示できるようにする
+- **目的**: `rules --rule <RULE_ID>` で意図・違反時の見方・修正方向を表示できるようにする
 - **完了条件**:
     - `RuleMeta` に intent / guidance / suggestion フィールドを追加する
     - `uv run paladin rules --rule <RULE_ID>` が summary に加えて intent / guidance / suggestion を返せる

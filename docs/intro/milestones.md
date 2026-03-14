@@ -91,8 +91,6 @@ Paladin が返すべき結果の形が固定されている状態。
 - R-060 `rules` コマンドの最小実装
 - R-061 `version` コマンドの実装
 - R-062 `rules --rule <RULE_ID>` の対応
-- R-063 `explain` 導入の再判断
-- R-064 `explain` の text 出力実装 (R-063 で導入を選択した場合)
 
 #### 完了条件
 
