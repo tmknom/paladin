@@ -1,7 +1,7 @@
 from pathlib import Path
 
+import pydantic
 import pytest
-from pydantic import ValidationError
 
 from paladin.config import EnvVarConfig
 
@@ -40,7 +40,7 @@ class TestEnvVarConfig:
         monkeypatch.setenv("EXAMPLE_LOG_LEVEL", "INVALID")
 
         # Act & Assert
-        with pytest.raises(ValidationError):
+        with pytest.raises(pydantic.ValidationError):
             EnvVarConfig()
 
     def test_tmp_dir_正常系_環境変数未設定時はNoneがデフォルト(
