@@ -8,7 +8,7 @@ from tests.unit.test_check.fakes import FakeRule
 
 
 def _make_parsed_file(source: str, filename: str = "__init__.py") -> ParsedFile:
-    return ParsedFile(file_path=Path(filename), tree=ast.parse(source))
+    return ParsedFile(file_path=Path(filename), tree=ast.parse(source), source=source)
 
 
 def _make_parsed_files(*sources_and_names: tuple[str, str]) -> ParsedFiles:

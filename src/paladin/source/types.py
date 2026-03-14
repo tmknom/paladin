@@ -15,6 +15,7 @@ class ParsedFile:
 
     file_path: Path
     tree: ast.Module
+    source: str
 
 
 @dataclass(frozen=True)

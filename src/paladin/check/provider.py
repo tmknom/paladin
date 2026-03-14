@@ -5,6 +5,7 @@
 
 from paladin.check.collector import FileCollector
 from paladin.check.formatter import CheckFormatterFactory
+from paladin.check.ignore import ViolationFilter
 from paladin.check.orchestrator import CheckOrchestrator
 from paladin.check.parser import AstParser
 from paladin.foundation.fs.text import TextFileSystemReader
@@ -39,6 +40,7 @@ class CheckOrchestratorProvider:
             parser=parser,
             runner=runner,
             formatter=CheckFormatterFactory(),
+            violation_filter=ViolationFilter(),
         )
 
     def _create_runner(self) -> RuleRunner:

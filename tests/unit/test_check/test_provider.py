@@ -1,5 +1,6 @@
 from paladin.check import CheckOrchestratorProvider
 from paladin.check.formatter import CheckFormatterFactory
+from paladin.check.ignore import ViolationFilter
 from paladin.check.orchestrator import CheckOrchestrator
 from paladin.check.parser import AstParser
 from paladin.lint import RuleRunner
@@ -35,3 +36,10 @@ class TestCheckOrchestratorProvider:
 
         # Assert
         assert isinstance(result.formatter, CheckFormatterFactory)
+
+    def test_provide_正常系_ViolationFilterが注入されたOrchestratorを返すこと(self):
+        # Act
+        result = CheckOrchestratorProvider().provide()
+
+        # Assert
+        assert isinstance(result.violation_filter, ViolationFilter)

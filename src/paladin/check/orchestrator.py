@@ -6,6 +6,7 @@
 from paladin.check.collector import FileCollector
 from paladin.check.context import CheckContext
 from paladin.check.formatter import CheckFormatterFactory
+from paladin.check.ignore import FileIgnoreParser, ViolationFilter
 from paladin.check.parser import AstParser
 from paladin.check.result import CheckReport, CheckResult
 from paladin.foundation.log import log
@@ -31,6 +32,7 @@ class CheckOrchestrator:
         parser: AstParser,
         runner: RuleRunner,
         formatter: CheckFormatterFactory,
+        violation_filter: ViolationFilter,
     ) -> None:
         """CheckOrchestratorを初期化
 
@@ -39,11 +41,13 @@ class CheckOrchestrator:
             parser: ASTパーサー
             runner: ルール実行器
             formatter: レポートフォーマッター
+            violation_filter: ignore フィルター
         """
         self.collector = collector
         self.parser = parser
         self.runner = runner
         self.formatter = formatter
+        self.violation_filter = violation_filter
 
     @log
     def orchestrate(self, context: CheckContext) -> CheckReport:
@@ -58,6 +62,8 @@ class CheckOrchestrator:
         target_files = self.collector.collect(context.targets)
         parsed_files = self.parser.parse_all(target_files)
         violations = self.runner.run(parsed_files)
+        directives = FileIgnoreParser().parse_all(parsed_files)
+        violations = self.violation_filter.filter(violations, directives)
         result = CheckResult(
             target_files=target_files, parsed_files=parsed_files, violations=violations
         )
