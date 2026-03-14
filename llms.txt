@@ -57,6 +57,7 @@ Identify and read task-related sections below:
 
 - [pyproject.toml design](docs/design/pyproject.md): Configuration rationale for build system, linter, and type checker - Use when modifying or reviewing `pyproject.toml` settings, understanding ruff/pyright rule choices, or reviewing tool configuration decisions
 - [Specification design](docs/design/specs.md): Purpose and design philosophy of specs/ documents for AI-assisted development, authoring guidelines, and operational workflow - Use when modifying or reviewing `docs/specs/` documents, understanding why `docs/specs/` exists, or reviewing synchronization requirements
+- [Ignore interface design](docs/design/ignore.md): Ignore feature interface design — inline comment syntax (`# paladin: ignore`), file-level ignore, `per-file-ignores` in `pyproject.toml`, and `--ignore-rule` CLI option - Use when implementing R-080 to R-083, designing the ignore feature, or understanding the config file strategy
 
 ## Introduction
 
