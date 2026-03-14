@@ -4,8 +4,9 @@ from pathlib import Path
 import pytest
 
 from paladin.check.parser import AstParser
-from paladin.check.types import ParsedFile, TargetFiles
+from paladin.check.types import TargetFiles
 from paladin.foundation.fs.error import FileSystemError
+from paladin.source.types import ParsedFile
 from tests.unit.test_check.fakes import InMemoryFsReader
 
 

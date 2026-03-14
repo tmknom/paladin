@@ -2,7 +2,7 @@ from paladin.check import CheckOrchestratorProvider
 from paladin.check.formatter import CheckFormatterFactory
 from paladin.check.orchestrator import CheckOrchestrator
 from paladin.check.parser import AstParser
-from paladin.check.rule.runner import RuleRunner
+from paladin.lint import RuleRunner
 
 
 class TestCheckOrchestratorProvider:

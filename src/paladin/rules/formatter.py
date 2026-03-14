@@ -3,7 +3,7 @@
 ルールメタ情報を列幅揃えの一覧テキストに変換する。
 """
 
-from paladin.check.rule.types import RuleMeta
+from paladin.lint import RuleMeta
 
 
 class RulesFormatter:

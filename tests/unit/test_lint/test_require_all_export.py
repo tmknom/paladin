@@ -1,9 +1,9 @@
 import ast
 from pathlib import Path
 
-from paladin.check.rule.require_all_export import RequireAllExportRule
-from paladin.check.rule.types import RuleMeta
-from paladin.check.types import ParsedFile
+from paladin.lint.require_all_export import RequireAllExportRule
+from paladin.lint.types import RuleMeta
+from paladin.source.types import ParsedFile
 
 
 def _make_parsed_file(source: str, filename: str = "__init__.py") -> ParsedFile:

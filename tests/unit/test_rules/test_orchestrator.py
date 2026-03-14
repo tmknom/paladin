@@ -1,7 +1,6 @@
 """RulesOrchestratorクラスのテスト"""
 
-from paladin.check.rule.protocol import Rule
-from paladin.check.rule.registry import RuleRegistry
+from paladin.lint import Rule, RuleRegistry
 from paladin.rules.context import RulesContext
 from paladin.rules.detail_formatter import RulesDetailFormatter
 from paladin.rules.formatter import RulesFormatter

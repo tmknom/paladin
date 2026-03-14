@@ -7,13 +7,15 @@ from paladin.check.collector import FileCollector
 from paladin.check.formatter import CheckFormatterFactory
 from paladin.check.orchestrator import CheckOrchestrator
 from paladin.check.parser import AstParser
-from paladin.check.rule.no_local_import import NoLocalImportRule
-from paladin.check.rule.no_relative_import import NoRelativeImportRule
-from paladin.check.rule.require_all_export import RequireAllExportRule
-from paladin.check.rule.require_qualified_third_party import RequireQualifiedThirdPartyRule
-from paladin.check.rule.runner import RuleRunner
 from paladin.foundation.fs.text import TextFileSystemReader
 from paladin.foundation.log import log
+from paladin.lint import (
+    NoLocalImportRule,
+    NoRelativeImportRule,
+    RequireAllExportRule,
+    RequireQualifiedThirdPartyRule,
+    RuleRunner,
+)
 
 
 class CheckOrchestratorProvider:

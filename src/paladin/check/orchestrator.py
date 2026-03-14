@@ -8,8 +8,8 @@ from paladin.check.context import CheckContext
 from paladin.check.formatter import CheckFormatterFactory
 from paladin.check.parser import AstParser
 from paladin.check.result import CheckReport, CheckResult
-from paladin.check.rule.runner import RuleRunner
 from paladin.foundation.log import log
+from paladin.lint import RuleRunner
 
 
 class CheckOrchestrator:

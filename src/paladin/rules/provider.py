@@ -3,13 +3,15 @@
 具象クラスへの依存を隠蔽し、Rules層の生成ロジックを一元化する。
 """
 
-from paladin.check.rule.no_local_import import NoLocalImportRule
-from paladin.check.rule.no_relative_import import NoRelativeImportRule
-from paladin.check.rule.protocol import Rule
-from paladin.check.rule.registry import RuleRegistry
-from paladin.check.rule.require_all_export import RequireAllExportRule
-from paladin.check.rule.require_qualified_third_party import RequireQualifiedThirdPartyRule
 from paladin.foundation.log import log
+from paladin.lint import (
+    NoLocalImportRule,
+    NoRelativeImportRule,
+    RequireAllExportRule,
+    RequireQualifiedThirdPartyRule,
+    Rule,
+    RuleRegistry,
+)
 from paladin.rules.detail_formatter import RulesDetailFormatter
 from paladin.rules.formatter import RulesFormatter
 from paladin.rules.orchestrator import RulesOrchestrator

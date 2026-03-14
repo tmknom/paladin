@@ -3,8 +3,8 @@
 登録済みルールの一覧取得・検索機能を提供する。
 """
 
-from paladin.check.rule.protocol import Rule
-from paladin.check.rule.types import RuleMeta
+from paladin.lint.protocol import Rule
+from paladin.lint.types import RuleMeta
 
 
 class RuleRegistry:

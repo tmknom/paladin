@@ -45,17 +45,7 @@ src/paladin/check/
 ├── parser.py             # AstParser
 ├── formatter.py          # CheckReportFormatter / CheckJsonFormatter / CheckFormatterFactory
 ├── result.py             # CheckResult / CheckStatus / CheckSummary / CheckReport
-├── types.py              # TargetFiles / ParsedFile / ParsedFiles / OutputFormat
-└── rule/
-    ├── __init__.py                          # rule サブパッケージの公開 API
-    ├── types.py                             # Violation / Violations / RuleMeta
-    ├── protocol.py                          # Rule Protocol
-    ├── registry.py                          # RuleRegistry
-    ├── runner.py                            # RuleRunner
-    ├── require_all_export.py                # RequireAllExportRule
-    ├── no_relative_import.py                # NoRelativeImportRule
-    ├── no_local_import.py                   # NoLocalImportRule
-    └── require_qualified_third_party.py     # RequireQualifiedThirdPartyRule
+└── types.py              # TargetFiles / OutputFormat
 ```
 
 #### テストコード
@@ -63,7 +53,7 @@ src/paladin/check/
 ```bash
 tests/unit/test_check/
 ├── __init__.py
-├── fakes.py                    # テスト用 Fake（FakeRule / InMemoryFsReader）
+├── fakes.py              # テスト用 Fake（FakeRule / InMemoryFsReader）
 ├── test_collector.py
 ├── test_context.py
 ├── test_formatter.py
@@ -71,17 +61,7 @@ tests/unit/test_check/
 ├── test_parser.py
 ├── test_provider.py
 ├── test_result.py
-├── test_types.py
-└── test_rule/
-    ├── __init__.py
-    ├── test_protocol.py
-    ├── test_registry.py
-    ├── test_runner.py
-    ├── test_require_all_export.py
-    ├── test_no_relative_import.py
-    ├── test_no_local_import.py
-    ├── test_require_qualified_third_party.py
-    └── test_types.py
+└── test_types.py
 ```
 
 ## 処理フロー
@@ -119,13 +99,22 @@ class Rule(Protocol):
 
 **トレードオフ**: Protocol に新しいメソッドを追加した場合、既存の全ルール実装がランタイムエラーになる。これは意図的な設計で、インターフェース違反を早期に発見できる。
 
-### ルール定義の配置場所
+### ルール定義の独立パッケージ化
 
-**設計の意図**: ルール定義を `src/paladin/check/rule/` サブパッケージに配置する。`src/paladin/rule/` として独立パッケージに分離する案も検討したが、現時点では現状維持を選択した。
+**設計の意図**: ルール定義を `check/rule/` サブパッケージから独立した `lint` パッケージへ切り出し、`check` と `rules` が対等に `lint` へ依存する構造にする。
 
-**なぜそう設計したか**: `rules` コマンドがルール定義を参照する際に `check` パッケージ内部に依存することになる。しかし、現時点でルールを参照するのは `check` コマンドのみであり、他コマンドからの参照は発生していない。また `rules` コマンドの具体的な設計が未確定で、分離の粒度についての正確な判断ができない。移動は後からでも低コストで実施可能なため、具体的な要件が確定してから判断する。
+**なぜそう設計したか**: `check/rule/` を `check` パッケージのサブパッケージとして置くと、`rules` パッケージが `paladin.check.rule.*` へ直接依存することになり、`check` と `rules` を別概念として分離した設計意図に反する。`rules` コマンドが実装済みとなった現在、ルールドメインを独立パッケージ `lint` として切り出すことで、`check` と `rules` が対等に `lint` に依存する構造が実現できる。
 
-**トレードオフ**: `rules` コマンドを実装する際に、そのコマンドが `check` パッケージに依存する形になる可能性がある。**再検討のトリガーは `rules` コマンドの設計・実装着手時とする。**
+**依存グラフ**:
+
+```
+check/ → lint/ (Rule, RuleRunner, Violation, Violations, RuleMeta)
+check/ → source/ (ParsedFile, ParsedFiles)
+rules/ → lint/ (Rule, RuleRegistry, RuleMeta, 具象ルール)
+lint/  → source/ (ParsedFile)
+```
+
+**トレードオフ**: `check` / `rules` / `lint` / `source` の 4 パッケージに分かれるため、全体の見通しには依存グラフの把握が必要になる。
 
 ### フォーマッター群の責務分離
 
@@ -161,8 +150,10 @@ class Rule(Protocol):
 
 新しいルールを追加する際は、次の手順を踏むこと。
 
-1. `rule/` サブパッケージに `Rule` Protocol を満たすクラスを実装する
-2. `CheckOrchestratorProvider._create_runner()` の `rules` タプルに追加する
+1. `lint/` パッケージに `Rule` Protocol を満たすクラスを実装する
+2. `lint/__init__.py` の `__all__` にクラス名を追加する
+3. `CheckOrchestratorProvider._create_runner()` の `rules` タプルに追加する
+4. `RulesOrchestratorProvider._create_rules()` のタプルにも追加する
 
 `RuleRunner` や `CheckOrchestrator` の変更は不要である。
 
@@ -173,13 +164,14 @@ class Rule(Protocol):
 | 依存先 | 用途 |
 |---|---|
 | Python 標準ライブラリ `ast` | Python ソースコードの AST 生成・走査 |
-| Python 標準ライブラリ `sys.stdlib_module_names` | 標準ライブラリモジュール名の判定（`RequireQualifiedThirdPartyRule` が使用） |
+| `paladin.lint` | ルールドメイン（`Rule`, `RuleRunner`, `Violation`, `Violations`, `RuleMeta`, 具象ルール） |
+| `paladin.source` | AST 解析済み表現（`ParsedFile`, `ParsedFiles`） |
 | `paladin.foundation.fs` | ファイル読み込みの抽象化（`TextFileSystemReaderProtocol`） |
 | `paladin.foundation.log` | ログ出力（`@log` デコレーター） |
 
 ### 想定される拡張ポイント
 
-- **新しいルールの追加**: `Rule` Protocol を実装したクラスを `rule/` に追加し、`CheckOrchestratorProvider._create_runner()` に登録する
+- **新しいルールの追加**: `Rule` Protocol を実装したクラスを `lint/` に追加し、`CheckOrchestratorProvider._create_runner()` に登録する
 - **複数ファイルにまたがるルール**: `Rule.check()` のシグネチャを `ParsedFiles` を受け取る形に拡張するか、新しい Protocol を定義する
 - **ルール選択機能**: `RuleRunner` が適用するルールを実行時に絞り込める仕組みを追加する
 - **エラーファイルのスキップ**: `AstParser` でエラーを捕捉してスキップし、`CheckResult` に解析失敗情報を追加する
@@ -194,12 +186,12 @@ class Rule(Protocol):
 
 | 変更内容 | 主な変更対象 | 備考 |
 |---|---|---|
-| 新しいルールを追加 | `rule/` に新ファイル、`provider.py`（`_create_runner()`） | `RuleRunner` / `CheckOrchestrator` の変更は不要 |
+| 新しいルールを追加 | `lint/` に新ファイル、`lint/__init__.py`（`__all__`）、`provider.py`（`_create_runner()`）、`rules/provider.py`（`_create_rules()`） | `RuleRunner` / `CheckOrchestrator` の変更は不要 |
 | ルールのチェックロジックを変更 | 対象ルールの `.py` | 他コンポーネントへの影響なし |
 | 実行時パラメータを追加 | `context.py`（`CheckContext`） | 追加フィールドは呼び出し元（CLI 層）が組み立てて渡す |
 | レポート出力形式を変更 | `formatter.py`（`CheckReportFormatter` / `CheckJsonFormatter`） | `CheckOrchestrator` の変更は不要 |
 | 新しい出力形式を追加 | `types.py`（`OutputFormat`）、`formatter.py`（新フォーマッタークラス・`CheckFormatterFactory`） | `CheckOrchestrator` の変更は不要 |
-| 値オブジェクトにフィールドを追加 | `types.py` / `result.py` / `rule/types.py` | 参照元のコンポーネントも合わせて更新する |
+| 値オブジェクトにフィールドを追加 | `check/types.py` / `check/result.py` / `lint/types.py` / `source/types.py` | 参照元のコンポーネントも合わせて更新する |
 | 公開 API を追加 | `__init__.py` の `__all__` | 内部コンポーネントの公開は原則行わない |
 
 ## 影響範囲

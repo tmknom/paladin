@@ -1,8 +1,9 @@
 from pathlib import Path
 
 from paladin.check.result import CheckReport, CheckResult, CheckStatus, CheckSummary
-from paladin.check.rule.types import Violation, Violations
-from paladin.check.types import ParsedFiles, TargetFiles
+from paladin.check.types import TargetFiles
+from paladin.lint import Violation, Violations
+from paladin.source.types import ParsedFiles
 
 
 class TestCheckResult:

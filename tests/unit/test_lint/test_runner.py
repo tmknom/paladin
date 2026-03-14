@@ -1,9 +1,9 @@
 import ast
 from pathlib import Path
 
-from paladin.check.rule.runner import RuleRunner
-from paladin.check.rule.types import Violation, Violations
-from paladin.check.types import ParsedFile, ParsedFiles
+from paladin.lint.runner import RuleRunner
+from paladin.lint.types import Violation, Violations
+from paladin.source.types import ParsedFile, ParsedFiles
 from tests.unit.test_check.fakes import FakeRule
 
 
