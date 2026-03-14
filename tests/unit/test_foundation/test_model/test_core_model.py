@@ -1,7 +1,7 @@
 """CoreModelのテスト"""
 
+import pydantic
 import pytest
-from pydantic import Field, ValidationError
 
 from paladin.foundation.model import CoreModel
 
@@ -11,7 +11,7 @@ class SampleCoreModel(CoreModel):
 
     name: str
     value: int
-    description: str = Field(alias="desc")
+    description: str = pydantic.Field(alias="desc")
 
 
 class TestCoreModel:
@@ -27,7 +27,7 @@ class TestCoreModel:
         }
 
         # Act & Assert
-        with pytest.raises(ValidationError):
+        with pytest.raises(pydantic.ValidationError):
             SampleCoreModel.model_validate(data)
 
     def test_populate_by_name_正常系_エイリアスとフィールド名の両方で入力可能(self):
@@ -67,5 +67,5 @@ class TestCoreModel:
         obj = SampleCoreModel.model_validate({"name": "test", "value": 42, "desc": "desc"})
 
         # Act & Assert
-        with pytest.raises(ValidationError):
+        with pytest.raises(pydantic.ValidationError):
             obj.name = "modified"
