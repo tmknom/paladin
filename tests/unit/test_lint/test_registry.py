@@ -1,5 +1,5 @@
-from paladin.check.rule.registry import RuleRegistry
-from paladin.check.rule.types import RuleMeta
+from paladin.lint.registry import RuleRegistry
+from paladin.lint.types import RuleMeta
 from tests.unit.test_check.fakes import FakeRule
 
 

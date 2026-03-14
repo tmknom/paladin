@@ -5,8 +5,8 @@
 
 from typing import Protocol, runtime_checkable
 
-from paladin.check.rule.types import RuleMeta, Violation
-from paladin.check.types import ParsedFile
+from paladin.lint.types import RuleMeta, Violation
+from paladin.source.types import ParsedFile
 
 
 @runtime_checkable

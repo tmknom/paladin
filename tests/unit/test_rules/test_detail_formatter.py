@@ -1,6 +1,6 @@
 """RulesDetailFormatterクラスのテスト"""
 
-from paladin.check.rule.types import RuleMeta
+from paladin.lint import RuleMeta
 from paladin.rules.detail_formatter import RulesDetailFormatter
 
 

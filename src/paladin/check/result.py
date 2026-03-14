@@ -6,8 +6,9 @@
 import enum
 from dataclasses import dataclass
 
-from paladin.check.rule.types import Violations
-from paladin.check.types import ParsedFiles, TargetFiles
+from paladin.check.types import TargetFiles
+from paladin.lint import Violations
+from paladin.source.types import ParsedFiles
 
 
 @dataclass(frozen=True)

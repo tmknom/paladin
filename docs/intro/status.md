@@ -31,9 +31,7 @@
 | R-091 | 解析対象パスの include/exclude を実装する | Not Started | |
 | R-092 | ルール個別設定を実装する | Not Started | |
 | R-093 | ディレクトリ別設定を実装する | Not Started | |
-| R-100 | import 関係の収集基盤を作る | Not Started | |
-| R-101 | パッケージ単位の判定基盤を作る | Not Started | |
-| R-102 | 複数ファイルルールを 1 本実装する | Not Started | |
+| R-100 | 複数ファイル解析基盤と `no-direct-internal-import` を実装する | Not Started | |
 | R-103 | 広域解析時のエラーハンドリングを設計する | Not Started | |
 | R-110 | `suggestion` の品質を高める | Not Started | |
 | R-111 | AI 向け修正指示文を整備する | Not Started | |

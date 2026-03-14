@@ -3,8 +3,8 @@
 ルール一覧取得とフォーマットの処理フロー全体を制御する。
 """
 
-from paladin.check.rule.registry import RuleRegistry
 from paladin.foundation.log import log
+from paladin.lint import RuleRegistry
 from paladin.rules.context import RulesContext
 from paladin.rules.detail_formatter import RulesDetailFormatter
 from paladin.rules.formatter import RulesFormatter

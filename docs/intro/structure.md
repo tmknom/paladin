@@ -26,6 +26,32 @@
 src/
 └── paladin/                      # メインパッケージ（リファレンス実装）
     ├── cli.py                    # CLI エントリポイント（Typer ベース）
+    ├── source/                   # Python ソースコードの解析済み表現
+    │   └── types.py              # ParsedFile / ParsedFiles
+    ├── lint/                     # ルールドメインパッケージ
+    │   ├── types.py              # Violation / Violations / RuleMeta
+    │   ├── protocol.py           # Rule Protocol
+    │   ├── registry.py           # RuleRegistry
+    │   ├── runner.py             # RuleRunner
+    │   ├── require_all_export.py # RequireAllExportRule
+    │   ├── no_relative_import.py # NoRelativeImportRule
+    │   ├── no_local_import.py    # NoLocalImportRule
+    │   └── require_qualified_third_party.py  # RequireQualifiedThirdPartyRule
+    ├── check/                    # check コマンドのビジネスロジック
+    │   ├── context.py            # CheckContext（実行コンテキスト）
+    │   ├── orchestrator.py       # CheckOrchestrator（処理フロー制御）
+    │   ├── provider.py           # CheckOrchestratorProvider（Composition Root）
+    │   ├── collector.py          # FileCollector（対象ファイル収集）
+    │   ├── parser.py             # AstParser（AST 生成）
+    │   ├── formatter.py          # CheckReportFormatter / CheckJsonFormatter / CheckFormatterFactory
+    │   ├── result.py             # CheckResult / CheckStatus / CheckSummary / CheckReport
+    │   └── types.py              # TargetFiles / OutputFormat
+    ├── rules/                    # rules コマンドのビジネスロジック
+    │   ├── context.py            # RulesContext（実行コンテキスト）
+    │   ├── orchestrator.py       # RulesOrchestrator（処理フロー制御）
+    │   ├── provider.py           # RulesOrchestratorProvider（Composition Root）
+    │   ├── formatter.py          # RulesFormatter（一覧表示）
+    │   └── detail_formatter.py   # RulesDetailFormatter（詳細表示）
     ├── config/                   # 設定パッケージ
     │   ├── app.py                # AppConfig（設定の統合）
     │   ├── env_var.py            # EnvVarConfig（環境変数ロード）

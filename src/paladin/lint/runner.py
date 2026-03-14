@@ -1,11 +1,11 @@
-"""Check層のルール適用
+"""ルール適用
 
-パイプライン第3段階として、全ルールを全ファイルへ適用し違反を集約する。
+全ルールを全ファイルへ適用し違反を集約する。
 """
 
-from paladin.check.rule.protocol import Rule
-from paladin.check.rule.types import Violation, Violations
-from paladin.check.types import ParsedFiles
+from paladin.lint.protocol import Rule
+from paladin.lint.types import Violation, Violations
+from paladin.source.types import ParsedFiles
 
 
 class RuleRunner:

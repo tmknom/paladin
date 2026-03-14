@@ -39,6 +39,8 @@ Identify and read task-related sections below:
 ### Business Logic
 
 - [Transform feature](src/paladin/transform/): Reference feature package with Context, Orchestrator, OrchestratorProvider (Composition Root), Reader, Transformer, Writer, and Result types - Use when modifying `docs/specs/transform/`, adding new feature packages, understanding the Orchestrator-Provider-Context pattern, or reviewing the canonical package structure
+- [source package](src/paladin/source/): ParsedFile / ParsedFiles - Use when modifying AST parsed representation types or understanding how Python source files are represented after parsing
+- [lint package](src/paladin/lint/): Rule domain package containing Rule Protocol, RuleRegistry, RuleRunner, Violation/Violations/RuleMeta types, and all concrete rule implementations - Use when adding new rules, modifying rule logic, or understanding the rule domain architecture
 
 ### CLI
 

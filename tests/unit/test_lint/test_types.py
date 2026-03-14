@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from paladin.check.rule.types import RuleMeta, Violation, Violations
+from paladin.lint.types import RuleMeta, Violation, Violations
 
 
 class TestViolation:

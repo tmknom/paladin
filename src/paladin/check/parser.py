@@ -6,9 +6,10 @@
 import ast
 from pathlib import Path
 
-from paladin.check.types import ParsedFile, ParsedFiles, TargetFiles
+from paladin.check.types import TargetFiles
 from paladin.foundation.log import log
 from paladin.protocol.fs import TextFileSystemReaderProtocol
+from paladin.source.types import ParsedFile, ParsedFiles
 
 
 class AstParser:
