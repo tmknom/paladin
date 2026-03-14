@@ -4,10 +4,10 @@
 不変性、厳格性、堅牢性を保証する設定を一元化する。
 """
 
-from pydantic import BaseModel, ConfigDict
+import pydantic
 
 
-class CoreModel(BaseModel):
+class CoreModel(pydantic.BaseModel):
     """不変かつ厳格なpydanticモデル基底
 
     Configuration:
@@ -17,7 +17,7 @@ class CoreModel(BaseModel):
         - frozen=True: インスタンス生成後の変更を禁止（不変オブジェクト）
     """
 
-    model_config = ConfigDict(
+    model_config = pydantic.ConfigDict(
         extra="forbid",
         populate_by_name=True,
         str_strip_whitespace=True,
