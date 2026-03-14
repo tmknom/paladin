@@ -15,6 +15,9 @@ class TestRuleProtocol:
                     rule_id="stub-rule",
                     rule_name="Stub Rule",
                     summary="スタブルール",
+                    intent="スタブ意図",
+                    guidance="スタブ見方",
+                    suggestion="スタブ修正方向",
                 )
 
             def check(self, parsed_file: ParsedFile) -> tuple[Violation, ...]:

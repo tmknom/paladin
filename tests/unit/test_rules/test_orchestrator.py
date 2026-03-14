@@ -60,6 +60,9 @@ class TestRulesOrchestrator:
         assert "Rule ID:" in result
         assert "Name:" in result
         assert "Summary:" in result
+        assert "Intent:" in result
+        assert "Guidance:" in result
+        assert "Suggestion:" in result
 
     def test_orchestrate_エッジケース_存在しないrule_idでエラーメッセージを返すこと(self):
         # Arrange

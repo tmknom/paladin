@@ -28,6 +28,9 @@ class TestRequireQualifiedThirdPartyRuleMeta:
             result.summary
             == "サードパーティライブラリの直接インポートとエイリアスインポートを禁止する"
         )
+        assert result.intent != ""
+        assert result.guidance != ""
+        assert result.suggestion != ""
 
 
 class TestRequireQualifiedThirdPartyRuleCheckFromImport:

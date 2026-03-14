@@ -18,6 +18,9 @@ class NoLocalImportRule:
             rule_id="no-local-import",
             rule_name="No Local Import",
             summary="ローカルインポートの使用を禁止する",
+            intent="import 文をモジュールのトップレベルに集約し、依存関係の一覧性を確保する",
+            guidance="関数・メソッド・クラス内に import 文が書かれている箇所を確認する",
+            suggestion="ファイル冒頭のインポートセクションに import 文を移動する",
         )
 
     @property

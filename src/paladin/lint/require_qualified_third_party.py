@@ -21,6 +21,9 @@ class RequireQualifiedThirdPartyRule:
             rule_id="require-qualified-third-party",
             rule_name="Require Qualified Third Party",
             summary="サードパーティライブラリの直接インポートとエイリアスインポートを禁止する",
+            intent="外部依存の境界を明示し、サードパーティライブラリの使用箇所を追跡可能にする",
+            guidance="from X import Y や import X as Y の形式でサードパーティが使われている箇所を確認する",
+            suggestion="import X の完全修飾インポートに書き換え、使用箇所を X.Y 形式に修正する",
         )
 
     @property

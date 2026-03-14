@@ -25,6 +25,9 @@ class TestNoLocalImportRuleMeta:
         assert result.rule_id == "no-local-import"
         assert result.rule_name == "No Local Import"
         assert result.summary == "ローカルインポートの使用を禁止する"
+        assert result.intent != ""
+        assert result.guidance != ""
+        assert result.suggestion != ""
 
 
 class TestNoLocalImportRuleCheck:
