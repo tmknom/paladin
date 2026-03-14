@@ -10,4 +10,3 @@
 | ルール名 | 概要 |
 |----------|------|
 | [no-direct-internal-import](no-direct-internal-import.md) | 他パッケージの内部モジュールへの直接参照を禁止する |
-| [no-local-import](no-local-import.md) | ファイル冒頭以外の場所での import を禁止する |
