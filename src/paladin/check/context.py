@@ -6,6 +6,8 @@
 from dataclasses import dataclass
 from pathlib import Path
 
+from paladin.check.types import OutputFormat
+
 
 @dataclass(frozen=True)
 class CheckContext:
@@ -16,6 +18,8 @@ class CheckContext:
 
     Attributes:
         targets: CLIから受け取ったターゲットパス群（ファイルまたはディレクトリ）
+        format: チェック結果の出力フォーマット
     """
 
     targets: tuple[Path, ...]
+    format: OutputFormat = OutputFormat.TEXT

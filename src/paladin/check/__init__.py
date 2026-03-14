@@ -11,6 +11,7 @@ from paladin.check.context import CheckContext
 from paladin.check.provider import CheckOrchestratorProvider
 from paladin.check.result import CheckReport, CheckStatus, CheckSummary
 from paladin.check.rule.types import RuleMeta, Violation, Violations
+from paladin.check.types import OutputFormat
 
 __all__ = [
     "CheckContext",
@@ -18,6 +19,7 @@ __all__ = [
     "CheckReport",
     "CheckStatus",
     "CheckSummary",
+    "OutputFormat",
     "RuleMeta",
     "Violation",
     "Violations",

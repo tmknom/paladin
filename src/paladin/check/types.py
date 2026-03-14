@@ -3,6 +3,7 @@
 import ast
 from collections.abc import Iterator
 from dataclasses import dataclass
+from enum import Enum
 from pathlib import Path
 
 
@@ -48,3 +49,10 @@ class ParsedFiles:
     def __iter__(self) -> Iterator[ParsedFile]:
         """解析済みファイルをイテレーションする"""
         return iter(self.files)
+
+
+class OutputFormat(Enum):
+    """チェック結果の出力フォーマット"""
+
+    TEXT = "text"
+    JSON = "json"

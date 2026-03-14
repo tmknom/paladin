@@ -1,11 +1,12 @@
 """CheckReportFormatterクラスのテスト"""
 
+import json
 from pathlib import Path
 
-from paladin.check.formatter import CheckReportFormatter
+from paladin.check.formatter import CheckFormatterFactory, CheckJsonFormatter, CheckReportFormatter
 from paladin.check.result import CheckResult
 from paladin.check.rule.types import Violation, Violations
-from paladin.check.types import ParsedFiles, TargetFiles
+from paladin.check.types import OutputFormat, ParsedFiles, TargetFiles
 
 
 def _make_violation(
@@ -121,3 +122,153 @@ class TestCheckReportFormatter:
         # Assert
         assert "by_rule: rule-a=2, rule-b=1" in report.text
         assert "by_file: a/__init__.py=1, b/__init__.py=2" in report.text
+
+
+class TestCheckJsonFormatter:
+    """CheckJsonFormatterクラスのテスト"""
+
+    def test_json_format_正常系_違反なしでstatus_okとexit_code_0のJSON文字列を返すこと(self):
+        # Arrange
+        result = _make_check_result(())
+
+        # Act
+        report = CheckJsonFormatter().format(result)
+
+        # Assert
+        assert '"status": "ok"' in report.text
+        assert '"total_violations": 0' in report.text
+        assert report.exit_code == 0
+
+    def test_json_format_正常系_違反ありでstatus_violationsとexit_code_1のJSON文字列を返すこと(
+        self,
+    ):
+        # Arrange
+        v = _make_violation()
+        result = _make_check_result((v,))
+
+        # Act
+        report = CheckJsonFormatter().format(result)
+
+        # Assert
+        assert '"status": "violations"' in report.text
+        assert report.exit_code == 1
+
+    def test_json_format_正常系_diagnosticsに全違反の詳細が含まれること(self):
+        # Arrange
+        v = _make_violation()
+        result = _make_check_result((v,))
+
+        # Act
+        report = CheckJsonFormatter().format(result)
+
+        # Assert
+        data = json.loads(report.text)
+        diag = data["diagnostics"][0]
+        assert "file" in diag
+        assert "line" in diag
+        assert "column" in diag
+        assert "rule_id" in diag
+        assert "rule_name" in diag
+        assert "message" in diag
+        assert "reason" in diag
+        assert "suggestion" in diag
+
+    def test_json_format_正常系_summaryにby_ruleとby_fileが含まれること(self):
+        # Arrange
+        v1 = _make_violation("a/__init__.py", rule_id="rule-a", rule_name="Rule A")
+        v2 = _make_violation("b/__init__.py", rule_id="rule-a", rule_name="Rule A")
+        v3 = _make_violation("b/__init__.py", rule_id="rule-b", rule_name="Rule B")
+        result = _make_check_result((v1, v2, v3))
+
+        # Act
+        report = CheckJsonFormatter().format(result)
+
+        # Assert
+        data = json.loads(report.text)
+        assert data["summary"]["by_rule"]["rule-a"] == 2
+        assert data["summary"]["by_rule"]["rule-b"] == 1
+        assert data["summary"]["by_file"]["a/__init__.py"] == 1
+        assert data["summary"]["by_file"]["b/__init__.py"] == 2
+
+    def test_json_format_エッジケース_同一入力に対してJSON構造が安定していること(self):
+        # Arrange
+        v = _make_violation()
+        result = _make_check_result((v,))
+        formatter = CheckJsonFormatter()
+
+        # Act
+        report1 = formatter.format(result)
+        report2 = formatter.format(result)
+
+        # Assert
+        assert report1.text == report2.text
+
+    def test_json_format_正常系_fileフィールドがPath型から文字列に変換されること(self):
+        # Arrange
+        v = _make_violation(file="src/paladin/__init__.py")
+        result = _make_check_result((v,))
+
+        # Act
+        report = CheckJsonFormatter().format(result)
+
+        # Assert
+        data = json.loads(report.text)
+        assert isinstance(data["diagnostics"][0]["file"], str)
+
+    def test_json_format_正常系_出力がvalid_JSONであること(self):
+        # Arrange
+        v = _make_violation()
+        result = _make_check_result((v,))
+
+        # Act
+        report = CheckJsonFormatter().format(result)
+
+        # Assert
+        json.loads(report.text)  # 例外なくパースできることを検証
+
+
+class TestCheckFormatterFactory:
+    """CheckFormatterFactoryクラスのテスト"""
+
+    def test_factory_format_正常系_TEXT指定でtext形式のCheckReportを返すこと(self):
+        # Arrange
+        result = _make_check_result(())
+
+        # Act
+        report = CheckFormatterFactory().format(result, OutputFormat.TEXT)
+
+        # Assert
+        assert "status: ok" in report.text
+
+    def test_factory_format_正常系_JSON指定でJSON形式のCheckReportを返すこと(self):
+        # Arrange
+        result = _make_check_result(())
+
+        # Act
+        report = CheckFormatterFactory().format(result, OutputFormat.JSON)
+
+        # Assert
+        data = json.loads(report.text)
+        assert "status" in data
+
+    def test_factory_format_正常系_TEXT指定で違反ありのexit_code_1を返すこと(self):
+        # Arrange
+        v = _make_violation()
+        result = _make_check_result((v,))
+
+        # Act
+        report = CheckFormatterFactory().format(result, OutputFormat.TEXT)
+
+        # Assert
+        assert report.exit_code == 1
+
+    def test_factory_format_正常系_JSON指定で違反ありのexit_code_1を返すこと(self):
+        # Arrange
+        v = _make_violation()
+        result = _make_check_result((v,))
+
+        # Act
+        report = CheckFormatterFactory().format(result, OutputFormat.JSON)
+
+        # Assert
+        assert report.exit_code == 1

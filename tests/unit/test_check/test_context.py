@@ -1,6 +1,7 @@
 from pathlib import Path
 
 from paladin.check.context import CheckContext
+from paladin.check.types import OutputFormat
 
 
 class TestCheckContext:
@@ -15,3 +16,17 @@ class TestCheckContext:
 
         # Assert
         assert context.targets == targets
+
+    def test_init_正常系_format属性がデフォルトでTEXTであること(self):
+        # Arrange & Act
+        context = CheckContext(targets=(Path("src/"),))
+
+        # Assert
+        assert context.format == OutputFormat.TEXT
+
+    def test_init_正常系_format属性にJSONを指定できること(self):
+        # Arrange & Act
+        context = CheckContext(targets=(Path("src/"),), format=OutputFormat.JSON)
+
+        # Assert
+        assert context.format == OutputFormat.JSON

@@ -1,7 +1,7 @@
 import ast
 from pathlib import Path
 
-from paladin.check.types import ParsedFile, ParsedFiles, TargetFiles
+from paladin.check.types import OutputFormat, ParsedFile, ParsedFiles, TargetFiles
 
 
 class TestTargetFiles:
@@ -95,3 +95,13 @@ class TestParsedFiles:
 
         # Assert
         assert result == 0
+
+
+class TestOutputFormat:
+    """OutputFormatクラスのテスト"""
+
+    def test_output_format_正常系_TEXT値がtextであること(self):
+        assert OutputFormat.TEXT.value == "text"
+
+    def test_output_format_正常系_JSON値がjsonであること(self):
+        assert OutputFormat.JSON.value == "json"

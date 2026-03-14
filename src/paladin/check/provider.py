@@ -13,12 +13,12 @@
     │   ├── NoLocalImportRule
     │   ├── RequireQualifiedThirdPartyRule(root_packages=("paladin",))
     │   └── RuleRunner(rules=(...))
-    ├── CheckReportFormatter
-    └── CheckOrchestrator(collector=FileCollector, parser=AstParser, runner=RuleRunner, formatter=CheckReportFormatter)
+    ├── CheckFormatterFactory
+    └── CheckOrchestrator(collector=FileCollector, parser=AstParser, runner=RuleRunner, formatter=CheckFormatterFactory)
 """
 
 from paladin.check.collector import FileCollector
-from paladin.check.formatter import CheckReportFormatter
+from paladin.check.formatter import CheckFormatterFactory
 from paladin.check.orchestrator import CheckOrchestrator
 from paladin.check.parser import AstParser
 from paladin.check.rule.no_local_import import NoLocalImportRule
@@ -50,7 +50,7 @@ class CheckOrchestratorProvider:
             collector=FileCollector(),
             parser=parser,
             runner=runner,
-            formatter=CheckReportFormatter(),
+            formatter=CheckFormatterFactory(),
         )
 
     def _create_runner(self) -> RuleRunner:
