@@ -44,3 +44,17 @@ class TestCheckContext:
 
         # Assert
         assert context.ignore_rules == frozenset()
+
+    def test_CheckContext_正常系_has_cli_targetsをTrueに設定できること(self):
+        # Arrange & Act
+        context = CheckContext(targets=(Path("src/"),), has_cli_targets=True)
+
+        # Assert
+        assert context.has_cli_targets is True
+
+    def test_CheckContext_正常系_デフォルトでhas_cli_targetsがFalseであること(self):
+        # Arrange & Act
+        context = CheckContext(targets=(Path("src/"),))
+
+        # Assert
+        assert context.has_cli_targets is False

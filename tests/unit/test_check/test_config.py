@@ -44,6 +44,28 @@ class TestProjectConfig:
         # Assert
         assert config.rules == {}
 
+    def test_ProjectConfig_正常系_includeフィールドを保持できること(self):
+        # Arrange / Act
+        config = ProjectConfig(include=("src/",))
+
+        # Assert
+        assert config.include == ("src/",)
+
+    def test_ProjectConfig_正常系_excludeフィールドを保持できること(self):
+        # Arrange / Act
+        config = ProjectConfig(exclude=(".venv/",))
+
+        # Assert
+        assert config.exclude == (".venv/",)
+
+    def test_ProjectConfig_正常系_デフォルトでincludeとexcludeが空タプルであること(self):
+        # Arrange / Act
+        config = ProjectConfig()
+
+        # Assert
+        assert config.include == ()
+        assert config.exclude == ()
+
     def test_ProjectConfig_正常系_rulesフィールドを保持できること(self):
         # Arrange / Act
         config = ProjectConfig(rules={"no-relative-import": False})
@@ -265,6 +287,116 @@ no-relative-import = false
         # Assert: rules が正しく読み込まれている
         assert result.rules == {"no-relative-import": False}
         assert result.per_file_ignores == ()
+
+    def test_load_正常系_includeを含むProjectConfigを返すこと(self):
+        # Arrange
+        toml_content = """\
+[tool.paladin]
+include = ["src/"]
+"""
+        reader = InMemoryFsReader(content=toml_content)
+        loader = ProjectConfigLoader(reader=reader)
+
+        # Act
+        result = loader.load()
+
+        # Assert
+        assert result.include == ("src/",)
+
+    def test_load_正常系_excludeを含むProjectConfigを返すこと(self):
+        # Arrange
+        toml_content = """\
+[tool.paladin]
+exclude = [".venv/"]
+"""
+        reader = InMemoryFsReader(content=toml_content)
+        loader = ProjectConfigLoader(reader=reader)
+
+        # Act
+        result = loader.load()
+
+        # Assert
+        assert result.exclude == (".venv/",)
+
+    def test_load_正常系_includeとexcludeの両方を読み込めること(self):
+        # Arrange
+        toml_content = """\
+[tool.paladin]
+include = ["src/"]
+exclude = [".venv/"]
+"""
+        reader = InMemoryFsReader(content=toml_content)
+        loader = ProjectConfigLoader(reader=reader)
+
+        # Act
+        result = loader.load()
+
+        # Assert
+        assert result.include == ("src/",)
+        assert result.exclude == (".venv/",)
+
+    def test_load_正常系_複数のincludeパスを読み込めること(self):
+        # Arrange
+        toml_content = """\
+[tool.paladin]
+include = ["src/", "lib/"]
+"""
+        reader = InMemoryFsReader(content=toml_content)
+        loader = ProjectConfigLoader(reader=reader)
+
+        # Act
+        result = loader.load()
+
+        # Assert
+        assert result.include == ("src/", "lib/")
+
+    def test_load_エッジケース_includeが未指定の場合空タプルになること(self):
+        # Arrange
+        toml_content = """\
+[tool.paladin]
+other_key = "value"
+"""
+        reader = InMemoryFsReader(content=toml_content)
+        loader = ProjectConfigLoader(reader=reader)
+
+        # Act
+        result = loader.load()
+
+        # Assert
+        assert result.include == ()
+
+    def test_load_エッジケース_excludeが未指定の場合空タプルになること(self):
+        # Arrange
+        toml_content = """\
+[tool.paladin]
+other_key = "value"
+"""
+        reader = InMemoryFsReader(content=toml_content)
+        loader = ProjectConfigLoader(reader=reader)
+
+        # Act
+        result = loader.load()
+
+        # Assert
+        assert result.exclude == ()
+
+    def test_load_エッジケース_tool_paladinセクションがない場合includeとexcludeが空タプルになること(
+        self,
+    ):
+        # Arrange
+        toml_content = """\
+[tool.other]
+key = "value"
+"""
+        reader = InMemoryFsReader(content=toml_content)
+        loader = ProjectConfigLoader(reader=reader)
+
+        # Act
+        result = loader.load()
+
+        # Assert
+        assert result.include == ()
+        assert result.exclude == ()
 
 
 class TestRuleFilter:

@@ -46,7 +46,9 @@ app = typer.Typer(no_args_is_help=True)
 @app.command()
 def check(
     ctx: typer.Context,
-    targets: Annotated[list[Path], typer.Argument(help="解析対象のファイルまたはディレクトリ")],
+    targets: Annotated[
+        list[Path] | None, typer.Argument(help="解析対象のファイルまたはディレクトリ")
+    ] = None,
     format: Annotated[OutputFormat, typer.Option("--format", help="出力形式")] = OutputFormat.TEXT,
     ignore_rule: Annotated[
         list[str] | None, typer.Option("--ignore-rule", help="無視するルール ID（複数回指定可）")
@@ -54,7 +56,8 @@ def check(
 ) -> None:
     """解析対象の .py ファイルを診断し、違反レポートを出力する"""
     context = CheckContext(
-        targets=tuple(targets),
+        targets=tuple(targets) if targets else (),
+        has_cli_targets=targets is not None and len(targets) > 0,
         format=format,
         ignore_rules=frozenset(ignore_rule or []),
     )
