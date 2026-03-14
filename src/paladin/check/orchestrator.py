@@ -6,7 +6,7 @@
 from pathlib import Path
 
 from paladin.check.collector import FileCollector
-from paladin.check.config import ConfigIgnoreResolver, ProjectConfigLoader
+from paladin.check.config import ConfigIgnoreResolver, ProjectConfigLoader, RuleFilter
 from paladin.check.context import CheckContext
 from paladin.check.formatter import CheckFormatterFactory
 from paladin.check.ignore import (
@@ -42,6 +42,7 @@ class CheckOrchestrator:
         formatter: CheckFormatterFactory,
         violation_filter: ViolationFilter,
         config_loader: ProjectConfigLoader,
+        rule_filter: RuleFilter,
     ) -> None:
         """CheckOrchestratorを初期化
 
@@ -52,6 +53,7 @@ class CheckOrchestrator:
             formatter: レポートフォーマッター
             violation_filter: ignore フィルター
             config_loader: プロジェクト設定ローダー
+            rule_filter: ルール有効/無効フィルター
         """
         self.collector = collector
         self.parser = parser
@@ -59,6 +61,7 @@ class CheckOrchestrator:
         self.formatter = formatter
         self.violation_filter = violation_filter
         self.config_loader = config_loader
+        self.rule_filter = rule_filter
 
     @log
     def orchestrate(self, context: CheckContext) -> CheckReport:
@@ -72,8 +75,9 @@ class CheckOrchestrator:
         """
         target_files = self.collector.collect(context.targets)
         parsed_files = self.parser.parse_all(target_files)
-        violations = self.runner.run(parsed_files)
         config = self.config_loader.load()
+        disabled_rule_ids = self.rule_filter.resolve_disabled_rules(config, self.runner.rule_ids)
+        violations = self.runner.run(parsed_files, disabled_rule_ids=disabled_rule_ids)
         file_paths = tuple(pf.file_path for pf in parsed_files)
         config_directives = ConfigIgnoreResolver().resolve(config, file_paths)
         comment_directives = FileIgnoreParser().parse_all(parsed_files)

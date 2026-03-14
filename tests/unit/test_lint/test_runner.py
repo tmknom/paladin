@@ -87,3 +87,76 @@ class TestRuleRunner:
         # Assert
         assert isinstance(result, Violations)
         assert len(result) == 2
+
+    def test_run_正常系_disabled_rule_idsに該当するルールの違反をスキップすること(self):
+        # Arrange
+        violation_a = Violation(
+            file=Path("src/__init__.py"),
+            line=1,
+            column=0,
+            rule_id="rule-a",
+            rule_name="Rule A",
+            message="msg",
+            reason="reason",
+            suggestion="suggestion",
+        )
+        violation_b = Violation(
+            file=Path("src/__init__.py"),
+            line=1,
+            column=0,
+            rule_id="rule-b",
+            rule_name="Rule B",
+            message="msg",
+            reason="reason",
+            suggestion="suggestion",
+        )
+        rule_a = FakeRule(rule_id="rule-a", violations=(violation_a,))
+        rule_b = FakeRule(rule_id="rule-b", violations=(violation_b,))
+        runner = RuleRunner(rules=(rule_a, rule_b))
+        parsed_files = _make_parsed_files(("x = 1\n", "__init__.py"))
+
+        # Act
+        result = runner.run(parsed_files, disabled_rule_ids=frozenset({"rule-a"}))
+
+        # Assert
+        assert len(result) == 1
+        assert result.items[0].rule_id == "rule-b"
+
+    def test_run_エッジケース_disabled_rule_idsが空の場合全ルール実行すること(self):
+        # Arrange
+        violation = _make_violation()
+        rule_a = FakeRule(rule_id="rule-a", violations=(violation,))
+        rule_b = FakeRule(rule_id="rule-b", violations=(violation,))
+        runner = RuleRunner(rules=(rule_a, rule_b))
+        parsed_files = _make_parsed_files(("x = 1\n", "__init__.py"))
+
+        # Act
+        result = runner.run(parsed_files, disabled_rule_ids=frozenset())
+
+        # Assert: 両ルールが実行される
+        assert len(result) == 2
+
+    def test_run_正常系_disabled_rule_idsのデフォルト値で全ルール実行すること(self):
+        # Arrange
+        violation = _make_violation()
+        rule = FakeRule(violations=(violation,))
+        runner = RuleRunner(rules=(rule,))
+        parsed_files = _make_parsed_files(("x = 1\n", "__init__.py"))
+
+        # Act: デフォルト引数（引数なし）で呼び出す
+        result = runner.run(parsed_files)
+
+        # Assert
+        assert len(result) == 1
+
+    def test_rule_ids_正常系_登録ルールのIDセットを返すこと(self):
+        # Arrange
+        rule_a = FakeRule(rule_id="rule-a")
+        rule_b = FakeRule(rule_id="rule-b")
+        runner = RuleRunner(rules=(rule_a, rule_b))
+
+        # Act
+        result = runner.rule_ids
+
+        # Assert
+        assert result == frozenset({"rule-a", "rule-b"})
