@@ -4,6 +4,7 @@
 """
 
 from paladin.check.collector import FileCollector
+from paladin.check.config import ProjectConfigLoader
 from paladin.check.formatter import CheckFormatterFactory
 from paladin.check.ignore import ViolationFilter
 from paladin.check.orchestrator import CheckOrchestrator
@@ -35,12 +36,14 @@ class CheckOrchestratorProvider:
         reader = TextFileSystemReader()
         parser = AstParser(reader=reader)
         runner = self._create_runner()
+        config_loader = ProjectConfigLoader(reader=TextFileSystemReader())
         return CheckOrchestrator(
             collector=FileCollector(),
             parser=parser,
             runner=runner,
             formatter=CheckFormatterFactory(),
             violation_filter=ViolationFilter(),
+            config_loader=config_loader,
         )
 
     def _create_runner(self) -> RuleRunner:

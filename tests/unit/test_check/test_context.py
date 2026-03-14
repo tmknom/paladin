@@ -30,3 +30,17 @@ class TestCheckContext:
 
         # Assert
         assert context.format == OutputFormat.JSON
+
+    def test_init_正常系_ignore_rulesを保持できること(self):
+        # Arrange & Act
+        context = CheckContext(targets=(Path("src/"),), ignore_rules=frozenset({"rule-a"}))
+
+        # Assert
+        assert context.ignore_rules == frozenset({"rule-a"})
+
+    def test_init_エッジケース_ignore_rulesのデフォルトが空frozensetであること(self):
+        # Arrange & Act
+        context = CheckContext(targets=(Path("src/"),))
+
+        # Assert
+        assert context.ignore_rules == frozenset()

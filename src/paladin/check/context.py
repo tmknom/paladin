@@ -19,7 +19,9 @@ class CheckContext:
     Attributes:
         targets: CLIから受け取ったターゲットパス群（ファイルまたはディレクトリ）
         format: チェック結果の出力フォーマット
+        ignore_rules: 無視するルールID群
     """
 
     targets: tuple[Path, ...]
     format: OutputFormat = OutputFormat.TEXT
+    ignore_rules: frozenset[str] = frozenset()

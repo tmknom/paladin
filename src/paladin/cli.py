@@ -48,9 +48,16 @@ def check(
     ctx: typer.Context,
     targets: Annotated[list[Path], typer.Argument(help="解析対象のファイルまたはディレクトリ")],
     format: Annotated[OutputFormat, typer.Option("--format", help="出力形式")] = OutputFormat.TEXT,
+    ignore_rule: Annotated[
+        list[str] | None, typer.Option("--ignore-rule", help="無視するルール ID（複数回指定可）")
+    ] = None,
 ) -> None:
     """解析対象の .py ファイルを診断し、違反レポートを出力する"""
-    context = CheckContext(targets=tuple(targets), format=format)
+    context = CheckContext(
+        targets=tuple(targets),
+        format=format,
+        ignore_rules=frozenset(ignore_rule or []),
+    )
     report = CheckOrchestratorProvider().provide().orchestrate(context)
     typer.echo(report.text)
     raise typer.Exit(code=report.exit_code)

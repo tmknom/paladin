@@ -213,6 +213,7 @@ class ViolationFilter:
         violations: Violations,
         directives: tuple[FileIgnoreDirective, ...],
         line_directives: tuple[LineIgnoreDirective, ...] = (),
+        ignore_rules: frozenset[str] = frozenset(),
     ) -> Violations:
         """Ignore 対象の違反を除外した新しい Violations を返す
 
@@ -220,6 +221,7 @@ class ViolationFilter:
             violations: フィルタリング対象の違反群
             directives: ファイルごとの ignore ディレクティブ群
             line_directives: 行単位の ignore ディレクティブ群
+            ignore_rules: CLI から指定されたグローバル ignore ルール ID 群
 
         Returns:
             ignore 対象を除外した Violations
@@ -228,10 +230,18 @@ class ViolationFilter:
         filtered = tuple(
             v
             for v in violations
-            if not self._should_ignore_by_file(v, file_directive_map)
+            if not self._should_ignore_by_cli(v, ignore_rules)
+            and not self._should_ignore_by_file(v, file_directive_map)
             and not self._should_ignore_by_line(v, line_directives)
         )
         return Violations(items=filtered)
+
+    def _should_ignore_by_cli(
+        self,
+        violation: Violation,
+        ignore_rules: frozenset[str],
+    ) -> bool:
+        return violation.rule_id in ignore_rules
 
     def _should_ignore_by_file(
         self,

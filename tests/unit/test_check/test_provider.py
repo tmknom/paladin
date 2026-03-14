@@ -1,4 +1,5 @@
 from paladin.check import CheckOrchestratorProvider
+from paladin.check.config import ProjectConfigLoader
 from paladin.check.formatter import CheckFormatterFactory
 from paladin.check.ignore import ViolationFilter
 from paladin.check.orchestrator import CheckOrchestrator
@@ -43,3 +44,10 @@ class TestCheckOrchestratorProvider:
 
         # Assert
         assert isinstance(result.violation_filter, ViolationFilter)
+
+    def test_provide_正常系_ProjectConfigLoaderが注入されたOrchestratorを返すこと(self):
+        # Act
+        result = CheckOrchestratorProvider().provide()
+
+        # Assert
+        assert isinstance(result.config_loader, ProjectConfigLoader)
