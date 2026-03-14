@@ -16,6 +16,7 @@ from paladin.check.ignore import (
     ViolationFilter,
 )
 from paladin.check.parser import AstParser
+from paladin.check.path import PathExcluder, TargetResolver
 from paladin.check.result import CheckReport, CheckResult
 from paladin.foundation.log import log
 from paladin.lint import RuleRunner
@@ -25,10 +26,13 @@ class CheckOrchestrator:
     """対象列挙と AST 生成の処理フローを制御するオーケストレーター
 
     Flow:
-        1. FileCollector で .py ファイルを列挙
-        2. AstParser で各ファイルの AST を生成
-        3. RuleRunner でルールを適用し Violations を収集
-        4. CheckReportFormatter で CheckReport に変換して返す
+        1. ProjectConfigLoader で設定を読み込む
+        2. TargetResolver で解析対象パスを解決
+        3. FileCollector で .py ファイルを列挙
+        4. PathExcluder で exclude パターンを適用
+        5. AstParser で各ファイルの AST を生成
+        6. RuleRunner でルールを適用し Violations を収集
+        7. CheckReportFormatter で CheckReport に変換して返す
 
     Returns:
         CheckReport: フォーマット済みレポート文字列と終了コードを含む実行結果
@@ -43,6 +47,8 @@ class CheckOrchestrator:
         violation_filter: ViolationFilter,
         config_loader: ProjectConfigLoader,
         rule_filter: RuleFilter,
+        target_resolver: TargetResolver,
+        path_excluder: PathExcluder,
     ) -> None:
         """CheckOrchestratorを初期化
 
@@ -54,6 +60,8 @@ class CheckOrchestrator:
             violation_filter: ignore フィルター
             config_loader: プロジェクト設定ローダー
             rule_filter: ルール有効/無効フィルター
+            target_resolver: CLI 引数と include を解決するリゾルバー
+            path_excluder: exclude パターンによるファイル除外
         """
         self.collector = collector
         self.parser = parser
@@ -62,6 +70,8 @@ class CheckOrchestrator:
         self.violation_filter = violation_filter
         self.config_loader = config_loader
         self.rule_filter = rule_filter
+        self.target_resolver = target_resolver
+        self.path_excluder = path_excluder
 
     @log
     def orchestrate(self, context: CheckContext) -> CheckReport:
@@ -73,9 +83,11 @@ class CheckOrchestrator:
         Returns:
             Check処理のフォーマット済みレポート
         """
-        target_files = self.collector.collect(context.targets)
-        parsed_files = self.parser.parse_all(target_files)
         config = self.config_loader.load()
+        resolved_targets = self.target_resolver.resolve(context, config)
+        target_files = self.collector.collect(resolved_targets)
+        target_files = self.path_excluder.exclude(target_files, config.exclude)
+        parsed_files = self.parser.parse_all(target_files)
         disabled_rule_ids = self.rule_filter.resolve_disabled_rules(config, self.runner.rule_ids)
         violations = self.runner.run(parsed_files, disabled_rule_ids=disabled_rule_ids)
         file_paths = tuple(pf.file_path for pf in parsed_files)

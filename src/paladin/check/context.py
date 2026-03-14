@@ -25,3 +25,4 @@ class CheckContext:
     targets: tuple[Path, ...]
     format: OutputFormat = OutputFormat.TEXT
     ignore_rules: frozenset[str] = frozenset()
+    has_cli_targets: bool = False

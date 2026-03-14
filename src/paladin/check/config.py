@@ -14,6 +14,25 @@ from paladin.foundation.fs.error import FileSystemError
 from paladin.lint.protocol import Rule
 from paladin.protocol.fs import TextFileSystemReaderProtocol
 
+
+def normalize_glob_pattern(pattern: str) -> str:
+    """相対 glob パターンに **/ を前置し、絶対パスにもマッチできるようにする
+
+    PurePath.full_match() は相対パターンを先頭固定で照合するため、
+    絶対パスに対して "tests/**" のような相対パターンはマッチしない。
+    "**/" を前置することで、パスのどの位置でもマッチするようになる。
+
+    Args:
+        pattern: glob パターン
+
+    Returns:
+        正規化済みの glob パターン
+    """
+    if pattern.startswith("/") or pattern.startswith("**/"):
+        return pattern
+    return "**/" + pattern
+
+
 logger = logging.getLogger(__name__)
 
 
@@ -32,6 +51,8 @@ class ProjectConfig:
 
     per_file_ignores: tuple[PerFileIgnoreEntry, ...] = field(default=())
     rules: dict[str, bool] = field(default_factory=lambda: {})
+    include: tuple[str, ...] = field(default=())
+    exclude: tuple[str, ...] = field(default=())
 
 
 class ProjectConfigLoader:
@@ -59,7 +80,34 @@ class ProjectConfigLoader:
         data = tomllib.loads(content)
         per_file_ignores = self._parse_per_file_ignores(data)
         rules = self._parse_rules(data)
-        return ProjectConfig(per_file_ignores=per_file_ignores, rules=rules)
+        include, exclude = self._parse_include_exclude(data)
+        return ProjectConfig(
+            per_file_ignores=per_file_ignores,
+            rules=rules,
+            include=include,
+            exclude=exclude,
+        )
+
+    def _parse_include_exclude(
+        self, data: dict[str, object]
+    ) -> tuple[tuple[str, ...], tuple[str, ...]]:
+        """TOML データから include / exclude をパースする
+
+        Args:
+            data: tomllib.loads() で解析した TOML データ
+
+        Returns:
+            (include, exclude) のタプル。キーが存在しない場合は空タプルを返す
+        """
+        try:
+            tool_section: dict[str, object] = data["tool"]  # type: ignore[assignment]
+            paladin_section: dict[str, object] = tool_section["paladin"]  # type: ignore[assignment,index]
+        except KeyError:
+            return (), ()
+
+        include_raw: list[str] = paladin_section.get("include", [])  # type: ignore[assignment]
+        exclude_raw: list[str] = paladin_section.get("exclude", [])  # type: ignore[assignment]
+        return tuple(include_raw), tuple(exclude_raw)
 
     def _parse_rules(self, data: dict[str, object]) -> dict[str, bool]:
         """TOML データから rules セクションをパースする
@@ -188,7 +236,7 @@ class ConfigIgnoreResolver:
             matched_entries: list[PerFileIgnoreEntry] = [
                 entry
                 for entry in config.per_file_ignores
-                if PurePath(str(file_path)).full_match(self._normalize_pattern(entry.pattern))
+                if PurePath(str(file_path)).full_match(normalize_glob_pattern(entry.pattern))
             ]
             if not matched_entries:
                 continue
@@ -213,20 +261,3 @@ class ConfigIgnoreResolver:
                     )
                 )
         return tuple(result)
-
-    def _normalize_pattern(self, pattern: str) -> str:
-        """相対 glob パターンに **/ を前置し、絶対パスにもマッチできるようにする
-
-        PurePath.full_match() は相対パターンを先頭固定で照合するため、
-        絶対パスに対して "tests/**" のような相対パターンはマッチしない。
-        "**/" を前置することで、パスのどの位置でもマッチするようになる。
-
-        Args:
-            pattern: glob パターン
-
-        Returns:
-            正規化済みの glob パターン
-        """
-        if pattern.startswith("/") or pattern.startswith("**/"):
-            return pattern
-        return "**/" + pattern

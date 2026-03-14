@@ -28,7 +28,7 @@
 | R-082 | 設定ファイルによる全体 Ignore を実装する | Done | |
 | R-083 | ディレクトリ単位の Ignore を実装する | Done | |
 | R-090 | ルール ON/OFF の設定ファイルを実装する | Done | |
-| R-091 | 解析対象パスの include/exclude を実装する | Not Started | |
+| R-091 | 解析対象パスの include/exclude を実装する | Done | |
 | R-092 | ルール個別設定を実装する | Not Started | `root_packages` の上書き。デフォルト値は R-094 |
 | R-093 | ディレクトリ別設定を実装する | Not Started | |
 | R-094 | `root_packages` のデフォルト値を動的に取得する | Not Started | 現在は Provider でハードコード暫定対応済み |

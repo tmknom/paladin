@@ -9,6 +9,7 @@ from paladin.check.formatter import CheckFormatterFactory
 from paladin.check.ignore import ViolationFilter
 from paladin.check.orchestrator import CheckOrchestrator
 from paladin.check.parser import AstParser
+from paladin.check.path import PathExcluder, TargetResolver
 from paladin.foundation.fs.text import TextFileSystemReader
 from paladin.foundation.log import log
 from paladin.lint import (
@@ -45,6 +46,8 @@ class CheckOrchestratorProvider:
             violation_filter=ViolationFilter(),
             config_loader=config_loader,
             rule_filter=RuleFilter(),
+            target_resolver=TargetResolver(),
+            path_excluder=PathExcluder(),
         )
 
     def _create_runner(self) -> RuleRunner:
