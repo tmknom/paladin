@@ -1,4 +1,7 @@
-"""ルールドメインの型定義"""
+"""ルールドメインの型定義
+
+ルール判定の入出力とメタ情報を表す値オブジェクトを定義する。
+"""
 
 from collections.abc import Iterator
 from dataclasses import dataclass

@@ -1,4 +1,7 @@
-"""RuleRegistryの実装"""
+"""ルールメタ情報の管理
+
+登録済みルールの一覧取得・検索機能を提供する。
+"""
 
 from paladin.check.rule.protocol import Rule
 from paladin.check.rule.types import RuleMeta

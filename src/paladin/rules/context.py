@@ -1,4 +1,7 @@
-"""Rules処理の実行時パラメータを保持する値オブジェクト"""
+"""Rules層の実行時パラメータ
+
+CLIから受け取ったパラメータを不変のまま処理完了まで保持する。
+"""
 
 from dataclasses import dataclass
 

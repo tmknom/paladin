@@ -1,4 +1,7 @@
-"""RulesOrchestratorProviderの実装"""
+"""Rules層の Composition Root
+
+具象クラスへの依存を隠蔽し、Rules層の生成ロジックを一元化する。
+"""
 
 from paladin.check.rule.no_local_import import NoLocalImportRule
 from paladin.check.rule.no_relative_import import NoRelativeImportRule

@@ -1,4 +1,7 @@
-"""no-relative-import ルールの実装"""
+"""相対インポート禁止ルール
+
+仕様は docs/rules/no-relative-import.md を参照。
+"""
 
 import ast
 

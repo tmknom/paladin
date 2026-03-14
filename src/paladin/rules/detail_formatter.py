@@ -1,4 +1,7 @@
-"""RulesDetailFormatterの実装"""
+"""ルール詳細のテキスト整形
+
+単一ルールのメタ情報をラベル付き詳細テキストに変換する。
+"""
 
 from paladin.check.rule.types import RuleMeta
 

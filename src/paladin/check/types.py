@@ -1,4 +1,7 @@
-"""Check向けドメインモデル定義"""
+"""Check層のドメインモデル定義
+
+パイプライン各段階の入出力を表す値オブジェクトと出力形式の列挙型を定義する。
+"""
 
 import ast
 from collections.abc import Iterator

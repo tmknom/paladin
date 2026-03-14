@@ -1,20 +1,6 @@
-"""CheckOrchestratorとその依存を一括生成するファクトリー
+"""Check層の Composition Root
 
 具象クラスへの依存を隠蔽し、Check層の生成ロジックを一元化する。
-
-依存グラフ:
-    CheckOrchestratorProvider
-    ├── TextFileSystemReader
-    ├── AstParser(reader=TextFileSystemReader)
-    ├── FileCollector
-    ├── _create_runner()
-    │   ├── RequireAllExportRule
-    │   ├── NoRelativeImportRule
-    │   ├── NoLocalImportRule
-    │   ├── RequireQualifiedThirdPartyRule(root_packages=("paladin",))
-    │   └── RuleRunner(rules=(...))
-    ├── CheckFormatterFactory
-    └── CheckOrchestrator(collector=FileCollector, parser=AstParser, runner=RuleRunner, formatter=CheckFormatterFactory)
 """
 
 from paladin.check.collector import FileCollector

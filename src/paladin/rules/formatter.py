@@ -1,4 +1,7 @@
-"""RulesFormatterの実装"""
+"""ルール一覧のテキスト整形
+
+ルールメタ情報を列幅揃えの一覧テキストに変換する。
+"""
 
 from paladin.check.rule.types import RuleMeta
 

@@ -1,4 +1,7 @@
-"""require-qualified-third-party ルールの実装"""
+"""サードパーティ完全修飾インポート要求ルール
+
+仕様は docs/rules/require-qualified-third-party.md を参照。
+"""
 
 import ast
 import sys
