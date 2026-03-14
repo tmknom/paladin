@@ -268,3 +268,157 @@ class TestConfigIgnoreResolver:
 
         # Assert
         assert result == ()
+
+    def test_resolve_正常系_ディレクトリパターンが絶対パスにマッチすること(self):
+        # Arrange
+        entry = PerFileIgnoreEntry(
+            pattern="tests/**",
+            rule_ids=frozenset({"R-001"}),
+            ignore_all=False,
+        )
+        config = ProjectConfig(per_file_ignores=(entry,))
+        file_paths = (Path("/Users/owner/code/project/tests/test_main.py"),)
+        resolver = ConfigIgnoreResolver()
+
+        # Act
+        result = resolver.resolve(config=config, file_paths=file_paths)
+
+        # Assert
+        assert len(result) == 1
+        directive = result[0]
+        assert directive.file_path == Path("/Users/owner/code/project/tests/test_main.py")
+        assert directive.ignored_rules == frozenset({"R-001"})
+
+    def test_resolve_正常系_ディレクトリパターンがネストした絶対パスにマッチすること(self):
+        # Arrange
+        entry = PerFileIgnoreEntry(
+            pattern="tests/**",
+            rule_ids=frozenset({"R-001"}),
+            ignore_all=False,
+        )
+        config = ProjectConfig(per_file_ignores=(entry,))
+        file_paths = (Path("/Users/owner/code/project/tests/unit/test_check/test_main.py"),)
+        resolver = ConfigIgnoreResolver()
+
+        # Act
+        result = resolver.resolve(config=config, file_paths=file_paths)
+
+        # Assert
+        assert len(result) == 1
+        directive = result[0]
+        assert directive.file_path == Path(
+            "/Users/owner/code/project/tests/unit/test_check/test_main.py"
+        )
+        assert directive.ignored_rules == frozenset({"R-001"})
+
+    def test_resolve_正常系_ディレクトリパターンが絶対パスのマッチしないファイルを除外すること(
+        self,
+    ):
+        # Arrange
+        entry = PerFileIgnoreEntry(
+            pattern="tests/**",
+            rule_ids=frozenset({"R-001"}),
+            ignore_all=False,
+        )
+        config = ProjectConfig(per_file_ignores=(entry,))
+        file_paths = (Path("/Users/owner/code/project/src/main.py"),)
+        resolver = ConfigIgnoreResolver()
+
+        # Act
+        result = resolver.resolve(config=config, file_paths=file_paths)
+
+        # Assert
+        assert result == ()
+
+    def test_resolve_正常系_複数ディレクトリパターンが異なる絶対パスにマッチすること(self):
+        # Arrange
+        entry1 = PerFileIgnoreEntry(
+            pattern="tests/**",
+            rule_ids=frozenset({"R-001"}),
+            ignore_all=False,
+        )
+        entry2 = PerFileIgnoreEntry(
+            pattern="scripts/**",
+            rule_ids=frozenset({"R-002"}),
+            ignore_all=False,
+        )
+        config = ProjectConfig(per_file_ignores=(entry1, entry2))
+        file_paths = (
+            Path("/abs/tests/unit/test_main.py"),
+            Path("/abs/scripts/deploy.py"),
+            Path("/abs/src/main.py"),
+        )
+        resolver = ConfigIgnoreResolver()
+
+        # Act
+        result = resolver.resolve(config=config, file_paths=file_paths)
+
+        # Assert
+        assert len(result) == 2
+        paths = {d.file_path for d in result}
+        assert paths == {
+            Path("/abs/tests/unit/test_main.py"),
+            Path("/abs/scripts/deploy.py"),
+        }
+
+    def test_resolve_正常系_ディレクトリパターンのignore_allが絶対パスで機能すること(self):
+        # Arrange
+        entry = PerFileIgnoreEntry(
+            pattern="tests/**",
+            rule_ids=frozenset(),
+            ignore_all=True,
+        )
+        config = ProjectConfig(per_file_ignores=(entry,))
+        file_paths = (Path("/abs/tests/unit/test_main.py"),)
+        resolver = ConfigIgnoreResolver()
+
+        # Act
+        result = resolver.resolve(config=config, file_paths=file_paths)
+
+        # Assert
+        assert len(result) == 1
+        assert result[0].ignore_all is True
+
+    def test_resolve_正常系_init_py固有パターンが絶対パスでマッチすること(self):
+        # Arrange
+        entry = PerFileIgnoreEntry(
+            pattern="tests/**/__init__.py",
+            rule_ids=frozenset({"R-001"}),
+            ignore_all=False,
+        )
+        config = ProjectConfig(per_file_ignores=(entry,))
+        file_paths = (
+            Path("/abs/tests/__init__.py"),
+            Path("/abs/tests/unit/__init__.py"),
+            Path("/abs/tests/unit/test_main.py"),
+        )
+        resolver = ConfigIgnoreResolver()
+
+        # Act
+        result = resolver.resolve(config=config, file_paths=file_paths)
+
+        # Assert
+        assert len(result) == 2
+        paths = {d.file_path for d in result}
+        assert paths == {
+            Path("/abs/tests/__init__.py"),
+            Path("/abs/tests/unit/__init__.py"),
+        }
+
+    def test_resolve_正常系_ダブルスター始まりのパターンが絶対パスにマッチすること(self):
+        # Arrange: パターンが既に **/ で始まっている場合もマッチすること
+        entry = PerFileIgnoreEntry(
+            pattern="**/tests/**",
+            rule_ids=frozenset({"R-001"}),
+            ignore_all=False,
+        )
+        config = ProjectConfig(per_file_ignores=(entry,))
+        file_paths = (Path("/abs/tests/unit/test_main.py"),)
+        resolver = ConfigIgnoreResolver()
+
+        # Act
+        result = resolver.resolve(config=config, file_paths=file_paths)
+
+        # Assert
+        assert len(result) == 1
+        assert result[0].ignored_rules == frozenset({"R-001"})
