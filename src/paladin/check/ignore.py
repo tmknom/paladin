@@ -1,6 +1,7 @@
-"""ファイル単位の Ignore 機能
+"""ファイル単位・行単位の Ignore 機能
 
 ファイル先頭コメントから ignore-file ディレクティブを抽出し、
+また直前コメントから行単位 ignore ディレクティブを抽出し、
 Violations から該当違反を除外する。
 """
 
@@ -17,6 +18,16 @@ class FileIgnoreDirective:
     """単一ファイルの ignore-file ディレクティブ情報を保持する値オブジェクト"""
 
     file_path: Path
+    ignore_all: bool
+    ignored_rules: frozenset[str]
+
+
+@dataclass(frozen=True)
+class LineIgnoreDirective:
+    """行単位の ignore ディレクティブ情報を保持する値オブジェクト"""
+
+    file_path: Path
+    target_line: int
     ignore_all: bool
     ignored_rules: frozenset[str]
 
@@ -124,28 +135,105 @@ class FileIgnoreParser:
         return tuple(self.parse(pf.file_path, pf.source) for pf in parsed_files)
 
 
+class LineIgnoreParser:
+    """ソーステキストの直前コメントから行単位 ignore ディレクティブを抽出するパーサー"""
+
+    _LINE_DIRECTIVE_PATTERN = re.compile(r"^# paladin: ignore(\[(.+)\])?$")
+
+    def parse(self, file_path: Path, source: str) -> tuple[LineIgnoreDirective, ...]:
+        """ソーステキストから行単位 ignore ディレクティブを抽出する
+
+        Args:
+            file_path: 対象ファイルのパス
+            source: ソーステキスト
+
+        Returns:
+            LineIgnoreDirective のタプル。ディレクティブなしの場合は空タプル
+        """
+        lines = source.splitlines()
+        result: list[LineIgnoreDirective] = []
+
+        for i, line in enumerate(lines):
+            stripped = line.strip()
+            match = self._LINE_DIRECTIVE_PATTERN.match(stripped)
+            if not match:
+                continue
+
+            # 直後の行が存在し、かつ非空行であることを確認する
+            next_index = i + 1
+            if next_index >= len(lines):
+                continue
+            next_line = lines[next_index]
+            if next_line.strip() == "":
+                continue
+
+            rule_spec = match.group(2)
+            if rule_spec is None:
+                result.append(
+                    LineIgnoreDirective(
+                        file_path=file_path,
+                        target_line=next_index + 1,  # 1-indexed
+                        ignore_all=True,
+                        ignored_rules=frozenset(),
+                    )
+                )
+            else:
+                rules = frozenset(r.strip() for r in rule_spec.split(","))
+                result.append(
+                    LineIgnoreDirective(
+                        file_path=file_path,
+                        target_line=next_index + 1,  # 1-indexed
+                        ignore_all=False,
+                        ignored_rules=rules,
+                    )
+                )
+
+        return tuple(result)
+
+    def parse_all(self, parsed_files: ParsedFiles) -> tuple[LineIgnoreDirective, ...]:
+        """複数ファイルのディレクティブをタプルで返す
+
+        Args:
+            parsed_files: 解析済みファイル群
+
+        Returns:
+            全ファイルの LineIgnoreDirective を平坦化したタプル
+        """
+        result: tuple[LineIgnoreDirective, ...] = ()
+        for pf in parsed_files:
+            result = result + self.parse(pf.file_path, pf.source)
+        return result
+
+
 class ViolationFilter:
-    """FileIgnoreDirective に基づいて Violations から ignore 対象の違反を除外するフィルター"""
+    """FileIgnoreDirective / LineIgnoreDirective に基づいて Violations から ignore 対象の違反を除外するフィルター"""
 
     def filter(
         self,
         violations: Violations,
         directives: tuple[FileIgnoreDirective, ...],
+        line_directives: tuple[LineIgnoreDirective, ...] = (),
     ) -> Violations:
         """Ignore 対象の違反を除外した新しい Violations を返す
 
         Args:
             violations: フィルタリング対象の違反群
             directives: ファイルごとの ignore ディレクティブ群
+            line_directives: 行単位の ignore ディレクティブ群
 
         Returns:
             ignore 対象を除外した Violations
         """
-        directive_map = {d.file_path: d for d in directives}
-        filtered = tuple(v for v in violations if not self._should_ignore(v, directive_map))
+        file_directive_map = {d.file_path: d for d in directives}
+        filtered = tuple(
+            v
+            for v in violations
+            if not self._should_ignore_by_file(v, file_directive_map)
+            and not self._should_ignore_by_line(v, line_directives)
+        )
         return Violations(items=filtered)
 
-    def _should_ignore(
+    def _should_ignore_by_file(
         self,
         violation: Violation,
         directive_map: dict[Path, FileIgnoreDirective],
@@ -156,3 +244,19 @@ class ViolationFilter:
         if directive.ignore_all:
             return True
         return violation.rule_id in directive.ignored_rules
+
+    def _should_ignore_by_line(
+        self,
+        violation: Violation,
+        line_directives: tuple[LineIgnoreDirective, ...],
+    ) -> bool:
+        for directive in line_directives:
+            if violation.file != directive.file_path:
+                continue
+            if violation.line != directive.target_line:
+                continue
+            if directive.ignore_all:
+                return True
+            if violation.rule_id in directive.ignored_rules:
+                return True
+        return False
