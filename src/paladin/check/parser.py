@@ -43,7 +43,7 @@ class AstParser:
         """
         source = self.reader.read(file_path)
         tree = ast.parse(source)
-        return ParsedFile(file_path=file_path, tree=tree)
+        return ParsedFile(file_path=file_path, tree=tree, source=source)
 
     @log
     def parse_all(self, target_files: TargetFiles) -> ParsedFiles:

@@ -20,6 +20,9 @@
 | AST パーサー | `AstParser` | Python ファイルの読み込みと AST 生成 |
 | ルール実行器 | `RuleRunner` | 全ルールを全ファイルへ適用し、違反を集約 |
 | ルールレジストリ | `RuleRegistry` | 登録済みルールのメタ情報一覧の管理 |
+| ignore ディレクティブ | `FileIgnoreDirective` | 単一ファイルの ignore-file ディレクティブ情報を保持する値オブジェクト |
+| ignore パーサー | `FileIgnoreParser` | ソーステキストのヘッダー領域から ignore-file ディレクティブを抽出する |
+| 違反フィルター | `ViolationFilter` | `FileIgnoreDirective` に基づいて Violations から ignore 対象の違反を除外する |
 | レポートフォーマッター（text） | `CheckReportFormatter` | `CheckResult` を text 形式の `CheckReport` に変換 |
 | レポートフォーマッター（JSON） | `CheckJsonFormatter` | `CheckResult` を JSON 形式の `CheckReport` に変換 |
 | フォーマッターファクトリー | `CheckFormatterFactory` | `OutputFormat` に応じたフォーマッターへ委譲する |
@@ -42,6 +45,7 @@ src/paladin/check/
 ├── orchestrator.py       # CheckOrchestrator
 ├── provider.py           # CheckOrchestratorProvider
 ├── collector.py          # FileCollector
+├── ignore.py             # FileIgnoreDirective / FileIgnoreParser / ViolationFilter
 ├── parser.py             # AstParser
 ├── formatter.py          # CheckReportFormatter / CheckJsonFormatter / CheckFormatterFactory
 ├── result.py             # CheckResult / CheckStatus / CheckSummary / CheckReport
@@ -57,6 +61,7 @@ tests/unit/test_check/
 ├── test_collector.py
 ├── test_context.py
 ├── test_formatter.py
+├── test_ignore.py
 ├── test_orchestrator.py
 ├── test_parser.py
 ├── test_provider.py
@@ -71,10 +76,12 @@ tests/unit/test_check/
 全体の処理フローは `CheckOrchestrator` が担います。
 
 1. `FileCollector` が解析対象パス群から `.py` ファイルを収集する（`TargetFiles`）
-2. `AstParser` が各ファイルを読み込み AST を生成する（`ParsedFiles`）
+2. `AstParser` が各ファイルを読み込み AST とソーステキストを生成する（`ParsedFiles`）
 3. `RuleRunner` が全ルールを全ファイルへ適用し、違反を集約する（`Violations`）
-4. `CheckResult`（`TargetFiles` + `ParsedFiles` + `Violations`）を組み立てる
-5. `CheckFormatterFactory` が `CheckContext.format`（`OutputFormat`）に応じて `CheckReportFormatter`（text）または `CheckJsonFormatter`（JSON）へ委譲し、`CheckReport` を生成して返す
+4. `FileIgnoreParser` がソーステキストのヘッダー領域を走査し、ignore ディレクティブを抽出する（`tuple[FileIgnoreDirective, ...]`）
+5. `ViolationFilter` が ignore ディレクティブに基づいて違反をフィルタリングする（`Violations`）
+6. `CheckResult`（`TargetFiles` + `ParsedFiles` + フィルタリング済み `Violations`）を組み立てる
+7. `CheckFormatterFactory` が `CheckContext.format`（`OutputFormat`）に応じて `CheckReportFormatter`（text）または `CheckJsonFormatter`（JSON）へ委譲し、`CheckReport` を生成して返す
 
 ### ルール適用ロジック
 
@@ -126,6 +133,30 @@ lint/  → source/ (ParsedFile)
 
 **トレードオフ**: 新しい出力形式を追加する場合は、`OutputFormat` への値追加・新しいフォーマッタークラスの実装・`CheckFormatterFactory` の `format()` メソッド拡張の3箇所を変更する必要がある。
 
+### ParsedFile へのソーステキスト保持
+
+**設計の意図**: `ParsedFile` に `source: str` フィールドを追加し、AST と合わせてソーステキストを保持する。
+
+**なぜそう設計したか**: Python の `ast` モジュールはコメントを AST ノードとして保持しない。ignore ディレクティブはコメントであるため、AST からは抽出できない。`AstParser.parse` がソーステキストを既に保持しているため、`ParsedFile` にそのまま含めるのが最もシンプルな手段である。将来の直前コメント ignore（R-081）でも同じ `source` を流用できる。
+
+**トレードオフ**: 全 `ParsedFile` がソーステキストをメモリ上に保持し続けるため、大量ファイル解析時のメモリ消費が増加する。現時点では対象ファイル数が限定的で問題にならないが、将来パフォーマンスが問題になった場合は遅延読み込みや ignore 解析後のソース破棄を検討する。
+
+### ヘッダー領域のみを走査する ignore パーサー
+
+**設計の意図**: `FileIgnoreParser` は、ファイル先頭から走査しヘッダー領域（空行・shebang・エンコーディング宣言・通常コメント・docstring）をスキップしながら ignore ディレクティブを探す。import 文などの実行コードに到達した時点で走査を打ち切る。
+
+**なぜそう設計したか**: ファイル全体を走査すると、本文中に偶然含まれる `# paladin: ignore-file` 形式の文字列（コメントや文字列リテラル）を誤検出するリスクがある。「ファイル先頭のヘッダー領域のみ有効」という制約により誤検出を防ぎ、ディレクティブの記述位置を明確に規定できる。
+
+**トレードオフ**: ディレクティブを後から追加する場合、import 文の前に移動しなければならない。ただしこれは意図的な制約であり、ignore の影響範囲を明確にするためのものである。
+
+### ViolationFilter をパイプラインの独立ステップとして配置
+
+**設計の意図**: ignore フィルタリングを `RuleRunner.run` の後・`CheckResult` 生成の前に独立したステップとして挿入する。`ViolationFilter` は `CheckOrchestrator` にコンストラクタ注入し、`FileIgnoreParser` は `orchestrate()` 内で直接生成する。
+
+**なぜそう設計したか**: `RuleRunner` の責務を「全ルールを全ファイルへ適用する」に限定し、ignore の関心事を分離することで、各コンポーネントのテスタビリティと拡張性を維持できる。`ViolationFilter` と `FileIgnoreParser` は純粋計算であり副作用を持たないため、Protocol による抽象化は YAGNI に該当する。
+
+**トレードオフ**: `FileIgnoreParser` を `orchestrate()` 内で都度生成しているため、将来状態を持つ必要が生じた場合はコンストラクタ注入に変更する必要がある。現時点では状態なしで十分なため直接生成とする。
+
 ### テストコード: Fake による副作用の分離
 
 **設計の意図**: テストでは実際のファイルシステムにアクセスせず、`fakes.py` に定義された Fake（`FakeRule` / `InMemoryFsReader`）を使用する。
@@ -175,6 +206,8 @@ lint/  → source/ (ParsedFile)
 - **複数ファイルにまたがるルール**: `Rule.check()` のシグネチャを `ParsedFiles` を受け取る形に拡張するか、新しい Protocol を定義する
 - **ルール選択機能**: `RuleRunner` が適用するルールを実行時に絞り込める仕組みを追加する
 - **エラーファイルのスキップ**: `AstParser` でエラーを捕捉してスキップし、`CheckResult` に解析失敗情報を追加する
+- **直前コメント ignore（R-081）**: `# paladin: ignore[rule-id]` をサポートする。`ignore.py` に `LineIgnoreParser` / `LineIgnoreDirective` を追加し、`ParsedFile.source` を入力として利用する
+- **CLI --ignore-rule（R-082）**: 実行時に全ファイルへ適用するルール除外を `ViolationFilter` に追加する。`CheckContext` に `ignored_rules` フィールドを追加して受け渡す
 
 ### 拡張時の注意点
 
@@ -188,6 +221,8 @@ lint/  → source/ (ParsedFile)
 |---|---|---|
 | 新しいルールを追加 | `lint/` に新ファイル、`lint/__init__.py`（`__all__`）、`provider.py`（`_create_runner()`）、`rules/provider.py`（`_create_rules()`） | `RuleRunner` / `CheckOrchestrator` の変更は不要 |
 | ルールのチェックロジックを変更 | 対象ルールの `.py` | 他コンポーネントへの影響なし |
+| ignore の解析ロジックを変更 | `ignore.py`（`FileIgnoreParser`） | `ViolationFilter` / `CheckOrchestrator` の変更は不要 |
+| ignore のフィルタリングロジックを変更 | `ignore.py`（`ViolationFilter`） | `FileIgnoreParser` / `CheckOrchestrator` の変更は不要 |
 | 実行時パラメータを追加 | `context.py`（`CheckContext`） | 追加フィールドは呼び出し元（CLI 層）が組み立てて渡す |
 | レポート出力形式を変更 | `formatter.py`（`CheckReportFormatter` / `CheckJsonFormatter`） | `CheckOrchestrator` の変更は不要 |
 | 新しい出力形式を追加 | `types.py`（`OutputFormat`）、`formatter.py`（新フォーマッタークラス・`CheckFormatterFactory`） | `CheckOrchestrator` の変更は不要 |

@@ -7,7 +7,7 @@ from paladin.source.types import ParsedFile
 
 
 def _make_parsed_file(source: str, filename: str = "__init__.py") -> ParsedFile:
-    return ParsedFile(file_path=Path(filename), tree=ast.parse(source))
+    return ParsedFile(file_path=Path(filename), tree=ast.parse(source), source=source)
 
 
 class TestRequireAllExportRuleCheck:
@@ -123,7 +123,7 @@ class TestRequireAllExportRuleCheck:
         ast.fix_missing_locations(aug_assign)
         import_node = ast.parse("from foo import bar\n").body[0]
         tree.body = [import_node, aug_assign]
-        parsed_file = ParsedFile(file_path=Path("__init__.py"), tree=tree)
+        parsed_file = ParsedFile(file_path=Path("__init__.py"), tree=tree, source="")
 
         # Act
         result = rule.check(parsed_file)

@@ -13,6 +13,17 @@ from tests.unit.test_check.fakes import InMemoryFsReader
 class TestAstParserParse:
     """AstParser.parse() のテスト"""
 
+    def test_parse_正常系_ParsedFileにソーステキストが保持されること(self):
+        # Arrange
+        reader = InMemoryFsReader(content="x = 1\n")
+        parser = AstParser(reader=reader)
+
+        # Act
+        result = parser.parse(Path("test.py"))
+
+        # Assert
+        assert result.source == "x = 1\n"
+
     def test_parse_正常系_有効なPythonコードからParsedFileを返すこと(self):
         # Arrange
         reader = InMemoryFsReader(content="x = 1\n")

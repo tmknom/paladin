@@ -12,7 +12,7 @@ class TestParsedFile:
         tree = ast.parse("x = 1\n")
 
         # Act
-        result = ParsedFile(file_path=Path("test.py"), tree=tree)
+        result = ParsedFile(file_path=Path("test.py"), tree=tree, source="x = 1\n")
 
         # Assert
         assert result.file_path == Path("test.py")
@@ -27,8 +27,8 @@ class TestParsedFiles:
         tree = ast.parse("x = 1\n")
         parsed_files = ParsedFiles(
             files=(
-                ParsedFile(file_path=Path("a.py"), tree=tree),
-                ParsedFile(file_path=Path("b.py"), tree=tree),
+                ParsedFile(file_path=Path("a.py"), tree=tree, source="x = 1\n"),
+                ParsedFile(file_path=Path("b.py"), tree=tree, source="x = 1\n"),
             )
         )
 
@@ -41,8 +41,8 @@ class TestParsedFiles:
     def test_iter_正常系_ParsedFileをイテレーションできること(self):
         # Arrange
         tree = ast.parse("x = 1\n")
-        pf_a = ParsedFile(file_path=Path("a.py"), tree=tree)
-        pf_b = ParsedFile(file_path=Path("b.py"), tree=tree)
+        pf_a = ParsedFile(file_path=Path("a.py"), tree=tree, source="x = 1\n")
+        pf_b = ParsedFile(file_path=Path("b.py"), tree=tree, source="x = 1\n")
         parsed_files = ParsedFiles(files=(pf_a, pf_b))
 
         # Act

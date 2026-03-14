@@ -7,7 +7,7 @@ from paladin.source.types import ParsedFile
 
 
 def _make_parsed_file(source: str, filename: str = "example.py") -> ParsedFile:
-    return ParsedFile(file_path=Path(filename), tree=ast.parse(source))
+    return ParsedFile(file_path=Path(filename), tree=ast.parse(source), source=source)
 
 
 class TestRequireQualifiedThirdPartyRuleMeta:
