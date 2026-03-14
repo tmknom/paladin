@@ -220,6 +220,18 @@ class TestRequireQualifiedThirdPartyRuleCheckExclusions:
         # Assert
         assert result == ()
 
+    def test_check_正常系_testsパッケージのfrom_importは違反なしを返すこと(self):
+        # Arrange
+        rule = RequireQualifiedThirdPartyRule(root_packages=("paladin", "tests"))
+        source = "from tests.unit.test_check.fakes import InMemoryFsReader\n"
+        parsed_file = _make_parsed_file(source)
+
+        # Act
+        result = rule.check(parsed_file)
+
+        # Assert
+        assert result == ()
+
     def test_check_正常系_複数のroot_packagesで除外できること(self):
         # Arrange
         rule = RequireQualifiedThirdPartyRule(root_packages=("paladin", "mylib"))
