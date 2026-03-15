@@ -21,7 +21,7 @@ class TargetResolver:
         """CLI ターゲットと include を解決し、最終的な解析対象パスを返す
 
         解決ロジック:
-        1. context.has_cli_targets が True の場合 → context.targets を返す
+        1. context.targets が空でない場合 → context.targets を返す
         2. config.include が空でない場合 → include の各パスを Path に変換して返す
         3. いずれも該当しない場合 → ApplicationError を送出する
 
@@ -35,7 +35,7 @@ class TargetResolver:
         Raises:
             ApplicationError: CLI ターゲットも include も未指定の場合
         """
-        if context.has_cli_targets:
+        if context.targets:
             return context.targets
 
         if config.include:

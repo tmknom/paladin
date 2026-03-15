@@ -48,7 +48,7 @@ class TestCheckOrchestrator:
             target_resolver=TargetResolver(),
             path_excluder=PathExcluder(),
         )
-        context = CheckContext(targets=(tmp_path,), has_cli_targets=True)
+        context = CheckContext(targets=(tmp_path,))
 
         # Act
         result = orchestrator.orchestrate(context)
@@ -80,7 +80,7 @@ class TestCheckOrchestrator:
             target_resolver=TargetResolver(),
             path_excluder=PathExcluder(),
         )
-        context = CheckContext(targets=(tmp_path,), has_cli_targets=True)
+        context = CheckContext(targets=(tmp_path,))
 
         # Act
         result = orchestrator.orchestrate(context)
@@ -112,7 +112,7 @@ class TestCheckOrchestrator:
             target_resolver=TargetResolver(),
             path_excluder=PathExcluder(),
         )
-        context = CheckContext(targets=(tmp_path,), format=OutputFormat.JSON, has_cli_targets=True)
+        context = CheckContext(targets=(tmp_path,), format=OutputFormat.JSON)
 
         # Act
         report = orchestrator.orchestrate(context)
@@ -145,7 +145,7 @@ class TestCheckOrchestrator:
             target_resolver=TargetResolver(),
             path_excluder=PathExcluder(),
         )
-        context = CheckContext(targets=(tmp_path,), format=OutputFormat.TEXT, has_cli_targets=True)
+        context = CheckContext(targets=(tmp_path,), format=OutputFormat.TEXT)
 
         # Act
         report = orchestrator.orchestrate(context)
@@ -181,7 +181,7 @@ class TestCheckOrchestrator:
             target_resolver=TargetResolver(),
             path_excluder=PathExcluder(),
         )
-        context = CheckContext(targets=(tmp_path,), has_cli_targets=True)
+        context = CheckContext(targets=(tmp_path,))
 
         # Act
         result = orchestrator.orchestrate(context)
@@ -221,7 +221,7 @@ class TestCheckOrchestrator:
             target_resolver=TargetResolver(),
             path_excluder=PathExcluder(),
         )
-        context = CheckContext(targets=(tmp_path,), has_cli_targets=True)
+        context = CheckContext(targets=(tmp_path,))
 
         # Act
         result = orchestrator.orchestrate(context)
@@ -265,7 +265,7 @@ class TestCheckOrchestrator:
             target_resolver=TargetResolver(),
             path_excluder=PathExcluder(),
         )
-        context = CheckContext(targets=(tmp_path,), has_cli_targets=True)
+        context = CheckContext(targets=(tmp_path,))
 
         # Act
         result = orchestrator.orchestrate(context)
@@ -311,7 +311,7 @@ class TestCheckOrchestrator:
             target_resolver=TargetResolver(),
             path_excluder=PathExcluder(),
         )
-        context = CheckContext(targets=(tmp_path,), has_cli_targets=True)
+        context = CheckContext(targets=(tmp_path,))
 
         # Act
         result = orchestrator.orchestrate(context)
@@ -353,7 +353,7 @@ class TestCheckOrchestrator:
             target_resolver=TargetResolver(),
             path_excluder=PathExcluder(),
         )
-        context = CheckContext(targets=(tmp_path,), has_cli_targets=True)
+        context = CheckContext(targets=(tmp_path,))
 
         # Act
         result = orchestrator.orchestrate(context)
@@ -398,9 +398,7 @@ class TestCheckOrchestrator:
             target_resolver=TargetResolver(),
             path_excluder=PathExcluder(),
         )
-        context = CheckContext(
-            targets=(tmp_path,), ignore_rules=frozenset({"fake-rule"}), has_cli_targets=True
-        )
+        context = CheckContext(targets=(tmp_path,), ignore_rules=frozenset({"fake-rule"}))
 
         # Act
         result = orchestrator.orchestrate(context)
@@ -459,7 +457,7 @@ class TestCheckOrchestrator:
             target_resolver=TargetResolver(),
             path_excluder=PathExcluder(),
         )
-        context = CheckContext(targets=(tmp_path,), has_cli_targets=True)
+        context = CheckContext(targets=(tmp_path,))
 
         # Act
         result = orchestrator.orchestrate(context)
@@ -501,7 +499,7 @@ class TestCheckOrchestrator:
             target_resolver=TargetResolver(),
             path_excluder=PathExcluder(),
         )
-        context = CheckContext(targets=(tmp_path,), has_cli_targets=True)
+        context = CheckContext(targets=(tmp_path,))
 
         # Act
         result = orchestrator.orchestrate(context)
@@ -535,7 +533,7 @@ class TestCheckOrchestrator:
             target_resolver=TargetResolver(),
             path_excluder=PathExcluder(),
         )
-        context = CheckContext(targets=(tmp_path,), has_cli_targets=True)
+        context = CheckContext(targets=(tmp_path,))
 
         # Act
         result = orchestrator.orchestrate(context)
@@ -566,7 +564,7 @@ class TestCheckOrchestrator:
             target_resolver=TargetResolver(),
             path_excluder=PathExcluder(),
         )
-        context = CheckContext(targets=(tmp_path,), has_cli_targets=True)
+        context = CheckContext(targets=(tmp_path,))
 
         # Act: 警告が出るが処理は完了する
         result = orchestrator.orchestrate(context)
@@ -594,8 +592,8 @@ class TestCheckOrchestrator:
             target_resolver=TargetResolver(),
             path_excluder=PathExcluder(),
         )
-        # has_cli_targets=False でCLIターゲット未指定
-        context = CheckContext(targets=(), has_cli_targets=False)
+        # CLIターゲット未指定
+        context = CheckContext(targets=())
 
         # Act
         result = orchestrator.orchestrate(context)
@@ -635,7 +633,7 @@ class TestCheckOrchestrator:
             target_resolver=TargetResolver(),
             path_excluder=PathExcluder(),
         )
-        context = CheckContext(targets=(tmp_path,), has_cli_targets=True)
+        context = CheckContext(targets=(tmp_path,))
 
         # Act
         result = orchestrator.orchestrate(context)
@@ -665,7 +663,7 @@ class TestCheckOrchestrator:
             path_excluder=PathExcluder(),
         )
         # CLI ターゲットが指定されているため include は無視される
-        context = CheckContext(targets=(tmp_path,), has_cli_targets=True)
+        context = CheckContext(targets=(tmp_path,))
 
         # Act
         result = orchestrator.orchestrate(context)
@@ -707,7 +705,7 @@ class TestCheckOrchestrator:
             target_resolver=TargetResolver(),
             path_excluder=PathExcluder(),
         )
-        context = CheckContext(targets=(tmp_path,), has_cli_targets=True)
+        context = CheckContext(targets=(tmp_path,))
 
         # Act
         result = orchestrator.orchestrate(context)
@@ -738,7 +736,7 @@ class TestCheckOrchestrator:
             target_resolver=TargetResolver(),
             path_excluder=PathExcluder(),
         )
-        context = CheckContext(targets=(), has_cli_targets=False)
+        context = CheckContext(targets=())
 
         # Act / Assert: TargetResolver が ApplicationError を送出する
         with pytest.raises(ApplicationError):

@@ -25,7 +25,7 @@ class TestIntegrationRuleDisabling:
         init_file.write_text("x = 1\n", encoding="utf-8")
         pyproject = tmp_path / "pyproject.toml"
         pyproject.write_text("[tool.paladin.rules]\nrequire-all-export = false\n", encoding="utf-8")
-        context = CheckContext(targets=(tmp_path,), has_cli_targets=True)
+        context = CheckContext(targets=(tmp_path,))
         original_cwd = Path.cwd()
         os.chdir(tmp_path)
 
@@ -46,7 +46,7 @@ class TestIntegrationRuleDisabling:
         init_file.write_text("x = 1\n", encoding="utf-8")
         pyproject = tmp_path / "pyproject.toml"
         pyproject.write_text("[tool.paladin]\n", encoding="utf-8")
-        context = CheckContext(targets=(tmp_path,), has_cli_targets=True)
+        context = CheckContext(targets=(tmp_path,))
         original_cwd = Path.cwd()
         os.chdir(tmp_path)
 
@@ -67,7 +67,7 @@ class TestIntegrationRuleDisabling:
         init_file.write_text("x = 1\n", encoding="utf-8")
         pyproject = tmp_path / "pyproject.toml"
         pyproject.write_text("[tool.paladin.rules]\nrequire-all-export = true\n", encoding="utf-8")
-        context = CheckContext(targets=(tmp_path,), has_cli_targets=True)
+        context = CheckContext(targets=(tmp_path,))
         original_cwd = Path.cwd()
         os.chdir(tmp_path)
 
@@ -93,7 +93,7 @@ class TestIntegrationIncludeExclude:
         pyproject = tmp_path / "pyproject.toml"
         pyproject.write_text(f'[tool.paladin]\ninclude = ["{src_dir}"]\n', encoding="utf-8")
         # CLI ターゲット未指定（include から解決）
-        context = CheckContext(targets=(), has_cli_targets=False)
+        context = CheckContext(targets=())
         original_cwd = Path.cwd()
         os.chdir(tmp_path)
 
@@ -112,7 +112,7 @@ class TestIntegrationIncludeExclude:
         init_file.write_text("x = 1\n", encoding="utf-8")
         pyproject = tmp_path / "pyproject.toml"
         pyproject.write_text('[tool.paladin]\nexclude = ["__init__.py"]\n', encoding="utf-8")
-        context = CheckContext(targets=(tmp_path,), has_cli_targets=True)
+        context = CheckContext(targets=(tmp_path,))
         original_cwd = Path.cwd()
         os.chdir(tmp_path)
 
@@ -134,7 +134,7 @@ class TestIntegrationIncludeExclude:
         pyproject = tmp_path / "pyproject.toml"
         pyproject.write_text('[tool.paladin]\ninclude = ["/nonexistent/path"]\n', encoding="utf-8")
         # CLI ターゲット指定 → include は無視される
-        context = CheckContext(targets=(src_dir,), has_cli_targets=True)
+        context = CheckContext(targets=(src_dir,))
         original_cwd = Path.cwd()
         os.chdir(tmp_path)
 
@@ -153,7 +153,7 @@ class TestIntegrationIncludeExclude:
         init_file.write_text("x = 1\n", encoding="utf-8")
         pyproject = tmp_path / "pyproject.toml"
         pyproject.write_text('[tool.paladin]\nexclude = ["__init__.py"]\n', encoding="utf-8")
-        context = CheckContext(targets=(tmp_path,), has_cli_targets=True)
+        context = CheckContext(targets=(tmp_path,))
         original_cwd = Path.cwd()
         os.chdir(tmp_path)
 
@@ -172,7 +172,7 @@ class TestIntegrationIncludeExclude:
         # Arrange: pyproject.toml に include なし、CLI ターゲットも未指定
         pyproject = tmp_path / "pyproject.toml"
         pyproject.write_text("[tool.paladin]\n", encoding="utf-8")
-        context = CheckContext(targets=(), has_cli_targets=False)
+        context = CheckContext(targets=())
         original_cwd = Path.cwd()
         os.chdir(tmp_path)
 

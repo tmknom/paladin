@@ -13,7 +13,7 @@ class TestTargetResolver:
     def test_resolve_正常系_CLIターゲット指定ありの場合contextのtargetsを返すこと(self):
         # Arrange
         targets = (Path("src/"),)
-        context = CheckContext(targets=targets, has_cli_targets=True)
+        context = CheckContext(targets=targets)
         config = ProjectConfig()
         resolver = TargetResolver()
 
@@ -25,7 +25,7 @@ class TestTargetResolver:
 
     def test_resolve_正常系_CLIターゲット未指定でinclude指定ありの場合includeのパスを返すこと(self):
         # Arrange
-        context = CheckContext(targets=(), has_cli_targets=False)
+        context = CheckContext(targets=())
         config = ProjectConfig(include=("src/",))
         resolver = TargetResolver()
 
@@ -40,7 +40,7 @@ class TestTargetResolver:
     ):
         # Arrange
         targets = (Path("lib/"),)
-        context = CheckContext(targets=targets, has_cli_targets=True)
+        context = CheckContext(targets=targets)
         config = ProjectConfig(include=("src/",))
         resolver = TargetResolver()
 
@@ -52,7 +52,7 @@ class TestTargetResolver:
 
     def test_resolve_正常系_複数のincludeパスをPathに変換して返すこと(self):
         # Arrange
-        context = CheckContext(targets=(), has_cli_targets=False)
+        context = CheckContext(targets=())
         config = ProjectConfig(include=("src/", "lib/"))
         resolver = TargetResolver()
 
@@ -66,7 +66,7 @@ class TestTargetResolver:
         self,
     ):
         # Arrange
-        context = CheckContext(targets=(), has_cli_targets=False)
+        context = CheckContext(targets=())
         config = ProjectConfig()
         resolver = TargetResolver()
 
