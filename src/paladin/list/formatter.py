@@ -6,7 +6,7 @@
 from paladin.lint import RuleMeta
 
 
-class RulesFormatter:
+class ListFormatter:
     """tuple[RuleMeta, ...] を text 形式の文字列に変換する"""
 
     def format(self, rules: tuple[RuleMeta, ...]) -> str:

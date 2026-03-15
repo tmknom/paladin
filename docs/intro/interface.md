@@ -16,11 +16,12 @@
 
 ```text
 uv run paladin check [TARGET ...] [OPTIONS]
-uv run paladin rules [OPTIONS]
+uv run paladin list [OPTIONS]
+uv run paladin view <RULE_ID>
 uv run paladin version
 ```
 
-このうち、MVP の中心は `check` である。`rules` は、診断結果を理解しやすくし、ルールを継続的に育てるための補助コマンドとして位置づける。
+このうち、MVP の中心は `check` である。`list` / `view` は、診断結果を理解しやすくし、ルールを継続的に育てるための補助コマンドとして位置づける。
 
 ## 3. 各コマンドの役割
 
@@ -46,16 +47,15 @@ uv run paladin check src/ --format json
 - 結果を構造化された診断情報として返す
 - 実行結果を機械的に判別できる状態で返す
 
-### 3.2 `rules`
+### 3.2 `list`
 
-利用可能なルールの一覧やメタ情報を表示するコマンド。
+利用可能なルールの一覧を表示するコマンド。
 
 想定例:
 
 ```text
-uv run paladin rules
-uv run paladin rules --format json
-uv run paladin rules --rule PAL001
+uv run paladin list
+uv run paladin list --format json
 ```
 
 責務は次の通り。
@@ -64,7 +64,23 @@ uv run paladin rules --rule PAL001
 - 必要に応じて、各ルールの概要や対象範囲を返す
 - AI や人間が「今どのルールが有効な世界か」を確認できるようにする
 
-### 3.3 `version`
+### 3.3 `view`
+
+指定したルールの詳細情報を表示するコマンド。
+
+想定例:
+
+```text
+uv run paladin view PAL001
+```
+
+責務は次の通り。
+
+- 指定された単一ルールの詳細情報を返す
+- ルール ID・ルール名・概要・対象範囲など、ルールを理解するための情報を提供する
+- AI や人間が特定ルールの意図や適用条件を確認できるようにする
+
+### 3.4 `version`
 
 バージョン情報を返すコマンド。
 
@@ -291,7 +307,7 @@ Summary:
 
 ただし、主契約はあくまで構造化出力側に置く。
 
-## 8. `rules` コマンドの出力草案
+## 8. `list` コマンドの出力草案
 
 ### 8.1 text 例
 
@@ -320,20 +336,44 @@ PAL003  declaration-order      宣言順に関するルール
 }
 ```
 
-## 9. 初期リリースに含める範囲
+## 9. `view` コマンドの出力草案
+
+### 9.1 text 例
+
+```text
+PAL001  public-boundary
+  概要: 公開境界に関するルール
+  対象: モジュール・パッケージの公開インターフェイス定義
+  説明: 非公開要素が公開境界に含まれていないかを検査する
+```
+
+### 9.2 json 例
+
+```json
+{
+  "rule_id": "PAL001",
+  "rule_name": "public-boundary",
+  "summary": "公開境界に関するルール",
+  "target": "モジュール・パッケージの公開インターフェイス定義",
+  "description": "非公開要素が公開境界に含まれていないかを検査する"
+}
+```
+
+## 10. 初期リリースに含める範囲
 
 初期リリースでは、次を含めるのが妥当である。
 
 - `check`
-- `rules`
+- `list`
+- `view`
 - `version`
 
 理由は次の通り。
 
 - 必須要件の中心は `check` に集約されている
-- ルールを継続的に育てる運用上、`rules` は早期に価値がある
+- ルールを継続的に育てる運用上、`list` / `view` は早期に価値がある
 
-## 10. 初期リリースで入れないもの
+## 11. 初期リリースで入れないもの
 
 初期段階では、次は CLI の前面に出さない。
 
@@ -354,7 +394,7 @@ PAL003  declaration-order      宣言順に関するルール
 
 この判断は、Paladin が最初から完成形を目指すのではなく、小さく始めて段階的に育てる前提に沿っている
 
-## 11. 最終提案
+## 12. 最終提案
 
 現時点のインターフェイス設計草案としては、以下を推奨する。
 
@@ -368,9 +408,10 @@ uv run paladin check [TARGET ...]
   [--quiet]
   [--verbose]
 
-uv run paladin rules
+uv run paladin list
   [--format <text|json>]
-  [--rule <RULE_ID>]
+
+uv run paladin view <RULE_ID>
 
 uv run paladin version
 ```

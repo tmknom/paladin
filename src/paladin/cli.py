@@ -35,9 +35,10 @@ from paladin.config import AppConfig, EnvVarConfig
 from paladin.config.env_var import LogLevel
 from paladin.foundation.error import ErrorHandler
 from paladin.foundation.log import LogConfigurator, log
-from paladin.rules import RulesContext, RulesOrchestratorProvider
+from paladin.list import ListContext, ListOrchestratorProvider
 from paladin.transform import TransformContext, TransformOrchestratorProvider
 from paladin.version import VersionOrchestratorProvider
+from paladin.view import ViewContext, ViewOrchestratorProvider
 
 logger = logging.getLogger(__name__)
 app = typer.Typer(no_args_is_help=True)
@@ -66,13 +67,21 @@ def check(
     raise typer.Exit(code=report.exit_code)
 
 
-@app.command()
-def rules(
-    rule: Annotated[str | None, typer.Option("--rule", help="特定ルールの詳細を表示")] = None,
-) -> None:
+@app.command(name="list")
+def list_rules() -> None:
     """利用可能なルールの一覧を表示する"""
-    context = RulesContext(rule_id=rule)
-    text = RulesOrchestratorProvider().provide().orchestrate(context)
+    context = ListContext()
+    text = ListOrchestratorProvider().provide().orchestrate(context)
+    typer.echo(text)
+
+
+@app.command()
+def view(
+    rule_id: Annotated[str, typer.Argument(help="詳細を表示するルール ID")],
+) -> None:
+    """指定されたルールの詳細を表示する"""
+    context = ViewContext(rule_id=rule_id)
+    text = ViewOrchestratorProvider().provide().orchestrate(context)
     typer.echo(text)
 
 

@@ -81,12 +81,12 @@ class TestIntegrationCLI:
         assert not (env_tmp_dir / "input.txt").exists()
 
 
-class TestIntegrationRulesCLI:
-    """rules サブコマンドの統合テスト"""
+class TestIntegrationListCLI:
+    """list サブコマンドの統合テスト"""
 
-    def test_rules_正常系_ルール一覧をtext形式で出力しexit_code_0で終了すること(self):
+    def test_list_正常系_ルール一覧をtext形式で出力しexit_code_0で終了すること(self):
         # Act
-        cmd = [sys.executable, "-m", "paladin.cli", "rules"]
+        cmd = [sys.executable, "-m", "paladin.cli", "list"]
         result = subprocess.run(cmd, capture_output=True, text=True, timeout=10)
 
         # Assert
@@ -96,11 +96,13 @@ class TestIntegrationRulesCLI:
         assert "no-local-import" in result.stdout
         assert "require-qualified-third-party" in result.stdout
 
-    def test_rules_正常系_rule_idオプション指定で対象ルールの詳細を出力しexit_code_0で終了すること(
-        self,
-    ):
+
+class TestIntegrationViewCLI:
+    """view サブコマンドの統合テスト"""
+
+    def test_view_正常系_rule_id指定で対象ルールの詳細を出力しexit_code_0で終了すること(self):
         # Act
-        cmd = [sys.executable, "-m", "paladin.cli", "rules", "--rule", "require-all-export"]
+        cmd = [sys.executable, "-m", "paladin.cli", "view", "require-all-export"]
         result = subprocess.run(cmd, capture_output=True, text=True, timeout=10)
 
         # Assert
@@ -113,11 +115,11 @@ class TestIntegrationRulesCLI:
         assert "Guidance:" in result.stdout
         assert "Suggestion:" in result.stdout
 
-    def test_rules_エッジケース_存在しないrule_idでエラーメッセージを出力しexit_code_0で終了すること(
+    def test_view_エッジケース_存在しないrule_idでエラーメッセージを出力しexit_code_0で終了すること(
         self,
     ):
         # Act
-        cmd = [sys.executable, "-m", "paladin.cli", "rules", "--rule", "nonexistent"]
+        cmd = [sys.executable, "-m", "paladin.cli", "view", "nonexistent"]
         result = subprocess.run(cmd, capture_output=True, text=True, timeout=10)
 
         # Assert

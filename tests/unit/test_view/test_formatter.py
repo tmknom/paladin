@@ -1,7 +1,7 @@
-"""RulesDetailFormatterクラスのテスト"""
+"""ViewFormatterクラスのテスト"""
 
 from paladin.lint import RuleMeta
-from paladin.rules.detail_formatter import RulesDetailFormatter
+from paladin.view.formatter import ViewFormatter
 
 
 def _make_rule_meta(
@@ -22,8 +22,8 @@ def _make_rule_meta(
     )
 
 
-class TestRulesDetailFormatter:
-    """RulesDetailFormatterクラスのテスト"""
+class TestViewFormatter:
+    """ViewFormatterクラスのテスト"""
 
     def test_format_正常系_RuleMetaの全フィールドがラベル付きで出力されること(self):
         # Arrange
@@ -35,7 +35,7 @@ class TestRulesDetailFormatter:
             guidance="__init__.py に __all__ が定義されているか確認する",
             suggestion="__all__ リストを定義する",
         )
-        formatter = RulesDetailFormatter()
+        formatter = ViewFormatter()
 
         # Act
         result = formatter.format(rule)
@@ -57,7 +57,7 @@ class TestRulesDetailFormatter:
     def test_format_正常系_ラベルの値が整列されること(self):
         # Arrange
         rule = _make_rule_meta()
-        formatter = RulesDetailFormatter()
+        formatter = ViewFormatter()
 
         # Act
         result = formatter.format(rule)
