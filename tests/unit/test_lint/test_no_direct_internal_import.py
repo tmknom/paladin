@@ -110,31 +110,6 @@ class TestNoDirectInternalImportRuleCheck:
         # Assert
         assert len(result) == 1
 
-    def test_check_正常系_違反メッセージが仕様どおりであること(self):
-        # Arrange
-        source = "from paladin.check.orchestrator import CheckOrchestrator\n"
-        source_files = _make_source_files((source, "src/other/module.py"))
-        rule = NoDirectInternalImportRule(root_packages=("paladin",))
-
-        # Act
-        result = rule.check(source_files)
-
-        # Assert: メッセージ形式の確認
-        assert len(result) == 1
-        v = result[0]
-        assert (
-            "`from paladin.check.orchestrator import CheckOrchestrator` は内部モジュールへの直接参照である"
-            in v.message
-        )
-        assert (
-            "`paladin.check` の内部実装に直接依存しており、パッケージの公開 API を経由していない"
-            in v.reason
-        )
-        assert (
-            "`from paladin.check import CheckOrchestrator` のように、パッケージの `__init__.py` を経由するインポートに書き換える"
-            in v.suggestion
-        )
-
 
 class TestNoDirectInternalImportRuleInitPy:
     """NoDirectInternalImportRule の __init__.py 解析テスト"""

@@ -35,6 +35,12 @@ class RequireAllExportRule:
             return ()
         if self._has_all_definition(source_file.tree):
             return ()
+        symbols = self._collect_public_symbols(source_file.tree)
+        if symbols:
+            symbols_str = ", ".join(f'"{s}"' for s in sorted(symbols))
+            suggestion = f"`__all__ = [{symbols_str}]` のように公開シンボルを定義してください"
+        else:
+            suggestion = "`__all__` リストを定義し、公開するシンボルを明示的に列挙してください"
         return (
             Violation(
                 file=source_file.file_path,
@@ -44,7 +50,7 @@ class RequireAllExportRule:
                 rule_name=self._meta.rule_name,
                 message="__init__.py に __all__ が定義されていない",
                 reason="__all__ が未定義の場合、パッケージの公開インタフェースが不明確になり、意図しないシンボルが外部に露出するリスクがある",
-                suggestion="__all__ リストを定義し、公開するシンボルを明示的に列挙する",
+                suggestion=suggestion,
             ),
         )
 
@@ -75,3 +81,21 @@ class RequireAllExportRule:
             ):
                 return True
         return False
+
+    def _collect_public_symbols(self, tree: ast.Module) -> list[str]:
+        """トップレベルの公開シンボルを収集する
+
+        from .xxx import Yyy の Yyy と、アンダースコア始まりでないトップレベル定義を返す。
+        """
+        symbols: list[str] = []
+        for node in tree.body:
+            if isinstance(node, ast.ImportFrom) and node.level >= 1:
+                for alias in node.names:
+                    name = alias.asname if alias.asname else alias.name
+                    if not name.startswith("_"):
+                        symbols.append(name)
+            elif isinstance(
+                node, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)
+            ) and not node.name.startswith("_"):
+                symbols.append(node.name)
+        return symbols

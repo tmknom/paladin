@@ -19,11 +19,21 @@
 
 ## 診断メッセージ
 
+from import パターン（`from X import Y`）:
+
 | フィールド | 内容 |
 |-----------|------|
 | message | `from {module} import {name}` はサードパーティライブラリの直接インポートである |
 | reason | 外部依存の境界を明示するために、サードパーティライブラリは完全修飾名で使用する必要がある |
-| suggestion | `import {module}` に書き換え、使用箇所を `{module}.{name}` 形式に修正する |
+| suggestion | `from {module} import {name}` を `import {module}` に書き換え、使用箇所の `{name}` を `{module}.{name}` に置換してください |
+
+import as パターン（`import X as Y`）:
+
+| フィールド | 内容 |
+|-----------|------|
+| message | `import {name} as {asname}` はサードパーティライブラリのエイリアスインポートである |
+| reason | 外部依存の境界を明示するために、サードパーティライブラリは完全修飾名で使用する必要がある |
+| suggestion | `import {name} as {asname}` を `import {name}` に書き換え、使用箇所の `{asname}` を `{name}` に置換してください |
 
 ## 検出パターン
 

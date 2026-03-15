@@ -27,7 +27,7 @@
 |-----------|------|
 | message | `from {module_path} import {name}` は内部モジュールへの直接参照である |
 | reason | `{package}` の内部実装に直接依存しており、パッケージの公開 API を経由していない |
-| suggestion | `from {package} import {name}` のように、パッケージの `__init__.py` を経由するインポートに書き換える |
+| suggestion | `from {module_path} import {name}` を `from {package} import {name}` に書き換えてください |
 
 ## 検出パターン
 

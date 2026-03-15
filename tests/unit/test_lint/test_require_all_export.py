@@ -130,6 +130,49 @@ class TestRequireAllExportRuleCheck:
         # Assert
         assert result == ()
 
+    def test_check_正常系_相対インポートのシンボルを列挙したsuggestionを返すこと(self):
+        # Arrange
+        rule = RequireAllExportRule()
+        source = "from .module import Foo, Bar\n"
+        source_file = _make_source_file(source, "__init__.py")
+
+        # Act
+        result = rule.check(source_file)
+
+        # Assert
+        assert len(result) == 1
+        violation = result[0]
+        assert '__all__ = ["Bar", "Foo"]' in violation.suggestion
+
+    def test_check_正常系_トップレベルクラスと関数を列挙したsuggestionを返すこと(self):
+        # Arrange
+        rule = RequireAllExportRule()
+        source = "class MyClass:\n    pass\n\ndef my_func():\n    pass\n"
+        source_file = _make_source_file(source, "__init__.py")
+
+        # Act
+        result = rule.check(source_file)
+
+        # Assert
+        assert len(result) == 1
+        violation = result[0]
+        assert '__all__ = ["MyClass", "my_func"]' in violation.suggestion
+
+    def test_check_正常系_アンダースコア始まりのシンボルはsuggestionに含まれないこと(self):
+        # Arrange
+        rule = RequireAllExportRule()
+        source = "from .module import _Private, Public\n"
+        source_file = _make_source_file(source, "__init__.py")
+
+        # Act
+        result = rule.check(source_file)
+
+        # Assert
+        assert len(result) == 1
+        violation = result[0]
+        assert '"Public"' in violation.suggestion
+        assert "_Private" not in violation.suggestion
+
 
 class TestRequireAllExportRuleMeta:
     """RequireAllExportRule.meta のテスト"""

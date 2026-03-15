@@ -336,5 +336,5 @@ class NoDirectInternalImportRule:
             rule_name=self._meta.rule_name,
             message=f"`from {module_path} import {name}` は内部モジュールへの直接参照である",
             reason=f"`{package}` の内部実装に直接依存しており、パッケージの公開 API を経由していない",
-            suggestion=f"`from {package} import {name}` のように、パッケージの `__init__.py` を経由するインポートに書き換える",
+            suggestion=f"`from {module_path} import {name}` を `from {package} import {name}` に書き換えてください",
         )
