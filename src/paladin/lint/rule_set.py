@@ -38,11 +38,16 @@ class RuleSet:
         self._rules = rules
 
     @classmethod
-    def default(cls, rule_options: Mapping[str, Mapping[str, object]] | None = None) -> "RuleSet":
+    def default(
+        cls,
+        rule_options: Mapping[str, Mapping[str, object]] | None = None,
+        project_name: str | None = None,
+    ) -> "RuleSet":
         """プロダクションで使うデフォルトのルール一式を返す
 
         Args:
             rule_options: ルール個別設定。キーはルール ID (kebab-case)、値はそのルールのパラメータ dict
+            project_name: pyproject.toml の [project] name から取得した正規化済みプロジェクト名
         """
         options = rule_options or {}
 
@@ -52,7 +57,7 @@ class RuleSet:
                 logger.warning("Unknown rule ID in [tool.paladin.rule]: %s", rule_id)
 
         # require-qualified-third-party の root_packages を解決
-        root_packages = cls._resolve_root_packages(options)
+        root_packages = cls._resolve_root_packages(options, project_name=project_name)
 
         return cls(
             rules=(
@@ -64,14 +69,19 @@ class RuleSet:
         )
 
     @classmethod
-    def _resolve_root_packages(cls, options: Mapping[str, Mapping[str, object]]) -> tuple[str, ...]:
+    def _resolve_root_packages(
+        cls,
+        options: Mapping[str, Mapping[str, object]],
+        project_name: str | None = None,
+    ) -> tuple[str, ...]:
         """require-qualified-third-party の root_packages を解決する"""
         rule_id = "require-qualified-third-party"
         known_params = cls._KNOWN_PARAMS.get(rule_id, frozenset())
         entry = options.get(rule_id)
+        default = (project_name, "tests") if project_name is not None else ("tests",)
 
         if entry is None:
-            return ("paladin", "tests")
+            return default
 
         # 未知パラメータの警告
         for param in entry:
@@ -82,7 +92,7 @@ class RuleSet:
         snake_entry = {k.replace("-", "_"): v for k, v in entry.items()}
         raw = snake_entry.get("root_packages")
         if raw is None:
-            return ("paladin", "tests")
+            return default
         return tuple(str(p) for p in raw)  # type: ignore[arg-type]
 
     @property

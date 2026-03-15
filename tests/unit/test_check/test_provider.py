@@ -76,3 +76,17 @@ class TestCheckOrchestratorProvider:
 
         # Assert
         assert isinstance(result, CheckOrchestrator)
+
+    def test_provide_正常系_project_nameを渡してCheckOrchestratorが返ること(self):
+        # Act
+        result = CheckOrchestratorProvider().provide(project_name="myapp")
+
+        # Assert
+        assert isinstance(result, CheckOrchestrator)
+
+    def test_provide_正常系_project_nameなしで従来通り動作すること(self):
+        # Act
+        result = CheckOrchestratorProvider().provide(project_name=None)
+
+        # Assert
+        assert isinstance(result, CheckOrchestrator)

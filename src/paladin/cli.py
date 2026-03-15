@@ -74,7 +74,10 @@ def check(
     )
     report = (
         CheckOrchestratorProvider()
-        .provide(rule_options=project_config.rule_options)
+        .provide(
+            rule_options=project_config.rule_options,
+            project_name=project_config.project_name,
+        )
         .orchestrate(context)
     )
     typer.echo(report.text)
