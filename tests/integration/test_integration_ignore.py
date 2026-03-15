@@ -8,6 +8,20 @@ from pathlib import Path
 
 from paladin.check import CheckOrchestratorProvider
 from paladin.check.context import CheckContext
+from paladin.config import ProjectConfigLoader
+from paladin.foundation.fs.text import TextFileSystemReader
+
+
+def _load_context(targets: tuple[Path, ...]) -> CheckContext:
+    """pyproject.toml を読み込み CheckContext を構築するヘルパー"""
+    config = ProjectConfigLoader(reader=TextFileSystemReader()).load()
+    return CheckContext(
+        targets=targets,
+        include=config.include,
+        exclude=config.exclude,
+        rules=config.rules,
+        per_file_ignores=config.per_file_ignores,
+    )
 
 
 class TestIntegrationIgnore:
@@ -74,12 +88,12 @@ class TestIntegrationDirectoryIgnore:
         init_file.write_text('__all__ = ["tests"]\n', encoding="utf-8")
         test_file = tests_dir / "test_main.py"
         test_file.write_text("import paladin\n", encoding="utf-8")
-        context = CheckContext(targets=(tests_dir,))
 
         # Act: pyproject.toml が読まれるよう CWD を tmp_path に変更
         original_cwd = Path.cwd()
         try:
             os.chdir(tmp_path)
+            context = _load_context((tests_dir,))
             report = CheckOrchestratorProvider().provide().orchestrate(context)
         finally:
             os.chdir(original_cwd)
@@ -106,12 +120,12 @@ class TestIntegrationDirectoryIgnore:
         unit_init.write_text('__all__ = ["unit"]\n', encoding="utf-8")
         test_file = unit_dir / "test_deep.py"
         test_file.write_text("import paladin\n", encoding="utf-8")
-        context = CheckContext(targets=(tests_dir,))
 
         # Act
         original_cwd = Path.cwd()
         try:
             os.chdir(tmp_path)
+            context = _load_context((tests_dir,))
             report = CheckOrchestratorProvider().provide().orchestrate(context)
         finally:
             os.chdir(original_cwd)
@@ -130,12 +144,12 @@ class TestIntegrationDirectoryIgnore:
         scripts_dir.mkdir()
         script_file = scripts_dir / "deploy.py"
         script_file.write_text("from foo import bar\n", encoding="utf-8")
-        context = CheckContext(targets=(scripts_dir,))
 
         # Act
         original_cwd = Path.cwd()
         try:
             os.chdir(tmp_path)
+            context = _load_context((scripts_dir,))
             report = CheckOrchestratorProvider().provide().orchestrate(context)
         finally:
             os.chdir(original_cwd)
@@ -156,12 +170,12 @@ class TestIntegrationDirectoryIgnore:
         src_dir.mkdir()
         src_file = src_dir / "main.py"
         src_file.write_text("from foo import bar\n", encoding="utf-8")
-        context = CheckContext(targets=(src_dir,))
 
         # Act
         original_cwd = Path.cwd()
         try:
             os.chdir(tmp_path)
+            context = _load_context((src_dir,))
             report = CheckOrchestratorProvider().provide().orchestrate(context)
         finally:
             os.chdir(original_cwd)

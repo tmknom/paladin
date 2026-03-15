@@ -31,9 +31,10 @@ from typing import Annotated
 import typer
 
 from paladin.check import CheckContext, CheckOrchestratorProvider, OutputFormat
-from paladin.config import AppConfig, EnvVarConfig
+from paladin.config import AppConfig, EnvVarConfig, ProjectConfigLoader
 from paladin.config.env_var import LogLevel
 from paladin.foundation.error import ErrorHandler
+from paladin.foundation.fs.text import TextFileSystemReader
 from paladin.foundation.log import LogConfigurator, log
 from paladin.list import ListContext, ListOrchestratorProvider
 from paladin.transform import TransformContext, TransformOrchestratorProvider
@@ -56,10 +57,15 @@ def check(
     ] = None,
 ) -> None:
     """解析対象の .py ファイルを診断し、違反レポートを出力する"""
+    project_config = ProjectConfigLoader(reader=TextFileSystemReader()).load()
     context = CheckContext(
         targets=tuple(targets) if targets else (),
         format=format,
         ignore_rules=frozenset(ignore_rule or []),
+        include=project_config.include,
+        exclude=project_config.exclude,
+        rules=project_config.rules,
+        per_file_ignores=project_config.per_file_ignores,
     )
     report = CheckOrchestratorProvider().provide().orchestrate(context)
     typer.echo(report.text)
