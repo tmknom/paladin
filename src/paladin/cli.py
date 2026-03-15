@@ -58,7 +58,6 @@ def check(
     """解析対象の .py ファイルを診断し、違反レポートを出力する"""
     context = CheckContext(
         targets=tuple(targets) if targets else (),
-        has_cli_targets=targets is not None and len(targets) > 0,
         format=format,
         ignore_rules=frozenset(ignore_rule or []),
     )
