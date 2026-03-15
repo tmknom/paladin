@@ -6,7 +6,7 @@ import pytest
 
 from paladin.lint.rule_set import RuleSet
 from paladin.lint.types import RuleMeta, SourceFile, SourceFiles, Violation, Violations
-from tests.unit.test_check.fakes import FakeMultiFileRule, FakeRule
+from tests.unit.fakes import FakeMultiFileRule, FakeRule
 
 
 def _make_source_file(source: str, filename: str = "__init__.py") -> SourceFile:

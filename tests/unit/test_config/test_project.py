@@ -1,6 +1,6 @@
 from paladin.config import OverrideEntry, PerFileIgnoreEntry, ProjectConfig, ProjectConfigLoader
 from paladin.foundation.fs import FileSystemError
-from tests.unit.test_check.fakes import InMemoryFsReader
+from tests.unit.fakes import InMemoryFsReader
 
 
 class TestOverrideEntry:
