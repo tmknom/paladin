@@ -10,7 +10,7 @@ from paladin.lint import (
     RequireAllExportRule,
     RequireQualifiedThirdPartyRule,
     Rule,
-    RuleRegistry,
+    RuleSet,
 )
 from paladin.view.formatter import ViewFormatter
 from paladin.view.orchestrator import ViewOrchestrator
@@ -29,9 +29,9 @@ class ViewOrchestratorProvider:
         Returns:
             設定済みの ViewOrchestrator
         """
-        registry = RuleRegistry(rules=self._create_rules())
+        rule_set = RuleSet(rules=self._create_rules())
         formatter = ViewFormatter()
-        return ViewOrchestrator(registry=registry, formatter=formatter)
+        return ViewOrchestrator(rule_set=rule_set, formatter=formatter)
 
     def _create_rules(self) -> tuple[Rule, ...]:
         return (

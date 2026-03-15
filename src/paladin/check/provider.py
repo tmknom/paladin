@@ -17,7 +17,7 @@ from paladin.lint import (
     NoRelativeImportRule,
     RequireAllExportRule,
     RequireQualifiedThirdPartyRule,
-    RuleRunner,
+    RuleSet,
 )
 
 
@@ -36,12 +36,12 @@ class CheckOrchestratorProvider:
         """
         reader = TextFileSystemReader()
         parser = AstParser(reader=reader)
-        runner = self._create_runner()
+        rule_set = self._create_rule_set()
         config_loader = ProjectConfigLoader(reader=TextFileSystemReader())
         return CheckOrchestrator(
             collector=FileCollector(),
             parser=parser,
-            runner=runner,
+            rule_set=rule_set,
             formatter=CheckFormatterFactory(),
             violation_filter=ViolationFilter(),
             config_loader=config_loader,
@@ -50,14 +50,14 @@ class CheckOrchestratorProvider:
             path_excluder=PathExcluder(),
         )
 
-    def _create_runner(self) -> RuleRunner:
+    def _create_rule_set(self) -> RuleSet:
         require_all_export_rule = RequireAllExportRule()
         no_relative_import_rule = NoRelativeImportRule()
         no_local_import_rule = NoLocalImportRule()
         require_qualified_third_party_rule = RequireQualifiedThirdPartyRule(
             root_packages=("paladin", "tests")
         )
-        return RuleRunner(
+        return RuleSet(
             rules=(
                 require_all_export_rule,
                 no_relative_import_rule,

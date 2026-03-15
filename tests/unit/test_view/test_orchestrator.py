@@ -1,6 +1,6 @@
 """ViewOrchestratorクラスのテスト"""
 
-from paladin.lint import Rule, RuleRegistry
+from paladin.lint import Rule, RuleSet
 from paladin.view.context import ViewContext
 from paladin.view.formatter import ViewFormatter
 from paladin.view.orchestrator import ViewOrchestrator
@@ -11,9 +11,9 @@ class TestViewOrchestrator:
     """ViewOrchestratorクラスのテスト"""
 
     def _make_orchestrator(self, rules: tuple[Rule, ...]) -> ViewOrchestrator:
-        registry = RuleRegistry(rules=rules)
+        rule_set = RuleSet(rules=rules)
         formatter = ViewFormatter()
-        return ViewOrchestrator(registry=registry, formatter=formatter)
+        return ViewOrchestrator(rule_set=rule_set, formatter=formatter)
 
     def test_orchestrate_正常系_rule_id指定で対象ルールの詳細を返すこと(self):
         # Arrange

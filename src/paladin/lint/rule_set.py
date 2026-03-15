@@ -1,17 +1,17 @@
-"""ルール適用
+"""ルール管理・実行
 
-全ルールを全ファイルへ適用し違反を集約する。
+複数 Rule を束ねて管理し、実行・一覧・検索を提供する。
 """
 
 from paladin.lint.protocol import Rule
-from paladin.lint.types import SourceFiles, Violation, Violations
+from paladin.lint.types import RuleMeta, SourceFiles, Violation, Violations
 
 
-class RuleRunner:
-    """複数Ruleを束ねてSourceFilesの各ファイルに適用し、Violationsを返す"""
+class RuleSet:
+    """複数 Rule を束ねて管理し、実行・一覧・検索を提供する"""
 
     def __init__(self, rules: tuple[Rule, ...]) -> None:
-        """RuleRunnerを初期化"""
+        """RuleSetを初期化"""
         self._rules = rules
 
     @property
@@ -37,3 +37,14 @@ class RuleRunner:
                     continue
                 violations.extend(rule.check(source_file))
         return Violations(items=tuple(violations))
+
+    def list_rules(self) -> tuple[RuleMeta, ...]:
+        """登録済みルールのメタ情報一覧を返す"""
+        return tuple(rule.meta for rule in self._rules)
+
+    def find_rule(self, rule_id: str) -> RuleMeta | None:
+        """指定した rule_id に一致する RuleMeta を返す。存在しない場合は None を返す"""
+        for rule in self._rules:
+            if rule.meta.rule_id == rule_id:
+                return rule.meta
+        return None

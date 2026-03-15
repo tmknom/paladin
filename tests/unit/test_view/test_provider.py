@@ -10,7 +10,7 @@ class TestViewOrchestratorProvider:
     def test_provide_正常系_全ルールが登録されたViewOrchestratorを返すこと(self):
         # Act
         result = ViewOrchestratorProvider().provide()
-        rules = result.registry.list_rules()
+        rules = result.rule_set.list_rules()
 
         # Assert
         assert isinstance(result, ViewOrchestrator)

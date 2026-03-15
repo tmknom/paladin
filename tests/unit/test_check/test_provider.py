@@ -5,7 +5,7 @@ from paladin.check.ignore import ViolationFilter
 from paladin.check.orchestrator import CheckOrchestrator
 from paladin.check.parser import AstParser
 from paladin.check.path import PathExcluder, TargetResolver
-from paladin.lint import RuleRunner
+from paladin.lint import RuleSet
 
 
 class TestCheckOrchestratorProvider:
@@ -25,12 +25,12 @@ class TestCheckOrchestratorProvider:
         # Assert
         assert isinstance(result.parser, AstParser)
 
-    def test_provide_正常系_RuleRunnerが注入されたOrchestratorを返すこと(self):
+    def test_provide_正常系_RuleSetが注入されたOrchestratorを返すこと(self):
         # Act
         result = CheckOrchestratorProvider().provide()
 
         # Assert
-        assert isinstance(result.runner, RuleRunner)
+        assert isinstance(result.rule_set, RuleSet)
 
     def test_provide_正常系_CheckFormatterFactoryが注入されたOrchestratorを返すこと(self):
         # Act

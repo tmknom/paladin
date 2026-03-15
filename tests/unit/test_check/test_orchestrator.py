@@ -15,7 +15,7 @@ from paladin.check.result import CheckReport
 from paladin.check.types import OutputFormat
 from paladin.foundation.error.error import ApplicationError
 from paladin.foundation.fs.error import FileSystemError
-from paladin.lint import RequireAllExportRule, RuleRunner
+from paladin.lint import RequireAllExportRule, RuleSet
 from paladin.lint.types import Violation
 from tests.unit.test_check.fakes import FakeRule, InMemoryFsReader
 
@@ -31,7 +31,7 @@ class TestCheckOrchestrator:
         py_file.write_text("x = 1\n")
         reader = InMemoryFsReader(contents={str(py_file.resolve()): "x = 1\n"})
         parser = AstParser(reader=reader)
-        runner = RuleRunner(rules=(RequireAllExportRule(),))
+        rule_set = RuleSet(rules=(RequireAllExportRule(),))
         config_loader = ProjectConfigLoader(
             reader=InMemoryFsReader(
                 error=FileSystemError(message="not found", cause=Exception("not found"))
@@ -40,7 +40,7 @@ class TestCheckOrchestrator:
         orchestrator = CheckOrchestrator(
             collector=FileCollector(),
             parser=parser,
-            runner=runner,
+            rule_set=rule_set,
             formatter=CheckFormatterFactory(),
             violation_filter=ViolationFilter(),
             config_loader=config_loader,
@@ -63,7 +63,7 @@ class TestCheckOrchestrator:
         init_file.write_text("from foo import bar\n")
         reader = InMemoryFsReader(contents={str(init_file.resolve()): "from foo import bar\n"})
         parser = AstParser(reader=reader)
-        runner = RuleRunner(rules=(RequireAllExportRule(),))
+        rule_set = RuleSet(rules=(RequireAllExportRule(),))
         config_loader = ProjectConfigLoader(
             reader=InMemoryFsReader(
                 error=FileSystemError(message="not found", cause=Exception("not found"))
@@ -72,7 +72,7 @@ class TestCheckOrchestrator:
         orchestrator = CheckOrchestrator(
             collector=FileCollector(),
             parser=parser,
-            runner=runner,
+            rule_set=rule_set,
             formatter=CheckFormatterFactory(),
             violation_filter=ViolationFilter(),
             config_loader=config_loader,
@@ -95,7 +95,7 @@ class TestCheckOrchestrator:
         py_file.write_text("x = 1\n")
         reader = InMemoryFsReader(contents={str(py_file.resolve()): "x = 1\n"})
         parser = AstParser(reader=reader)
-        runner = RuleRunner(rules=(RequireAllExportRule(),))
+        rule_set = RuleSet(rules=(RequireAllExportRule(),))
         config_loader = ProjectConfigLoader(
             reader=InMemoryFsReader(
                 error=FileSystemError(message="not found", cause=Exception("not found"))
@@ -104,7 +104,7 @@ class TestCheckOrchestrator:
         orchestrator = CheckOrchestrator(
             collector=FileCollector(),
             parser=parser,
-            runner=runner,
+            rule_set=rule_set,
             formatter=CheckFormatterFactory(),
             violation_filter=ViolationFilter(),
             config_loader=config_loader,
@@ -128,7 +128,7 @@ class TestCheckOrchestrator:
         py_file.write_text("x = 1\n")
         reader = InMemoryFsReader(contents={str(py_file.resolve()): "x = 1\n"})
         parser = AstParser(reader=reader)
-        runner = RuleRunner(rules=(RequireAllExportRule(),))
+        rule_set = RuleSet(rules=(RequireAllExportRule(),))
         config_loader = ProjectConfigLoader(
             reader=InMemoryFsReader(
                 error=FileSystemError(message="not found", cause=Exception("not found"))
@@ -137,7 +137,7 @@ class TestCheckOrchestrator:
         orchestrator = CheckOrchestrator(
             collector=FileCollector(),
             parser=parser,
-            runner=runner,
+            rule_set=rule_set,
             formatter=CheckFormatterFactory(),
             violation_filter=ViolationFilter(),
             config_loader=config_loader,
@@ -164,7 +164,7 @@ class TestCheckOrchestrator:
             contents={str(init_file.resolve()): "# paladin: ignore-file\nfrom foo import bar\n"}
         )
         parser = AstParser(reader=reader)
-        runner = RuleRunner(rules=(RequireAllExportRule(),))
+        rule_set = RuleSet(rules=(RequireAllExportRule(),))
         config_loader = ProjectConfigLoader(
             reader=InMemoryFsReader(
                 error=FileSystemError(message="not found", cause=Exception("not found"))
@@ -173,7 +173,7 @@ class TestCheckOrchestrator:
         orchestrator = CheckOrchestrator(
             collector=FileCollector(),
             parser=parser,
-            runner=runner,
+            rule_set=rule_set,
             formatter=CheckFormatterFactory(),
             violation_filter=ViolationFilter(),
             config_loader=config_loader,
@@ -204,7 +204,7 @@ class TestCheckOrchestrator:
             }
         )
         parser = AstParser(reader=reader)
-        runner = RuleRunner(rules=(RequireAllExportRule(),))
+        rule_set = RuleSet(rules=(RequireAllExportRule(),))
         config_loader = ProjectConfigLoader(
             reader=InMemoryFsReader(
                 error=FileSystemError(message="not found", cause=Exception("not found"))
@@ -213,7 +213,7 @@ class TestCheckOrchestrator:
         orchestrator = CheckOrchestrator(
             collector=FileCollector(),
             parser=parser,
-            runner=runner,
+            rule_set=rule_set,
             formatter=CheckFormatterFactory(),
             violation_filter=ViolationFilter(),
             config_loader=config_loader,
@@ -248,7 +248,7 @@ class TestCheckOrchestrator:
             suggestion="suggestion",
         )
         rule = FakeRule(violations=(violation,))
-        runner = RuleRunner(rules=(rule,))
+        rule_set = RuleSet(rules=(rule,))
         config_loader = ProjectConfigLoader(
             reader=InMemoryFsReader(
                 error=FileSystemError(message="not found", cause=Exception("not found"))
@@ -257,7 +257,7 @@ class TestCheckOrchestrator:
         orchestrator = CheckOrchestrator(
             collector=FileCollector(),
             parser=parser,
-            runner=runner,
+            rule_set=rule_set,
             formatter=CheckFormatterFactory(),
             violation_filter=ViolationFilter(),
             config_loader=config_loader,
@@ -294,7 +294,7 @@ class TestCheckOrchestrator:
             suggestion="suggestion",
         )
         rule = FakeRule(violations=(violation,))
-        runner = RuleRunner(rules=(rule,))
+        rule_set = RuleSet(rules=(rule,))
         config_loader = ProjectConfigLoader(
             reader=InMemoryFsReader(
                 error=FileSystemError(message="not found", cause=Exception("not found"))
@@ -303,7 +303,7 @@ class TestCheckOrchestrator:
         orchestrator = CheckOrchestrator(
             collector=FileCollector(),
             parser=parser,
-            runner=runner,
+            rule_set=rule_set,
             formatter=CheckFormatterFactory(),
             violation_filter=ViolationFilter(),
             config_loader=config_loader,
@@ -339,13 +339,13 @@ class TestCheckOrchestrator:
             suggestion="suggestion",
         )
         rule = FakeRule(violations=(violation,))
-        runner = RuleRunner(rules=(rule,))
+        rule_set = RuleSet(rules=(rule,))
         toml_content = '[tool.paladin.per-file-ignores]\n"example.py" = ["fake-rule"]\n'
         config_loader = ProjectConfigLoader(reader=InMemoryFsReader(content=toml_content))
         orchestrator = CheckOrchestrator(
             collector=FileCollector(),
             parser=parser,
-            runner=runner,
+            rule_set=rule_set,
             formatter=CheckFormatterFactory(),
             violation_filter=ViolationFilter(),
             config_loader=config_loader,
@@ -381,7 +381,7 @@ class TestCheckOrchestrator:
             suggestion="suggestion",
         )
         rule = FakeRule(violations=(violation,))
-        runner = RuleRunner(rules=(rule,))
+        rule_set = RuleSet(rules=(rule,))
         config_loader = ProjectConfigLoader(
             reader=InMemoryFsReader(
                 error=FileSystemError(message="not found", cause=Exception("not found"))
@@ -390,7 +390,7 @@ class TestCheckOrchestrator:
         orchestrator = CheckOrchestrator(
             collector=FileCollector(),
             parser=parser,
-            runner=runner,
+            rule_set=rule_set,
             formatter=CheckFormatterFactory(),
             violation_filter=ViolationFilter(),
             config_loader=config_loader,
@@ -445,13 +445,13 @@ class TestCheckOrchestrator:
             suggestion="suggestion",
         )
         rule = FakeRule(violations=(violation1, violation2))
-        runner = RuleRunner(rules=(rule,))
+        rule_set = RuleSet(rules=(rule,))
         toml_content = '[tool.paladin.per-file-ignores]\n"config_ignored.py" = ["fake-rule"]\n'
         config_loader = ProjectConfigLoader(reader=InMemoryFsReader(content=toml_content))
         orchestrator = CheckOrchestrator(
             collector=FileCollector(),
             parser=parser,
-            runner=runner,
+            rule_set=rule_set,
             formatter=CheckFormatterFactory(),
             violation_filter=ViolationFilter(),
             config_loader=config_loader,
@@ -487,13 +487,13 @@ class TestCheckOrchestrator:
             suggestion="suggestion",
         )
         rule = FakeRule(rule_id="fake-rule", violations=(violation,))
-        runner = RuleRunner(rules=(rule,))
+        rule_set = RuleSet(rules=(rule,))
         toml_content = "[tool.paladin.rules]\nfake-rule = false\n"
         config_loader = ProjectConfigLoader(reader=InMemoryFsReader(content=toml_content))
         orchestrator = CheckOrchestrator(
             collector=FileCollector(),
             parser=parser,
-            runner=runner,
+            rule_set=rule_set,
             formatter=CheckFormatterFactory(),
             violation_filter=ViolationFilter(),
             config_loader=config_loader,
@@ -518,7 +518,7 @@ class TestCheckOrchestrator:
         init_file.write_text("from foo import bar\n")
         reader = InMemoryFsReader(contents={str(init_file.resolve()): "from foo import bar\n"})
         parser = AstParser(reader=reader)
-        runner = RuleRunner(rules=(RequireAllExportRule(),))
+        rule_set = RuleSet(rules=(RequireAllExportRule(),))
         config_loader = ProjectConfigLoader(
             reader=InMemoryFsReader(
                 error=FileSystemError(message="not found", cause=Exception("not found"))
@@ -527,7 +527,7 @@ class TestCheckOrchestrator:
         orchestrator = CheckOrchestrator(
             collector=FileCollector(),
             parser=parser,
-            runner=runner,
+            rule_set=rule_set,
             formatter=CheckFormatterFactory(),
             violation_filter=ViolationFilter(),
             config_loader=config_loader,
@@ -552,13 +552,13 @@ class TestCheckOrchestrator:
         py_file.write_text("x = 1\n")
         reader = InMemoryFsReader(contents={str(py_file.resolve()): "x = 1\n"})
         parser = AstParser(reader=reader)
-        runner = RuleRunner(rules=(RequireAllExportRule(),))
+        rule_set = RuleSet(rules=(RequireAllExportRule(),))
         toml_content = "[tool.paladin.rules]\nunknown-rule = false\n"
         config_loader = ProjectConfigLoader(reader=InMemoryFsReader(content=toml_content))
         orchestrator = CheckOrchestrator(
             collector=FileCollector(),
             parser=parser,
-            runner=runner,
+            rule_set=rule_set,
             formatter=CheckFormatterFactory(),
             violation_filter=ViolationFilter(),
             config_loader=config_loader,
@@ -580,13 +580,13 @@ class TestCheckOrchestrator:
         py_file.write_text("x = 1\n")
         reader = InMemoryFsReader(contents={str(py_file.resolve()): "x = 1\n"})
         parser = AstParser(reader=reader)
-        runner = RuleRunner(rules=(RequireAllExportRule(),))
+        rule_set = RuleSet(rules=(RequireAllExportRule(),))
         toml_content = f'[tool.paladin]\ninclude = ["{tmp_path}"]\n'
         config_loader = ProjectConfigLoader(reader=InMemoryFsReader(content=toml_content))
         orchestrator = CheckOrchestrator(
             collector=FileCollector(),
             parser=parser,
-            runner=runner,
+            rule_set=rule_set,
             formatter=CheckFormatterFactory(),
             violation_filter=ViolationFilter(),
             config_loader=config_loader,
@@ -621,13 +621,13 @@ class TestCheckOrchestrator:
             suggestion="suggestion",
         )
         rule = FakeRule(rule_id="fake-rule", violations=(violation,))
-        runner = RuleRunner(rules=(rule,))
+        rule_set = RuleSet(rules=(rule,))
         toml_content = f'[tool.paladin]\nexclude = ["{py_file.name}"]\n'
         config_loader = ProjectConfigLoader(reader=InMemoryFsReader(content=toml_content))
         orchestrator = CheckOrchestrator(
             collector=FileCollector(),
             parser=parser,
-            runner=runner,
+            rule_set=rule_set,
             formatter=CheckFormatterFactory(),
             violation_filter=ViolationFilter(),
             config_loader=config_loader,
@@ -650,13 +650,13 @@ class TestCheckOrchestrator:
         py_file.write_text("x = 1\n")
         reader = InMemoryFsReader(contents={str(py_file.resolve()): "x = 1\n"})
         parser = AstParser(reader=reader)
-        runner = RuleRunner(rules=(RequireAllExportRule(),))
+        rule_set = RuleSet(rules=(RequireAllExportRule(),))
         toml_content = '[tool.paladin]\ninclude = ["/nonexistent/path"]\n'
         config_loader = ProjectConfigLoader(reader=InMemoryFsReader(content=toml_content))
         orchestrator = CheckOrchestrator(
             collector=FileCollector(),
             parser=parser,
-            runner=runner,
+            rule_set=rule_set,
             formatter=CheckFormatterFactory(),
             violation_filter=ViolationFilter(),
             config_loader=config_loader,
@@ -693,13 +693,13 @@ class TestCheckOrchestrator:
             suggestion="suggestion",
         )
         rule = FakeRule(rule_id="fake-rule", violations=(violation,))
-        runner = RuleRunner(rules=(rule,))
+        rule_set = RuleSet(rules=(rule,))
         toml_content = f'[tool.paladin]\nexclude = ["{py_file.name}"]\n'
         config_loader = ProjectConfigLoader(reader=InMemoryFsReader(content=toml_content))
         orchestrator = CheckOrchestrator(
             collector=FileCollector(),
             parser=parser,
-            runner=runner,
+            rule_set=rule_set,
             formatter=CheckFormatterFactory(),
             violation_filter=ViolationFilter(),
             config_loader=config_loader,
@@ -720,7 +720,7 @@ class TestCheckOrchestrator:
         self, tmp_path: Path
     ):
         # Arrange
-        runner = RuleRunner(rules=(RequireAllExportRule(),))
+        rule_set = RuleSet(rules=(RequireAllExportRule(),))
         config_loader = ProjectConfigLoader(
             reader=InMemoryFsReader(
                 error=FileSystemError(message="not found", cause=Exception("not found"))
@@ -730,7 +730,7 @@ class TestCheckOrchestrator:
         orchestrator = CheckOrchestrator(
             collector=FileCollector(),
             parser=parser,
-            runner=runner,
+            rule_set=rule_set,
             formatter=CheckFormatterFactory(),
             violation_filter=ViolationFilter(),
             config_loader=config_loader,

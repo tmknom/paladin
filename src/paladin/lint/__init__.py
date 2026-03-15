@@ -9,10 +9,9 @@ Docs:
 from paladin.lint.no_local_import import NoLocalImportRule
 from paladin.lint.no_relative_import import NoRelativeImportRule
 from paladin.lint.protocol import Rule
-from paladin.lint.registry import RuleRegistry
 from paladin.lint.require_all_export import RequireAllExportRule
 from paladin.lint.require_qualified_third_party import RequireQualifiedThirdPartyRule
-from paladin.lint.runner import RuleRunner
+from paladin.lint.rule_set import RuleSet
 from paladin.lint.types import RuleMeta, SourceFile, SourceFiles, Violation, Violations
 
 __all__ = [
@@ -22,8 +21,7 @@ __all__ = [
     "RequireQualifiedThirdPartyRule",
     "Rule",
     "RuleMeta",
-    "RuleRegistry",
-    "RuleRunner",
+    "RuleSet",
     "SourceFile",
     "SourceFiles",
     "Violation",

@@ -10,7 +10,7 @@ class TestListOrchestratorProvider:
     def test_provide_正常系_全ルールが登録されたListOrchestratorを返すこと(self):
         # Act
         result = ListOrchestratorProvider().provide()
-        rules = result.registry.list_rules()
+        rules = result.rule_set.list_rules()
 
         # Assert
         assert isinstance(result, ListOrchestrator)
