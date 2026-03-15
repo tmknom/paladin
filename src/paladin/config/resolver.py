@@ -6,7 +6,7 @@ TargetResolver を提供する。
 
 from pathlib import Path
 
-from paladin.foundation.error.error import ApplicationError
+from paladin.foundation.error import ApplicationError
 
 __all__ = ["TargetResolver"]
 

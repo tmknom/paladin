@@ -6,7 +6,7 @@
 from pathlib import Path
 
 from paladin.foundation.log import log
-from paladin.protocol.fs import TextFileSystemReaderProtocol
+from paladin.protocol import TextFileSystemReaderProtocol
 from paladin.transform.types import SrcText
 
 

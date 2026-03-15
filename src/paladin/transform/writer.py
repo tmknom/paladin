@@ -6,7 +6,7 @@
 from pathlib import Path
 
 from paladin.foundation.log import log
-from paladin.protocol.fs import TextFileSystemWriterProtocol
+from paladin.protocol import TextFileSystemWriterProtocol
 from paladin.transform.types import DstText
 
 

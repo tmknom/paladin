@@ -34,7 +34,7 @@ from paladin.check import CheckContext, CheckOrchestratorProvider, OutputFormat
 from paladin.config import AppConfig, EnvVarConfig, ProjectConfigLoader, TargetResolver
 from paladin.config.env_var import LogLevel
 from paladin.foundation.error import ErrorHandler
-from paladin.foundation.fs.text import TextFileSystemReader
+from paladin.foundation.fs import TextFileSystemReader
 from paladin.foundation.log import LogConfigurator, log
 from paladin.list import ListContext, ListOrchestratorProvider
 from paladin.transform import TransformContext, TransformOrchestratorProvider

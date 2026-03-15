@@ -3,7 +3,7 @@
 from pathlib import Path
 
 from paladin.foundation.fs.error import FileSystemError
-from paladin.protocol.fs import TextFileSystemReaderProtocol, TextFileSystemWriterProtocol
+from paladin.protocol import TextFileSystemReaderProtocol, TextFileSystemWriterProtocol
 
 
 class TextFileSystemReader(TextFileSystemReaderProtocol):
