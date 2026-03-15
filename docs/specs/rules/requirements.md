@@ -54,4 +54,4 @@
 
 - [list / view モジュール基本設計](./design.md): list / view モジュールのアーキテクチャ設計やコンポーネント構成
 - [check モジュール要件定義](../check/requirements.md): ルール定義の基盤となる check モジュールの要件
-- [Paladin 要件定義](../../intro/requirements.md): ツール全体の要件定義
+- [Paladin 全体仕様](../../intro/specifications.md): ツール全体の仕様
