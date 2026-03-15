@@ -1,7 +1,7 @@
-"""RulesFormatterクラスのテスト"""
+"""ListFormatterクラスのテスト"""
 
 from paladin.lint import RuleMeta
-from paladin.rules.formatter import RulesFormatter
+from paladin.list.formatter import ListFormatter
 
 
 def _make_rule_meta(
@@ -22,15 +22,15 @@ def _make_rule_meta(
     )
 
 
-class TestRulesFormatter:
-    """RulesFormatterクラスのテスト"""
+class TestListFormatter:
+    """ListFormatterクラスのテスト"""
 
     def test_format_正常系_単一ルールのID名前概要をタブ区切り風に返すこと(self):
         # Arrange
         rules = (_make_rule_meta(rule_id="PAL001", rule_name="rule-name", summary="概要テキスト"),)
 
         # Act
-        result = RulesFormatter().format(rules)
+        result = ListFormatter().format(rules)
 
         # Assert
         assert "PAL001" in result
@@ -45,7 +45,7 @@ class TestRulesFormatter:
         )
 
         # Act
-        result = RulesFormatter().format(rules)
+        result = ListFormatter().format(rules)
 
         # Assert
         lines = result.splitlines()
@@ -60,7 +60,7 @@ class TestRulesFormatter:
         rules: tuple[()] = ()
 
         # Act
-        result = RulesFormatter().format(rules)
+        result = ListFormatter().format(rules)
 
         # Assert
         assert result == ""

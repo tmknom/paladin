@@ -14,7 +14,7 @@ _LABEL_SUGGESTION = "Suggestion:"
 _COL_WIDTH = len(_LABEL_SUGGESTION) + 2
 
 
-class RulesDetailFormatter:
+class ViewFormatter:
     """RuleMeta を詳細表示用の text 形式に変換する"""
 
     def format(self, rule: RuleMeta) -> str:
