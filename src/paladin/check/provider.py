@@ -4,12 +4,11 @@
 """
 
 from paladin.check.collector import FileCollector, PathExcluder
-from paladin.check.config import RuleFilter
 from paladin.check.formatter import CheckFormatterFactory
 from paladin.check.ignore import ViolationFilter
 from paladin.check.orchestrator import CheckOrchestrator
 from paladin.check.parser import AstParser
-from paladin.check.resolver import TargetResolver
+from paladin.check.rule_filter import RuleFilter
 from paladin.foundation.fs.text import TextFileSystemReader
 from paladin.foundation.log import log
 from paladin.lint import (
@@ -44,7 +43,6 @@ class CheckOrchestratorProvider:
             formatter=CheckFormatterFactory(),
             violation_filter=ViolationFilter(),
             rule_filter=RuleFilter(),
-            target_resolver=TargetResolver(),
             path_excluder=PathExcluder(),
         )
 

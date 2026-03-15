@@ -1,20 +1,16 @@
 import json
 from pathlib import Path
 
-import pytest
-
 from paladin.check.collector import FileCollector, PathExcluder
-from paladin.check.config import RuleFilter
 from paladin.check.context import CheckContext
 from paladin.check.formatter import CheckFormatterFactory
 from paladin.check.ignore import ViolationFilter
 from paladin.check.orchestrator import CheckOrchestrator
 from paladin.check.parser import AstParser
-from paladin.check.resolver import TargetResolver
 from paladin.check.result import CheckReport
+from paladin.check.rule_filter import RuleFilter
 from paladin.check.types import OutputFormat
 from paladin.config import PerFileIgnoreEntry
-from paladin.foundation.error.error import ApplicationError
 from paladin.lint import RequireAllExportRule, RuleSet
 from paladin.lint.types import Violation
 from tests.unit.test_check.fakes import FakeRule, InMemoryFsReader
@@ -39,7 +35,6 @@ class TestCheckOrchestrator:
             formatter=CheckFormatterFactory(),
             violation_filter=ViolationFilter(),
             rule_filter=RuleFilter(),
-            target_resolver=TargetResolver(),
             path_excluder=PathExcluder(),
         )
         context = CheckContext(targets=(tmp_path,))
@@ -65,7 +60,6 @@ class TestCheckOrchestrator:
             formatter=CheckFormatterFactory(),
             violation_filter=ViolationFilter(),
             rule_filter=RuleFilter(),
-            target_resolver=TargetResolver(),
             path_excluder=PathExcluder(),
         )
         context = CheckContext(targets=(tmp_path,))
@@ -91,7 +85,6 @@ class TestCheckOrchestrator:
             formatter=CheckFormatterFactory(),
             violation_filter=ViolationFilter(),
             rule_filter=RuleFilter(),
-            target_resolver=TargetResolver(),
             path_excluder=PathExcluder(),
         )
         context = CheckContext(targets=(tmp_path,), format=OutputFormat.JSON)
@@ -118,7 +111,6 @@ class TestCheckOrchestrator:
             formatter=CheckFormatterFactory(),
             violation_filter=ViolationFilter(),
             rule_filter=RuleFilter(),
-            target_resolver=TargetResolver(),
             path_excluder=PathExcluder(),
         )
         context = CheckContext(targets=(tmp_path,), format=OutputFormat.TEXT)
@@ -148,7 +140,6 @@ class TestCheckOrchestrator:
             formatter=CheckFormatterFactory(),
             violation_filter=ViolationFilter(),
             rule_filter=RuleFilter(),
-            target_resolver=TargetResolver(),
             path_excluder=PathExcluder(),
         )
         context = CheckContext(targets=(tmp_path,))
@@ -182,7 +173,6 @@ class TestCheckOrchestrator:
             formatter=CheckFormatterFactory(),
             violation_filter=ViolationFilter(),
             rule_filter=RuleFilter(),
-            target_resolver=TargetResolver(),
             path_excluder=PathExcluder(),
         )
         context = CheckContext(targets=(tmp_path,))
@@ -220,7 +210,6 @@ class TestCheckOrchestrator:
             formatter=CheckFormatterFactory(),
             violation_filter=ViolationFilter(),
             rule_filter=RuleFilter(),
-            target_resolver=TargetResolver(),
             path_excluder=PathExcluder(),
         )
         context = CheckContext(targets=(tmp_path,))
@@ -260,7 +249,6 @@ class TestCheckOrchestrator:
             formatter=CheckFormatterFactory(),
             violation_filter=ViolationFilter(),
             rule_filter=RuleFilter(),
-            target_resolver=TargetResolver(),
             path_excluder=PathExcluder(),
         )
         context = CheckContext(targets=(tmp_path,))
@@ -299,7 +287,6 @@ class TestCheckOrchestrator:
             formatter=CheckFormatterFactory(),
             violation_filter=ViolationFilter(),
             rule_filter=RuleFilter(),
-            target_resolver=TargetResolver(),
             path_excluder=PathExcluder(),
         )
         context = CheckContext(
@@ -347,7 +334,6 @@ class TestCheckOrchestrator:
             formatter=CheckFormatterFactory(),
             violation_filter=ViolationFilter(),
             rule_filter=RuleFilter(),
-            target_resolver=TargetResolver(),
             path_excluder=PathExcluder(),
         )
         context = CheckContext(targets=(tmp_path,), ignore_rules=frozenset({"fake-rule"}))
@@ -403,7 +389,6 @@ class TestCheckOrchestrator:
             formatter=CheckFormatterFactory(),
             violation_filter=ViolationFilter(),
             rule_filter=RuleFilter(),
-            target_resolver=TargetResolver(),
             path_excluder=PathExcluder(),
         )
         context = CheckContext(
@@ -451,7 +436,6 @@ class TestCheckOrchestrator:
             formatter=CheckFormatterFactory(),
             violation_filter=ViolationFilter(),
             rule_filter=RuleFilter(),
-            target_resolver=TargetResolver(),
             path_excluder=PathExcluder(),
         )
         context = CheckContext(targets=(tmp_path,), rules={"fake-rule": False})
@@ -479,7 +463,6 @@ class TestCheckOrchestrator:
             formatter=CheckFormatterFactory(),
             violation_filter=ViolationFilter(),
             rule_filter=RuleFilter(),
-            target_resolver=TargetResolver(),
             path_excluder=PathExcluder(),
         )
         context = CheckContext(targets=(tmp_path,))
@@ -507,7 +490,6 @@ class TestCheckOrchestrator:
             formatter=CheckFormatterFactory(),
             violation_filter=ViolationFilter(),
             rule_filter=RuleFilter(),
-            target_resolver=TargetResolver(),
             path_excluder=PathExcluder(),
         )
         context = CheckContext(targets=(tmp_path,), rules={"unknown-rule": False})
@@ -518,8 +500,8 @@ class TestCheckOrchestrator:
         # Assert: 処理が正常に完了する
         assert isinstance(result, CheckReport)
 
-    def test_orchestrate_正常系_includeで指定したパスを解析対象とすること(self, tmp_path: Path):
-        # Arrange
+    def test_orchestrate_正常系_targetsで指定したパスを解析対象とすること(self, tmp_path: Path):
+        # Arrange: TargetResolver で解決済みの targets を渡す
         py_file = tmp_path / "main.py"
         py_file.write_text("x = 1\n")
         reader = InMemoryFsReader(contents={str(py_file.resolve()): "x = 1\n"})
@@ -532,16 +514,14 @@ class TestCheckOrchestrator:
             formatter=CheckFormatterFactory(),
             violation_filter=ViolationFilter(),
             rule_filter=RuleFilter(),
-            target_resolver=TargetResolver(),
             path_excluder=PathExcluder(),
         )
-        # CLIターゲット未指定
-        context = CheckContext(targets=(), include=(str(tmp_path),))
+        context = CheckContext(targets=(tmp_path,))
 
         # Act
         result = orchestrator.orchestrate(context)
 
-        # Assert: include のパスが解析対象になり、違反なしで終了
+        # Assert: targets のパスが解析対象になり、違反なしで終了
         assert isinstance(result, CheckReport)
         assert result.exit_code == 0
 
@@ -570,7 +550,6 @@ class TestCheckOrchestrator:
             formatter=CheckFormatterFactory(),
             violation_filter=ViolationFilter(),
             rule_filter=RuleFilter(),
-            target_resolver=TargetResolver(),
             path_excluder=PathExcluder(),
         )
         context = CheckContext(targets=(tmp_path,), exclude=(py_file.name,))
@@ -579,33 +558,6 @@ class TestCheckOrchestrator:
         result = orchestrator.orchestrate(context)
 
         # Assert: exclude パターンで example.py が除外されるため違反なし
-        assert isinstance(result, CheckReport)
-        assert result.exit_code == 0
-
-    def test_orchestrate_正常系_CLIターゲット指定時にincludeが無視されること(self, tmp_path: Path):
-        # Arrange: include に存在しないパスを指定し、CLI ターゲットが有効なことを確認
-        py_file = tmp_path / "main.py"
-        py_file.write_text("x = 1\n")
-        reader = InMemoryFsReader(contents={str(py_file.resolve()): "x = 1\n"})
-        parser = AstParser(reader=reader)
-        rule_set = RuleSet(rules=(RequireAllExportRule(),))
-        orchestrator = CheckOrchestrator(
-            collector=FileCollector(),
-            parser=parser,
-            rule_set=rule_set,
-            formatter=CheckFormatterFactory(),
-            violation_filter=ViolationFilter(),
-            rule_filter=RuleFilter(),
-            target_resolver=TargetResolver(),
-            path_excluder=PathExcluder(),
-        )
-        # CLI ターゲットが指定されているため include は無視される
-        context = CheckContext(targets=(tmp_path,), include=("/nonexistent/path",))
-
-        # Act
-        result = orchestrator.orchestrate(context)
-
-        # Assert: CLI ターゲット（tmp_path）が解析され、違反なし
         assert isinstance(result, CheckReport)
         assert result.exit_code == 0
 
@@ -636,7 +588,6 @@ class TestCheckOrchestrator:
             formatter=CheckFormatterFactory(),
             violation_filter=ViolationFilter(),
             rule_filter=RuleFilter(),
-            target_resolver=TargetResolver(),
             path_excluder=PathExcluder(),
         )
         context = CheckContext(targets=(tmp_path,), exclude=(py_file.name,))
@@ -647,25 +598,3 @@ class TestCheckOrchestrator:
         # Assert: CLI ターゲット指定でも exclude が適用され、違反なし
         assert isinstance(result, CheckReport)
         assert result.exit_code == 0
-
-    def test_orchestrate_異常系_CLIターゲットもincludeも未指定の場合ApplicationErrorを送出すること(
-        self,
-    ):
-        # Arrange
-        rule_set = RuleSet(rules=(RequireAllExportRule(),))
-        parser = AstParser(reader=InMemoryFsReader(content=""))
-        orchestrator = CheckOrchestrator(
-            collector=FileCollector(),
-            parser=parser,
-            rule_set=rule_set,
-            formatter=CheckFormatterFactory(),
-            violation_filter=ViolationFilter(),
-            rule_filter=RuleFilter(),
-            target_resolver=TargetResolver(),
-            path_excluder=PathExcluder(),
-        )
-        context = CheckContext(targets=())
-
-        # Act / Assert: TargetResolver が ApplicationError を送出する
-        with pytest.raises(ApplicationError):
-            orchestrator.orchestrate(context)

@@ -11,7 +11,7 @@ import pytest
 
 from paladin.check import CheckOrchestratorProvider
 from paladin.check.context import CheckContext
-from paladin.config import ProjectConfigLoader
+from paladin.config import ProjectConfigLoader, TargetResolver
 from paladin.foundation.error.error import ApplicationError
 from paladin.foundation.fs.text import TextFileSystemReader
 
@@ -19,9 +19,9 @@ from paladin.foundation.fs.text import TextFileSystemReader
 def _load_context(targets: tuple[Path, ...]) -> CheckContext:
     """pyproject.toml を読み込み CheckContext を構築するヘルパー"""
     config = ProjectConfigLoader(reader=TextFileSystemReader()).load()
+    resolved_targets = TargetResolver().resolve(targets=targets, include=config.include)
     return CheckContext(
-        targets=targets,
-        include=config.include,
+        targets=resolved_targets,
         exclude=config.exclude,
         rules=config.rules,
         per_file_ignores=config.per_file_ignores,
@@ -190,9 +190,8 @@ class TestIntegrationIncludeExclude:
         os.chdir(tmp_path)
 
         try:
-            context = _load_context(())
-            # Act / Assert: ApplicationError が発生する
+            # Act / Assert: TargetResolver が ApplicationError を送出する
             with pytest.raises(ApplicationError):
-                CheckOrchestratorProvider().provide().orchestrate(context)
+                _load_context(())
         finally:
             os.chdir(original_cwd)

@@ -2,31 +2,28 @@ from pathlib import Path
 
 import pytest
 
-from paladin.check.context import CheckContext
-from paladin.check.resolver import TargetResolver
+from paladin.config.resolver import TargetResolver
 from paladin.foundation.error.error import ApplicationError
 
 
 class TestTargetResolver:
-    def test_resolve_正常系_CLIターゲット指定ありの場合contextのtargetsを返すこと(self):
+    def test_resolve_正常系_CLIターゲット指定ありの場合targetsを返すこと(self):
         # Arrange
         targets = (Path("src/"),)
-        context = CheckContext(targets=targets)
         resolver = TargetResolver()
 
         # Act
-        result = resolver.resolve(context)
+        result = resolver.resolve(targets=targets, include=())
 
         # Assert
         assert result == targets
 
     def test_resolve_正常系_CLIターゲット未指定でinclude指定ありの場合includeのパスを返すこと(self):
         # Arrange
-        context = CheckContext(targets=(), include=("src/",))
         resolver = TargetResolver()
 
         # Act
-        result = resolver.resolve(context)
+        result = resolver.resolve(targets=(), include=("src/",))
 
         # Assert
         assert result == (Path("src/"),)
@@ -36,22 +33,20 @@ class TestTargetResolver:
     ):
         # Arrange
         targets = (Path("lib/"),)
-        context = CheckContext(targets=targets, include=("src/",))
         resolver = TargetResolver()
 
         # Act
-        result = resolver.resolve(context)
+        result = resolver.resolve(targets=targets, include=("src/",))
 
         # Assert
         assert result == targets
 
     def test_resolve_正常系_複数のincludeパスをPathに変換して返すこと(self):
         # Arrange
-        context = CheckContext(targets=(), include=("src/", "lib/"))
         resolver = TargetResolver()
 
         # Act
-        result = resolver.resolve(context)
+        result = resolver.resolve(targets=(), include=("src/", "lib/"))
 
         # Assert
         assert result == (Path("src/"), Path("lib/"))
@@ -60,9 +55,8 @@ class TestTargetResolver:
         self,
     ):
         # Arrange
-        context = CheckContext(targets=())
         resolver = TargetResolver()
 
         # Act / Assert
         with pytest.raises(ApplicationError):
-            resolver.resolve(context)
+            resolver.resolve(targets=(), include=())

@@ -31,7 +31,7 @@ from typing import Annotated
 import typer
 
 from paladin.check import CheckContext, CheckOrchestratorProvider, OutputFormat
-from paladin.config import AppConfig, EnvVarConfig, ProjectConfigLoader
+from paladin.config import AppConfig, EnvVarConfig, ProjectConfigLoader, TargetResolver
 from paladin.config.env_var import LogLevel
 from paladin.foundation.error import ErrorHandler
 from paladin.foundation.fs.text import TextFileSystemReader
@@ -58,11 +58,14 @@ def check(
 ) -> None:
     """解析対象の .py ファイルを診断し、違反レポートを出力する"""
     project_config = ProjectConfigLoader(reader=TextFileSystemReader()).load()
-    context = CheckContext(
+    resolved_targets = TargetResolver().resolve(
         targets=tuple(targets) if targets else (),
+        include=project_config.include,
+    )
+    context = CheckContext(
+        targets=resolved_targets,
         format=format,
         ignore_rules=frozenset(ignore_rule or []),
-        include=project_config.include,
         exclude=project_config.exclude,
         rules=project_config.rules,
         per_file_ignores=project_config.per_file_ignores,
