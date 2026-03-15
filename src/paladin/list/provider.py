@@ -10,7 +10,7 @@ from paladin.lint import (
     RequireAllExportRule,
     RequireQualifiedThirdPartyRule,
     Rule,
-    RuleRegistry,
+    RuleSet,
 )
 from paladin.list.formatter import ListFormatter
 from paladin.list.orchestrator import ListOrchestrator
@@ -29,9 +29,9 @@ class ListOrchestratorProvider:
         Returns:
             設定済みの ListOrchestrator
         """
-        registry = RuleRegistry(rules=self._create_rules())
+        rule_set = RuleSet(rules=self._create_rules())
         formatter = ListFormatter()
-        return ListOrchestrator(registry=registry, formatter=formatter)
+        return ListOrchestrator(rule_set=rule_set, formatter=formatter)
 
     def _create_rules(self) -> tuple[Rule, ...]:
         return (

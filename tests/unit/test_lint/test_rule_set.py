@@ -1,8 +1,8 @@
 import ast
 from pathlib import Path
 
-from paladin.lint.runner import RuleRunner
-from paladin.lint.types import SourceFile, SourceFiles, Violation, Violations
+from paladin.lint.rule_set import RuleSet
+from paladin.lint.types import RuleMeta, SourceFile, SourceFiles, Violation, Violations
 from tests.unit.test_check.fakes import FakeRule
 
 
@@ -27,18 +27,18 @@ def _make_violation(file: str = "src/paladin/__init__.py") -> Violation:
     )
 
 
-class TestRuleRunner:
-    """RuleRunnerクラスのテスト"""
+class TestRuleSet:
+    """RuleSetクラスのテスト"""
 
     def test_run_正常系_単一ルールの違反をViolationsとして返すこと(self):
         # Arrange
         violation = _make_violation()
         rule = FakeRule(violations=(violation,))
-        runner = RuleRunner(rules=(rule,))
+        rule_set = RuleSet(rules=(rule,))
         source_files = _make_source_files(("x = 1\n", "__init__.py"))
 
         # Act
-        result = runner.run(source_files)
+        result = rule_set.run(source_files)
 
         # Assert
         assert isinstance(result, Violations)
@@ -47,11 +47,11 @@ class TestRuleRunner:
     def test_run_正常系_違反なしの場合に空のViolationsを返すこと(self):
         # Arrange
         rule = FakeRule(violations=())
-        runner = RuleRunner(rules=(rule,))
+        rule_set = RuleSet(rules=(rule,))
         source_files = _make_source_files(("x = 1\n", "__init__.py"))
 
         # Act
-        result = runner.run(source_files)
+        result = rule_set.run(source_files)
 
         # Assert
         assert isinstance(result, Violations)
@@ -60,11 +60,11 @@ class TestRuleRunner:
     def test_run_エッジケース_空のSourceFilesで空のViolationsを返すこと(self):
         # Arrange
         rule = FakeRule(violations=(_make_violation(),))
-        runner = RuleRunner(rules=(rule,))
+        rule_set = RuleSet(rules=(rule,))
         source_files = SourceFiles(files=())
 
         # Act
-        result = runner.run(source_files)
+        result = rule_set.run(source_files)
 
         # Assert
         assert isinstance(result, Violations)
@@ -74,14 +74,14 @@ class TestRuleRunner:
         # Arrange
         violation = _make_violation()
         rule = FakeRule(violations=(violation,))
-        runner = RuleRunner(rules=(rule,))
+        rule_set = RuleSet(rules=(rule,))
         source_files = _make_source_files(
             ("x = 1\n", "a/__init__.py"),
             ("y = 2\n", "b/__init__.py"),
         )
 
         # Act
-        result = runner.run(source_files)
+        result = rule_set.run(source_files)
 
         # Assert
         assert isinstance(result, Violations)
@@ -111,11 +111,11 @@ class TestRuleRunner:
         )
         rule_a = FakeRule(rule_id="rule-a", violations=(violation_a,))
         rule_b = FakeRule(rule_id="rule-b", violations=(violation_b,))
-        runner = RuleRunner(rules=(rule_a, rule_b))
+        rule_set = RuleSet(rules=(rule_a, rule_b))
         source_files = _make_source_files(("x = 1\n", "__init__.py"))
 
         # Act
-        result = runner.run(source_files, disabled_rule_ids=frozenset({"rule-a"}))
+        result = rule_set.run(source_files, disabled_rule_ids=frozenset({"rule-a"}))
 
         # Assert
         assert len(result) == 1
@@ -126,11 +126,11 @@ class TestRuleRunner:
         violation = _make_violation()
         rule_a = FakeRule(rule_id="rule-a", violations=(violation,))
         rule_b = FakeRule(rule_id="rule-b", violations=(violation,))
-        runner = RuleRunner(rules=(rule_a, rule_b))
+        rule_set = RuleSet(rules=(rule_a, rule_b))
         source_files = _make_source_files(("x = 1\n", "__init__.py"))
 
         # Act
-        result = runner.run(source_files, disabled_rule_ids=frozenset())
+        result = rule_set.run(source_files, disabled_rule_ids=frozenset())
 
         # Assert: 両ルールが実行される
         assert len(result) == 2
@@ -139,11 +139,11 @@ class TestRuleRunner:
         # Arrange
         violation = _make_violation()
         rule = FakeRule(violations=(violation,))
-        runner = RuleRunner(rules=(rule,))
+        rule_set = RuleSet(rules=(rule,))
         source_files = _make_source_files(("x = 1\n", "__init__.py"))
 
         # Act: デフォルト引数（引数なし）で呼び出す
-        result = runner.run(source_files)
+        result = rule_set.run(source_files)
 
         # Assert
         assert len(result) == 1
@@ -152,10 +152,59 @@ class TestRuleRunner:
         # Arrange
         rule_a = FakeRule(rule_id="rule-a")
         rule_b = FakeRule(rule_id="rule-b")
-        runner = RuleRunner(rules=(rule_a, rule_b))
+        rule_set = RuleSet(rules=(rule_a, rule_b))
 
         # Act
-        result = runner.rule_ids
+        result = rule_set.rule_ids
 
         # Assert
         assert result == frozenset({"rule-a", "rule-b"})
+
+    def test_list_rules_正常系_登録済みルールのメタ情報を返すこと(self):
+        # Arrange
+        rule = FakeRule()
+        rule_set = RuleSet(rules=(rule,))
+
+        # Act
+        result = rule_set.list_rules()
+
+        # Assert
+        assert len(result) == 1
+        assert isinstance(result[0], RuleMeta)
+        assert result[0].rule_id == "fake-rule"
+        assert result[0].rule_name == "Fake Rule"
+
+    def test_list_rules_エッジケース_ルール未登録で空タプルを返すこと(self):
+        # Arrange
+        rule_set = RuleSet(rules=())
+
+        # Act
+        result = rule_set.list_rules()
+
+        # Assert
+        assert result == ()
+
+    def test_find_rule_正常系_登録済みrule_idに一致するRuleMetaを返すこと(self):
+        # Arrange
+        rule = FakeRule(rule_id="PAL001", rule_name="Fake Rule", summary="Fake summary")
+        rule_set = RuleSet(rules=(rule,))
+
+        # Act
+        result = rule_set.find_rule("PAL001")
+
+        # Assert
+        assert result is not None
+        assert isinstance(result, RuleMeta)
+        assert result.rule_id == "PAL001"
+        assert result.rule_name == "Fake Rule"
+
+    def test_find_rule_エッジケース_存在しないrule_idでNoneを返すこと(self):
+        # Arrange
+        rule = FakeRule(rule_id="PAL001")
+        rule_set = RuleSet(rules=(rule,))
+
+        # Act
+        result = rule_set.find_rule("nonexistent")
+
+        # Assert
+        assert result is None

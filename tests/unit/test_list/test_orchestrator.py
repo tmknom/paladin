@@ -1,6 +1,6 @@
 """ListOrchestratorクラスのテスト"""
 
-from paladin.lint import Rule, RuleRegistry
+from paladin.lint import Rule, RuleSet
 from paladin.list.context import ListContext
 from paladin.list.formatter import ListFormatter
 from paladin.list.orchestrator import ListOrchestrator
@@ -11,9 +11,9 @@ class TestListOrchestrator:
     """ListOrchestratorクラスのテスト"""
 
     def _make_orchestrator(self, rules: tuple[Rule, ...]) -> ListOrchestrator:
-        registry = RuleRegistry(rules=rules)
+        rule_set = RuleSet(rules=rules)
         formatter = ListFormatter()
-        return ListOrchestrator(registry=registry, formatter=formatter)
+        return ListOrchestrator(rule_set=rule_set, formatter=formatter)
 
     def test_orchestrate_正常系_既存の全ルール一覧を返すこと(self):
         # Arrange
