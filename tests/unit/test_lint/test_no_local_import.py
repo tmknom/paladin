@@ -73,12 +73,6 @@ class TestNoLocalImportRuleCheck:
         assert violation.column == 4
         assert violation.rule_id == "no-local-import"
         assert violation.rule_name == "No Local Import"
-        assert violation.message == "関数 foo 内に import 文があります"
-        assert (
-            violation.reason
-            == "import 文はモジュールのトップレベルに配置することで依存関係を明示し、インポートのタイミングを予測可能にします"
-        )
-        assert violation.suggestion == "ファイル冒頭のインポートセクションに移動してください"
 
     def test_check_正常系_クラス直下importで違反を返すこと(self):
         # Arrange

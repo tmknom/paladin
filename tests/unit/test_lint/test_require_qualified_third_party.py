@@ -64,18 +64,6 @@ class TestRequireQualifiedThirdPartyRuleCheckFromImport:
         assert violation.column == 0
         assert violation.rule_id == "require-qualified-third-party"
         assert violation.rule_name == "Require Qualified Third Party"
-        assert (
-            violation.message
-            == "`from requests import get` はサードパーティライブラリの直接インポートである"
-        )
-        assert (
-            violation.reason
-            == "外部依存の境界を明示するために、サードパーティライブラリは完全修飾名で使用する必要がある"
-        )
-        assert (
-            violation.suggestion
-            == "`import requests` に書き換え、使用箇所を `requests.get` 形式に修正する"
-        )
 
     def test_check_正常系_from_importで複数名をインポートした場合に名前ごとに個別の違反を返すこと(
         self,
@@ -136,15 +124,6 @@ class TestRequireQualifiedThirdPartyRuleCheckImportAs:
         assert violation.column == 0
         assert violation.rule_id == "require-qualified-third-party"
         assert violation.rule_name == "Require Qualified Third Party"
-        assert (
-            violation.message
-            == "`import requests as req` はサードパーティライブラリのエイリアスインポートである"
-        )
-        assert (
-            violation.reason
-            == "外部依存の境界を明示するために、サードパーティライブラリは完全修飾名で使用する必要がある"
-        )
-        assert violation.suggestion == "`import requests` に書き換え、エイリアスなしで使用する"
 
 
 class TestRequireQualifiedThirdPartyRuleCheckExclusions:

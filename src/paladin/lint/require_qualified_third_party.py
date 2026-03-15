@@ -63,7 +63,7 @@ class RequireQualifiedThirdPartyRule:
                     rule_name=self._meta.rule_name,
                     message=f"`from {node.module} import {alias.name}` はサードパーティライブラリの直接インポートである",
                     reason="外部依存の境界を明示するために、サードパーティライブラリは完全修飾名で使用する必要がある",
-                    suggestion=f"`import {node.module}` に書き換え、使用箇所を `{node.module}.{alias.name}` 形式に修正する",
+                    suggestion=f"`from {node.module} import {alias.name}` を `import {node.module}` に書き換え、使用箇所の `{alias.name}` を `{node.module}.{alias.name}` に置換してください",
                 )
             )
 
@@ -88,7 +88,7 @@ class RequireQualifiedThirdPartyRule:
                     rule_name=self._meta.rule_name,
                     message=f"`import {alias.name} as {alias.asname}` はサードパーティライブラリのエイリアスインポートである",
                     reason="外部依存の境界を明示するために、サードパーティライブラリは完全修飾名で使用する必要がある",
-                    suggestion=f"`import {alias.name}` に書き換え、エイリアスなしで使用する",
+                    suggestion=f"`import {alias.name} as {alias.asname}` を `import {alias.name}` に書き換え、使用箇所の `{alias.asname}` を `{alias.name}` に置換してください",
                 )
             )
 

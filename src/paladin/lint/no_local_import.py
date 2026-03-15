@@ -97,6 +97,7 @@ class NoLocalImportRule:
         scope: str,
         source_file: SourceFile,
     ) -> Violation:
+        import_text = source_file.source.splitlines()[node.lineno - 1].strip()
         return Violation(
             file=source_file.file_path,
             line=node.lineno,
@@ -105,7 +106,7 @@ class NoLocalImportRule:
             rule_name=self._meta.rule_name,
             message=f"{scope} 内に import 文があります",
             reason="import 文はモジュールのトップレベルに配置することで依存関係を明示し、インポートのタイミングを予測可能にします",
-            suggestion="ファイル冒頭のインポートセクションに移動してください",
+            suggestion=f"`{import_text}` をファイル冒頭のインポートセクションに移動し、{scope} 内から削除してください",
         )
 
 

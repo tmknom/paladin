@@ -25,7 +25,7 @@
 |-----------|------|
 | message | 相対インポートが使用されている（`from {level_dots}{module} import ...`） |
 | reason | 相対インポートは依存関係を不透明にし、モジュール移動時にインポートパスの修正が必要になる |
-| suggestion | プロジェクトルートからの絶対インポートに書き換える（例：`from myapp.services.data import DataLoader`） |
+| suggestion | `from {level_dots}{module} import {names}` をプロジェクトルートからの絶対インポートに書き換えてください |
 
 ## 検出パターン
 

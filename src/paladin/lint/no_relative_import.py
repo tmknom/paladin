@@ -34,6 +34,7 @@ class NoRelativeImportRule:
             if isinstance(node, ast.ImportFrom) and node.level >= 1:
                 level_dots = "." * node.level
                 module = node.module or ""
+                names_str = ", ".join(alias.name for alias in node.names)
                 violations.append(
                     Violation(
                         file=source_file.file_path,
@@ -43,7 +44,7 @@ class NoRelativeImportRule:
                         rule_name=self._meta.rule_name,
                         message=f"相対インポートが使用されている（from {level_dots}{module} import ...）",
                         reason="相対インポートは依存関係を不透明にし、モジュール移動時にインポートパスの修正が必要になる",
-                        suggestion="プロジェクトルートからの絶対インポートに書き換える（例：from myapp.services.data import DataLoader）",
+                        suggestion=f"`from {level_dots}{module} import {names_str}` をプロジェクトルートからの絶対インポートに書き換えてください",
                     )
                 )
         return tuple(violations)
