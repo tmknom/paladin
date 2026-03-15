@@ -1,9 +1,6 @@
 """ルールドメインパッケージの公開API
 
 公開APIは `paladin.lint` から import すること(`__all__` のみ互換性対象)。
-
-Docs:
-    - docs/specs/lint/design.md
 """
 
 from paladin.lint.protocol import MultiFileRule, Rule

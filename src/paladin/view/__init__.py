@@ -3,8 +3,8 @@
 公開APIは `paladin.view` から import すること(`__all__` のみ互換性対象)。
 
 Docs:
-    - docs/specs/rules/requirements.md
-    - docs/specs/rules/design.md
+    - docs/specs/view/requirements.md
+    - docs/specs/view/design.md
 """
 
 from paladin.view.context import ViewContext

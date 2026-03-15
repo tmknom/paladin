@@ -3,8 +3,8 @@
 公開APIは `paladin.list` から import すること(`__all__` のみ互換性対象)。
 
 Docs:
-    - docs/specs/rules/requirements.md
-    - docs/specs/rules/design.md
+    - docs/specs/list/requirements.md
+    - docs/specs/list/design.md
 """
 
 from paladin.list.context import ListContext
