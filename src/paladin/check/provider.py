@@ -9,6 +9,7 @@ from paladin.check.collector import FileCollector, PathExcluder
 from paladin.check.formatter import CheckFormatterFactory
 from paladin.check.ignore import ViolationFilter
 from paladin.check.orchestrator import CheckOrchestrator
+from paladin.check.override import OverrideResolver
 from paladin.check.parser import AstParser
 from paladin.check.rule_filter import RuleFilter
 from paladin.foundation.fs.text import TextFileSystemReader
@@ -45,4 +46,5 @@ class CheckOrchestratorProvider:
             violation_filter=ViolationFilter(),
             rule_filter=RuleFilter(),
             path_excluder=PathExcluder(),
+            override_resolver=OverrideResolver(),
         )

@@ -26,6 +26,7 @@ def _load_context(targets: tuple[Path, ...]) -> CheckContext:
         rules=config.rules,
         per_file_ignores=config.per_file_ignores,
         rule_options=config.rule_options,
+        overrides=config.overrides,
     )
 
 
@@ -286,3 +287,129 @@ class TestIntegrationRuleOptions:
 
         # Assert: 処理が正常に完了していること
         assert report.exit_code == 0
+
+
+class TestIntegrationOverrides:
+    """[[tool.paladin.overrides]] セクションによるディレクトリ別ルール設定の統合テスト"""
+
+    def test_check_正常系_overridesでテストディレクトリのルールを無効化できること(
+        self, tmp_path: Path
+    ):
+        # Arrange: tests/ 配下の __init__.py は require-all-export 違反あり
+        # overrides で tests/** に require-all-export = false を設定
+        tests_dir = tmp_path / "tests"
+        tests_dir.mkdir()
+        init_file = tests_dir / "__init__.py"
+        init_file.write_text("x = 1\n", encoding="utf-8")
+        pyproject = tmp_path / "pyproject.toml"
+        pyproject.write_text(
+            "[[tool.paladin.overrides]]\n"
+            'files = ["tests/**"]\n'
+            "\n"
+            "[tool.paladin.overrides.rules]\n"
+            "require-all-export = false\n",
+            encoding="utf-8",
+        )
+        original_cwd = Path.cwd()
+        os.chdir(tmp_path)
+
+        try:
+            context = _load_context((tmp_path,))
+            # Act
+            report = CheckOrchestratorProvider().provide().orchestrate(context)
+        finally:
+            os.chdir(original_cwd)
+
+        # Assert: tests/ 配下の require-all-export が無効化されるため exit_code == 0
+        assert report.exit_code == 0
+
+    def test_check_正常系_overridesでマッチしないファイルにはトップレベル設定が適用されること(
+        self, tmp_path: Path
+    ):
+        # Arrange: src/ の __init__.py は require-all-export 違反あり（overrides の対象外）
+        src_dir = tmp_path / "src"
+        src_dir.mkdir()
+        src_init = src_dir / "__init__.py"
+        src_init.write_text("x = 1\n", encoding="utf-8")
+        tests_dir = tmp_path / "tests"
+        tests_dir.mkdir()
+        tests_init = tests_dir / "__init__.py"
+        tests_init.write_text("x = 1\n", encoding="utf-8")
+        pyproject = tmp_path / "pyproject.toml"
+        pyproject.write_text(
+            "[[tool.paladin.overrides]]\n"
+            'files = ["tests/**"]\n'
+            "\n"
+            "[tool.paladin.overrides.rules]\n"
+            "require-all-export = false\n",
+            encoding="utf-8",
+        )
+        original_cwd = Path.cwd()
+        os.chdir(tmp_path)
+
+        try:
+            context = _load_context((tmp_path,))
+            # Act
+            report = CheckOrchestratorProvider().provide().orchestrate(context)
+        finally:
+            os.chdir(original_cwd)
+
+        # Assert: src/ の __init__.py は overrides 対象外のため違反あり
+        assert report.exit_code == 1
+
+    def test_check_正常系_overridesが未定義の場合全ファイルにトップレベル設定が適用されること(
+        self, tmp_path: Path
+    ):
+        # Arrange: overrides セクションなし → 全ファイルにトップレベルのルールが適用される
+        init_file = tmp_path / "__init__.py"
+        init_file.write_text("x = 1\n", encoding="utf-8")
+        pyproject = tmp_path / "pyproject.toml"
+        pyproject.write_text("[tool.paladin]\n", encoding="utf-8")
+        original_cwd = Path.cwd()
+        os.chdir(tmp_path)
+
+        try:
+            context = _load_context((tmp_path,))
+            # Act
+            report = CheckOrchestratorProvider().provide().orchestrate(context)
+        finally:
+            os.chdir(original_cwd)
+
+        # Assert: require-all-export が有効のため違反あり
+        assert report.exit_code == 1
+
+    def test_check_正常系_複数overridesで後勝ちが正しく動作すること(self, tmp_path: Path):
+        # Arrange: tests/unit/ 配下のファイルに2つのオーバーライドが適用される
+        # override1: tests/** で require-all-export = false
+        # override2: tests/unit/** で require-all-export = true（後勝ち）
+        unit_dir = tmp_path / "tests" / "unit"
+        unit_dir.mkdir(parents=True)
+        unit_init = unit_dir / "__init__.py"
+        unit_init.write_text("x = 1\n", encoding="utf-8")
+        pyproject = tmp_path / "pyproject.toml"
+        pyproject.write_text(
+            "[[tool.paladin.overrides]]\n"
+            'files = ["tests/**"]\n'
+            "\n"
+            "[tool.paladin.overrides.rules]\n"
+            "require-all-export = false\n"
+            "\n"
+            "[[tool.paladin.overrides]]\n"
+            'files = ["tests/unit/**"]\n'
+            "\n"
+            "[tool.paladin.overrides.rules]\n"
+            "require-all-export = true\n",
+            encoding="utf-8",
+        )
+        original_cwd = Path.cwd()
+        os.chdir(tmp_path)
+
+        try:
+            context = _load_context((tmp_path,))
+            # Act
+            report = CheckOrchestratorProvider().provide().orchestrate(context)
+        finally:
+            os.chdir(original_cwd)
+
+        # Assert: override2 が後勝ちで require-all-export = true → 違反あり
+        assert report.exit_code == 1

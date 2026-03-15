@@ -1,6 +1,19 @@
-from paladin.config import PerFileIgnoreEntry, ProjectConfig, ProjectConfigLoader
+from paladin.config import OverrideEntry, PerFileIgnoreEntry, ProjectConfig, ProjectConfigLoader
 from paladin.foundation.fs.error import FileSystemError
 from tests.unit.test_check.fakes import InMemoryFsReader
+
+
+class TestOverrideEntry:
+    def test_OverrideEntry_正常系_インスタンスを生成できること(self):
+        # Arrange / Act
+        entry = OverrideEntry(
+            files=("tests/**",),
+            rules={"require-all-export": False},
+        )
+
+        # Assert
+        assert entry.files == ("tests/**",)
+        assert entry.rules == {"require-all-export": False}
 
 
 class TestPerFileIgnoreEntry:
@@ -80,6 +93,23 @@ class TestProjectConfig:
 
         # Assert
         assert config.rule_options == {}
+
+    def test_ProjectConfig_正常系_overridesフィールドを保持できること(self):
+        # Arrange
+        entry = OverrideEntry(files=("tests/**",), rules={"require-all-export": False})
+
+        # Act
+        config = ProjectConfig(overrides=(entry,))
+
+        # Assert
+        assert config.overrides == (entry,)
+
+    def test_ProjectConfig_正常系_デフォルトでoverridesが空タプルであること(self):
+        # Arrange / Act
+        config = ProjectConfig()
+
+        # Assert
+        assert config.overrides == ()
 
     def test_ProjectConfig_正常系_per_file_ignoresを保持できること(self):
         # Arrange
@@ -474,3 +504,104 @@ key = "value"
         # Assert
         assert result.include == ()
         assert result.exclude == ()
+
+    def test_load_正常系_overridesセクションを含むProjectConfigを返すこと(self):
+        # Arrange
+        toml_content = """\
+[[tool.paladin.overrides]]
+files = ["tests/**"]
+
+[tool.paladin.overrides.rules]
+require-all-export = false
+"""
+        reader = InMemoryFsReader(content=toml_content)
+        loader = ProjectConfigLoader(reader=reader)
+
+        # Act
+        result = loader.load()
+
+        # Assert
+        assert len(result.overrides) == 1
+        entry = result.overrides[0]
+        assert entry.files == ("tests/**",)
+        assert entry.rules == {"require-all-export": False}
+
+    def test_load_正常系_複数overridesエントリを読み込めること(self):
+        # Arrange
+        toml_content = """\
+[[tool.paladin.overrides]]
+files = ["tests/**"]
+
+[tool.paladin.overrides.rules]
+require-all-export = false
+
+[[tool.paladin.overrides]]
+files = ["scripts/**", "tools/**"]
+
+[tool.paladin.overrides.rules]
+no-relative-import = false
+"""
+        reader = InMemoryFsReader(content=toml_content)
+        loader = ProjectConfigLoader(reader=reader)
+
+        # Act
+        result = loader.load()
+
+        # Assert
+        assert len(result.overrides) == 2
+        assert result.overrides[0].files == ("tests/**",)
+        assert result.overrides[0].rules == {"require-all-export": False}
+        assert result.overrides[1].files == ("scripts/**", "tools/**")
+        assert result.overrides[1].rules == {"no-relative-import": False}
+
+    def test_load_エッジケース_overridesセクションがない場合空タプルになること(self):
+        # Arrange
+        toml_content = """\
+[tool.paladin]
+other_key = "value"
+"""
+        reader = InMemoryFsReader(content=toml_content)
+        loader = ProjectConfigLoader(reader=reader)
+
+        # Act
+        result = loader.load()
+
+        # Assert
+        assert result.overrides == ()
+
+    def test_load_エッジケース_overridesのfilesが空配列の場合も読み込めること(self):
+        # Arrange
+        toml_content = """\
+[[tool.paladin.overrides]]
+files = []
+
+[tool.paladin.overrides.rules]
+require-all-export = false
+"""
+        reader = InMemoryFsReader(content=toml_content)
+        loader = ProjectConfigLoader(reader=reader)
+
+        # Act
+        result = loader.load()
+
+        # Assert
+        assert len(result.overrides) == 1
+        assert result.overrides[0].files == ()
+        assert result.overrides[0].rules == {"require-all-export": False}
+
+    def test_load_エッジケース_overridesのrulesが空の場合も読み込めること(self):
+        # Arrange
+        toml_content = """\
+[[tool.paladin.overrides]]
+files = ["tests/**"]
+"""
+        reader = InMemoryFsReader(content=toml_content)
+        loader = ProjectConfigLoader(reader=reader)
+
+        # Act
+        result = loader.load()
+
+        # Assert
+        assert len(result.overrides) == 1
+        assert result.overrides[0].files == ("tests/**",)
+        assert result.overrides[0].rules == {}

@@ -70,6 +70,7 @@ def check(
         rules=project_config.rules,
         per_file_ignores=project_config.per_file_ignores,
         rule_options=project_config.rule_options,
+        overrides=project_config.overrides,
     )
     report = (
         CheckOrchestratorProvider()

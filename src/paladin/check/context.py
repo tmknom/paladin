@@ -7,7 +7,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 
 from paladin.check.types import OutputFormat
-from paladin.config import PerFileIgnoreEntry
+from paladin.config import OverrideEntry, PerFileIgnoreEntry
 
 
 @dataclass(frozen=True)
@@ -25,6 +25,7 @@ class CheckContext:
         rules: ルールの有効/無効設定
         per_file_ignores: ファイルごとのignore設定
         rule_options: ルール個別設定
+        overrides: ディレクトリ別ルール設定
     """
 
     targets: tuple[Path, ...]
@@ -34,3 +35,4 @@ class CheckContext:
     rules: dict[str, bool] = field(default_factory=lambda: {})
     per_file_ignores: tuple[PerFileIgnoreEntry, ...] = ()
     rule_options: dict[str, dict[str, object]] = field(default_factory=lambda: {})
+    overrides: tuple[OverrideEntry, ...] = ()

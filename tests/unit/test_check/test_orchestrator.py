@@ -6,11 +6,12 @@ from paladin.check.context import CheckContext
 from paladin.check.formatter import CheckFormatterFactory
 from paladin.check.ignore import ViolationFilter
 from paladin.check.orchestrator import CheckOrchestrator
+from paladin.check.override import OverrideResolver
 from paladin.check.parser import AstParser
 from paladin.check.result import CheckReport
 from paladin.check.rule_filter import RuleFilter
 from paladin.check.types import OutputFormat
-from paladin.config import PerFileIgnoreEntry
+from paladin.config import OverrideEntry, PerFileIgnoreEntry
 from paladin.lint import RuleSet
 from paladin.lint.types import Violation
 from tests.unit.test_check.fakes import FakeRule, InMemoryFsReader
@@ -36,6 +37,7 @@ class TestCheckOrchestrator:
             violation_filter=ViolationFilter(),
             rule_filter=RuleFilter(),
             path_excluder=PathExcluder(),
+            override_resolver=OverrideResolver(),
         )
         context = CheckContext(targets=(tmp_path,))
 
@@ -71,6 +73,7 @@ class TestCheckOrchestrator:
             violation_filter=ViolationFilter(),
             rule_filter=RuleFilter(),
             path_excluder=PathExcluder(),
+            override_resolver=OverrideResolver(),
         )
         context = CheckContext(targets=(tmp_path,))
 
@@ -96,6 +99,7 @@ class TestCheckOrchestrator:
             violation_filter=ViolationFilter(),
             rule_filter=RuleFilter(),
             path_excluder=PathExcluder(),
+            override_resolver=OverrideResolver(),
         )
         context = CheckContext(targets=(tmp_path,), format=OutputFormat.JSON)
 
@@ -122,6 +126,7 @@ class TestCheckOrchestrator:
             violation_filter=ViolationFilter(),
             rule_filter=RuleFilter(),
             path_excluder=PathExcluder(),
+            override_resolver=OverrideResolver(),
         )
         context = CheckContext(targets=(tmp_path,), format=OutputFormat.TEXT)
 
@@ -161,6 +166,7 @@ class TestCheckOrchestrator:
             violation_filter=ViolationFilter(),
             rule_filter=RuleFilter(),
             path_excluder=PathExcluder(),
+            override_resolver=OverrideResolver(),
         )
         context = CheckContext(targets=(tmp_path,))
 
@@ -204,6 +210,7 @@ class TestCheckOrchestrator:
             violation_filter=ViolationFilter(),
             rule_filter=RuleFilter(),
             path_excluder=PathExcluder(),
+            override_resolver=OverrideResolver(),
         )
         context = CheckContext(targets=(tmp_path,))
 
@@ -241,6 +248,7 @@ class TestCheckOrchestrator:
             violation_filter=ViolationFilter(),
             rule_filter=RuleFilter(),
             path_excluder=PathExcluder(),
+            override_resolver=OverrideResolver(),
         )
         context = CheckContext(targets=(tmp_path,))
 
@@ -280,6 +288,7 @@ class TestCheckOrchestrator:
             violation_filter=ViolationFilter(),
             rule_filter=RuleFilter(),
             path_excluder=PathExcluder(),
+            override_resolver=OverrideResolver(),
         )
         context = CheckContext(targets=(tmp_path,))
 
@@ -318,6 +327,7 @@ class TestCheckOrchestrator:
             violation_filter=ViolationFilter(),
             rule_filter=RuleFilter(),
             path_excluder=PathExcluder(),
+            override_resolver=OverrideResolver(),
         )
         context = CheckContext(
             targets=(tmp_path,),
@@ -365,6 +375,7 @@ class TestCheckOrchestrator:
             violation_filter=ViolationFilter(),
             rule_filter=RuleFilter(),
             path_excluder=PathExcluder(),
+            override_resolver=OverrideResolver(),
         )
         context = CheckContext(targets=(tmp_path,), ignore_rules=frozenset({"fake-rule"}))
 
@@ -420,6 +431,7 @@ class TestCheckOrchestrator:
             violation_filter=ViolationFilter(),
             rule_filter=RuleFilter(),
             path_excluder=PathExcluder(),
+            override_resolver=OverrideResolver(),
         )
         context = CheckContext(
             targets=(tmp_path,),
@@ -467,6 +479,7 @@ class TestCheckOrchestrator:
             violation_filter=ViolationFilter(),
             rule_filter=RuleFilter(),
             path_excluder=PathExcluder(),
+            override_resolver=OverrideResolver(),
         )
         context = CheckContext(targets=(tmp_path,), rules={"fake-rule": False})
 
@@ -504,6 +517,7 @@ class TestCheckOrchestrator:
             violation_filter=ViolationFilter(),
             rule_filter=RuleFilter(),
             path_excluder=PathExcluder(),
+            override_resolver=OverrideResolver(),
         )
         context = CheckContext(targets=(tmp_path,))
 
@@ -531,6 +545,7 @@ class TestCheckOrchestrator:
             violation_filter=ViolationFilter(),
             rule_filter=RuleFilter(),
             path_excluder=PathExcluder(),
+            override_resolver=OverrideResolver(),
         )
         context = CheckContext(targets=(tmp_path,), rules={"unknown-rule": False})
 
@@ -555,6 +570,7 @@ class TestCheckOrchestrator:
             violation_filter=ViolationFilter(),
             rule_filter=RuleFilter(),
             path_excluder=PathExcluder(),
+            override_resolver=OverrideResolver(),
         )
         context = CheckContext(targets=(tmp_path,))
 
@@ -591,6 +607,7 @@ class TestCheckOrchestrator:
             violation_filter=ViolationFilter(),
             rule_filter=RuleFilter(),
             path_excluder=PathExcluder(),
+            override_resolver=OverrideResolver(),
         )
         context = CheckContext(targets=(tmp_path,), exclude=(py_file.name,))
 
@@ -629,6 +646,7 @@ class TestCheckOrchestrator:
             violation_filter=ViolationFilter(),
             rule_filter=RuleFilter(),
             path_excluder=PathExcluder(),
+            override_resolver=OverrideResolver(),
         )
         context = CheckContext(targets=(tmp_path,), exclude=(py_file.name,))
 
@@ -638,3 +656,154 @@ class TestCheckOrchestrator:
         # Assert: CLI ターゲット指定でも exclude が適用され、違反なし
         assert isinstance(result, CheckReport)
         assert result.exit_code == 0
+
+    def test_orchestrate_正常系_overridesで特定ディレクトリのルールを無効化できること(
+        self, tmp_path: Path
+    ):
+        # Arrange: tests/ 配下のファイルで fake-rule を無効化する
+        tests_dir = tmp_path / "tests"
+        tests_dir.mkdir()
+        test_file = tests_dir / "test_foo.py"
+        test_file.write_text("x = 1\n")
+        src_file = tmp_path / "main.py"
+        src_file.write_text("x = 1\n")
+
+        reader = InMemoryFsReader(
+            contents={
+                str(test_file.resolve()): "x = 1\n",
+                str(src_file.resolve()): "x = 1\n",
+            }
+        )
+        parser = AstParser(reader=reader)
+        # tests/ の違反と src/ の違反を両方返すルール
+        violation_tests = Violation(
+            file=test_file.resolve(),
+            line=1,
+            column=0,
+            rule_id="fake-rule",
+            rule_name="Fake Rule",
+            message="violation",
+            reason="reason",
+            suggestion="suggestion",
+        )
+        violation_src = Violation(
+            file=src_file.resolve(),
+            line=1,
+            column=0,
+            rule_id="fake-rule",
+            rule_name="Fake Rule",
+            message="violation",
+            reason="reason",
+            suggestion="suggestion",
+        )
+        rule = FakeRule(rule_id="fake-rule", violations=(violation_tests, violation_src))
+        rule_set = RuleSet(rules=(rule,))
+        orchestrator = CheckOrchestrator(
+            collector=FileCollector(),
+            parser=parser,
+            rule_set=rule_set,
+            formatter=CheckFormatterFactory(),
+            violation_filter=ViolationFilter(),
+            rule_filter=RuleFilter(),
+            path_excluder=PathExcluder(),
+            override_resolver=OverrideResolver(),
+        )
+        override = OverrideEntry(files=("tests/**",), rules={"fake-rule": False})
+        context = CheckContext(
+            targets=(tmp_path,),
+            rules={"fake-rule": True},
+            overrides=(override,),
+        )
+
+        # Act
+        result = orchestrator.orchestrate(context)
+
+        # Assert: tests/ 配下の違反のみ除外され、src/ の違反は残る
+        assert isinstance(result, CheckReport)
+        assert result.exit_code == 1  # src/ の違反あり
+
+    def test_orchestrate_正常系_overridesが空の場合既存動作と同じこと(self, tmp_path: Path):
+        # Arrange: overrides が空タプル
+        py_file = tmp_path / "main.py"
+        py_file.write_text("x = 1\n")
+        reader = InMemoryFsReader(contents={str(py_file.resolve()): "x = 1\n"})
+        parser = AstParser(reader=reader)
+        violation = Violation(
+            file=py_file.resolve(),
+            line=1,
+            column=0,
+            rule_id="fake-rule",
+            rule_name="Fake Rule",
+            message="violation",
+            reason="reason",
+            suggestion="suggestion",
+        )
+        rule = FakeRule(rule_id="fake-rule", violations=(violation,))
+        rule_set = RuleSet(rules=(rule,))
+        orchestrator = CheckOrchestrator(
+            collector=FileCollector(),
+            parser=parser,
+            rule_set=rule_set,
+            formatter=CheckFormatterFactory(),
+            violation_filter=ViolationFilter(),
+            rule_filter=RuleFilter(),
+            path_excluder=PathExcluder(),
+            override_resolver=OverrideResolver(),
+        )
+        context = CheckContext(targets=(tmp_path,), overrides=())
+
+        # Act
+        result = orchestrator.orchestrate(context)
+
+        # Assert: overrides なしなので fake-rule の違反がそのまま残る
+        assert isinstance(result, CheckReport)
+        assert result.exit_code == 1
+
+    def test_orchestrate_正常系_overridesで後に定義されたオーバーライドが優先されること(
+        self, tmp_path: Path
+    ):
+        # Arrange: 同一ファイルに2つのオーバーライドがマッチする場合、後者が優先
+        tests_dir = tmp_path / "tests" / "unit"
+        tests_dir.mkdir(parents=True)
+        test_file = tests_dir / "test_foo.py"
+        test_file.write_text("x = 1\n")
+        reader = InMemoryFsReader(contents={str(test_file.resolve()): "x = 1\n"})
+        parser = AstParser(reader=reader)
+        violation = Violation(
+            file=test_file.resolve(),
+            line=1,
+            column=0,
+            rule_id="fake-rule",
+            rule_name="Fake Rule",
+            message="violation",
+            reason="reason",
+            suggestion="suggestion",
+        )
+        rule = FakeRule(rule_id="fake-rule", violations=(violation,))
+        rule_set = RuleSet(rules=(rule,))
+        orchestrator = CheckOrchestrator(
+            collector=FileCollector(),
+            parser=parser,
+            rule_set=rule_set,
+            formatter=CheckFormatterFactory(),
+            violation_filter=ViolationFilter(),
+            rule_filter=RuleFilter(),
+            path_excluder=PathExcluder(),
+            override_resolver=OverrideResolver(),
+        )
+        # override1: tests/** で fake-rule を無効化
+        # override2: tests/unit/** で fake-rule を有効化（後勝ち）
+        override1 = OverrideEntry(files=("tests/**",), rules={"fake-rule": False})
+        override2 = OverrideEntry(files=("tests/unit/**",), rules={"fake-rule": True})
+        context = CheckContext(
+            targets=(tmp_path,),
+            rules={"fake-rule": True},
+            overrides=(override1, override2),
+        )
+
+        # Act
+        result = orchestrator.orchestrate(context)
+
+        # Assert: override2 が後勝ちで fake-rule が有効のため、違反あり
+        assert isinstance(result, CheckReport)
+        assert result.exit_code == 1

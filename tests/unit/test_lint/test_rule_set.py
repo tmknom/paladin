@@ -360,3 +360,105 @@ class TestRuleSetDefault:
 
         # Assert: 警告なし
         assert len(caplog.records) == 0
+
+
+class TestRuleSetPerFileDisabled:
+    """RuleSet.run の per_file_disabled パラメータのテスト"""
+
+    def test_run_正常系_per_file_disabledでファイル別にルールを無効化できること(self):
+        # Arrange: file_a.py では rule-a を無効化、file_b.py では有効
+        # FakeRule は全ファイルに violations を返すため、per_file_disabled によってファイル別に
+        # ルールの実行自体がスキップされる（違反数 = ファイル数 - 無効化ファイル数）
+        file_a = Path("file_a.py")
+        violation = Violation(
+            file=Path("any.py"),
+            line=1,
+            column=0,
+            rule_id="rule-a",
+            rule_name="Rule A",
+            message="msg",
+            reason="reason",
+            suggestion="suggestion",
+        )
+        rule_a = FakeRule(rule_id="rule-a", violations=(violation,))
+        rule_b = FakeRule(rule_id="rule-b", violations=(violation,))
+        rule_set = RuleSet(rules=(rule_a, rule_b))
+        source_files = _make_source_files(("x = 1\n", "file_a.py"), ("y = 2\n", "file_b.py"))
+
+        # Act: file_a.py では rule-a を無効化。file_b.py では全ルール有効
+        result = rule_set.run(
+            source_files,
+            per_file_disabled={file_a: frozenset({"rule-a"})},
+        )
+
+        # Assert:
+        # file_a.py: rule-a 無効 → rule-b のみ実行 → 1件
+        # file_b.py: 全有効 → rule-a + rule-b → 2件
+        # 合計: 3件
+        assert len(result) == 3
+
+    def test_run_正常系_per_file_disabledに含まれないファイルはdisabled_rule_idsを使用すること(
+        self,
+    ):
+        # Arrange: file_a.py は per_file_disabled で全有効（frozenset()）、
+        # file_b.py は per_file_disabled にエントリなし → disabled_rule_ids にフォールバック
+        file_a = Path("file_a.py")
+        violation = Violation(
+            file=Path("any.py"),
+            line=1,
+            column=0,
+            rule_id="rule-a",
+            rule_name="Rule A",
+            message="msg",
+            reason="reason",
+            suggestion="suggestion",
+        )
+        rule_a = FakeRule(rule_id="rule-a", violations=(violation,))
+        rule_set = RuleSet(rules=(rule_a,))
+        source_files = _make_source_files(("x = 1\n", "file_a.py"), ("y = 2\n", "file_b.py"))
+
+        # Act: file_a.py は空 set（全有効）、file_b.py はフォールバックで rule-a 無効
+        result = rule_set.run(
+            source_files,
+            disabled_rule_ids=frozenset({"rule-a"}),
+            per_file_disabled={file_a: frozenset()},
+        )
+
+        # Assert: file_a.py の rule-a が実行されて1件、file_b.py はフォールバックで無効化されて0件
+        assert len(result) == 1
+
+    def test_run_エッジケース_per_file_disabledがNoneの場合既存動作と同じこと(self):
+        # Arrange
+        violation = _make_violation()
+        rule_a = FakeRule(rule_id="rule-a", violations=(violation,))
+        rule_set = RuleSet(rules=(rule_a,))
+        source_files = _make_source_files(("x = 1\n", "__init__.py"))
+
+        # Act: per_file_disabled=None（デフォルト）
+        result = rule_set.run(
+            source_files,
+            disabled_rule_ids=frozenset({"rule-a"}),
+            per_file_disabled=None,
+        )
+
+        # Assert: rule-a が disabled されるため違反なし
+        assert len(result) == 0
+
+    def test_run_エッジケース_per_file_disabledが空dictの場合disabled_rule_idsを使用すること(
+        self,
+    ):
+        # Arrange: per_file_disabled が空 dict の場合、全ファイルが disabled_rule_ids にフォールバック
+        violation = _make_violation()
+        rule_a = FakeRule(rule_id="rule-a", violations=(violation,))
+        rule_set = RuleSet(rules=(rule_a,))
+        source_files = _make_source_files(("x = 1\n", "__init__.py"))
+
+        # Act: 空 dict → フォールバックして disabled_rule_ids が使われる
+        result = rule_set.run(
+            source_files,
+            disabled_rule_ids=frozenset({"rule-a"}),
+            per_file_disabled={},
+        )
+
+        # Assert: フォールバックで rule-a が disabled されるため違反なし
+        assert len(result) == 0
