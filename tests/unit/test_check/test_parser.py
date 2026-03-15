@@ -6,14 +6,14 @@ import pytest
 from paladin.check.parser import AstParser
 from paladin.check.types import TargetFiles
 from paladin.foundation.fs.error import FileSystemError
-from paladin.source.types import ParsedFile
+from paladin.lint.types import SourceFile
 from tests.unit.test_check.fakes import InMemoryFsReader
 
 
 class TestAstParserParse:
     """AstParser.parse() のテスト"""
 
-    def test_parse_正常系_ParsedFileにソーステキストが保持されること(self):
+    def test_parse_正常系_SourceFileにソーステキストが保持されること(self):
         # Arrange
         reader = InMemoryFsReader(content="x = 1\n")
         parser = AstParser(reader=reader)
@@ -24,7 +24,7 @@ class TestAstParserParse:
         # Assert
         assert result.source == "x = 1\n"
 
-    def test_parse_正常系_有効なPythonコードからParsedFileを返すこと(self):
+    def test_parse_正常系_有効なPythonコードからSourceFileを返すこと(self):
         # Arrange
         reader = InMemoryFsReader(content="x = 1\n")
         parser = AstParser(reader=reader)
@@ -33,7 +33,7 @@ class TestAstParserParse:
         result = parser.parse(Path("test.py"))
 
         # Assert
-        assert isinstance(result, ParsedFile)
+        assert isinstance(result, SourceFile)
         assert result.file_path == Path("test.py")
         assert isinstance(result.tree, ast.Module)
 
@@ -59,7 +59,7 @@ class TestAstParserParse:
 class TestAstParserParseAll:
     """AstParser.parse_all() のテスト"""
 
-    def test_parse_all_正常系_複数ファイルをParsedFilesとして返すこと(self):
+    def test_parse_all_正常系_複数ファイルをSourceFilesとして返すこと(self):
         # Arrange
         reader = InMemoryFsReader(contents={"a.py": "x = 1\n", "b.py": "y = 2\n"})
         parser = AstParser(reader=reader)
@@ -71,7 +71,7 @@ class TestAstParserParseAll:
         # Assert
         assert len(result) == 2
 
-    def test_parse_all_エッジケース_空のTargetFilesで空のParsedFilesを返すこと(self):
+    def test_parse_all_エッジケース_空のTargetFilesで空のSourceFilesを返すこと(self):
         # Arrange
         reader = InMemoryFsReader()
         parser = AstParser(reader=reader)

@@ -10,8 +10,7 @@ from paladin.check.ignore import (
     LineIgnoreParser,
     ViolationFilter,
 )
-from paladin.lint.types import Violation, Violations
-from paladin.source.types import ParsedFile, ParsedFiles
+from paladin.lint.types import SourceFile, SourceFiles, Violation, Violations
 
 
 def _make_violation(
@@ -31,8 +30,8 @@ def _make_violation(
     )
 
 
-def _make_parsed_file(source: str, filename: str = "example.py") -> ParsedFile:
-    return ParsedFile(file_path=Path(filename), tree=ast.parse(source), source=source)
+def _make_source_file(source: str, filename: str = "example.py") -> SourceFile:
+    return SourceFile(file_path=Path(filename), tree=ast.parse(source), source=source)
 
 
 class TestFileIgnoreDirective:
@@ -214,25 +213,25 @@ class TestFileIgnoreParserParseAll:
     def test_parse_all_正常系_複数ファイルのディレクティブをタプルで返すこと(self):
         # Arrange
         parser = FileIgnoreParser()
-        pf_with_directive = _make_parsed_file("# paladin: ignore-file\nimport os\n", "a.py")
-        pf_without_directive = _make_parsed_file("import os\n", "b.py")
-        parsed_files = ParsedFiles(files=(pf_with_directive, pf_without_directive))
+        pf_with_directive = _make_source_file("# paladin: ignore-file\nimport os\n", "a.py")
+        pf_without_directive = _make_source_file("import os\n", "b.py")
+        source_files = SourceFiles(files=(pf_with_directive, pf_without_directive))
 
         # Act
-        result = parser.parse_all(parsed_files)
+        result = parser.parse_all(source_files)
 
         # Assert
         assert len(result) == 2
         assert result[0].ignore_all is True
         assert result[1].ignore_all is False
 
-    def test_parse_all_エッジケース_空のParsedFilesで空タプルを返すこと(self):
+    def test_parse_all_エッジケース_空のSourceFilesで空タプルを返すこと(self):
         # Arrange
         parser = FileIgnoreParser()
-        parsed_files = ParsedFiles(files=())
+        source_files = SourceFiles(files=())
 
         # Act
-        result = parser.parse_all(parsed_files)
+        result = parser.parse_all(source_files)
 
         # Assert
         assert result == ()
@@ -520,25 +519,25 @@ class TestLineIgnoreParserParseAll:
     def test_parse_all_正常系_複数ファイルのディレクティブをタプルで返すこと(self):
         # Arrange
         parser = LineIgnoreParser()
-        pf_with_directive = _make_parsed_file("# paladin: ignore\nfrom foo import bar\n", "a.py")
-        pf_without_directive = _make_parsed_file("import os\n", "b.py")
-        parsed_files = ParsedFiles(files=(pf_with_directive, pf_without_directive))
+        pf_with_directive = _make_source_file("# paladin: ignore\nfrom foo import bar\n", "a.py")
+        pf_without_directive = _make_source_file("import os\n", "b.py")
+        source_files = SourceFiles(files=(pf_with_directive, pf_without_directive))
 
         # Act
-        result = parser.parse_all(parsed_files)
+        result = parser.parse_all(source_files)
 
         # Assert
         assert len(result) == 1
         assert result[0].file_path == Path("a.py")
         assert result[0].target_line == 2
 
-    def test_parse_all_エッジケース_空のParsedFilesで空タプルを返すこと(self):
+    def test_parse_all_エッジケース_空のSourceFilesで空タプルを返すこと(self):
         # Arrange
         parser = LineIgnoreParser()
-        parsed_files = ParsedFiles(files=())
+        source_files = SourceFiles(files=())
 
         # Act
-        result = parser.parse_all(parsed_files)
+        result = parser.parse_all(source_files)
 
         # Assert
         assert result == ()

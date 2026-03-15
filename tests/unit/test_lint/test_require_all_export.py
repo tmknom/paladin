@@ -2,12 +2,11 @@ import ast
 from pathlib import Path
 
 from paladin.lint.require_all_export import RequireAllExportRule
-from paladin.lint.types import RuleMeta
-from paladin.source.types import ParsedFile
+from paladin.lint.types import RuleMeta, SourceFile
 
 
-def _make_parsed_file(source: str, filename: str = "__init__.py") -> ParsedFile:
-    return ParsedFile(file_path=Path(filename), tree=ast.parse(source), source=source)
+def _make_source_file(source: str, filename: str = "__init__.py") -> SourceFile:
+    return SourceFile(file_path=Path(filename), tree=ast.parse(source), source=source)
 
 
 class TestRequireAllExportRuleCheck:
@@ -16,10 +15,10 @@ class TestRequireAllExportRuleCheck:
     def test_check_正常系_init_py以外のファイルは空タプルを返すこと(self):
         # Arrange
         rule = RequireAllExportRule()
-        parsed_file = _make_parsed_file("x = 1\n", "main.py")
+        source_file = _make_source_file("x = 1\n", "main.py")
 
         # Act
-        result = rule.check(parsed_file)
+        result = rule.check(source_file)
 
         # Assert
         assert result == ()
@@ -27,10 +26,10 @@ class TestRequireAllExportRuleCheck:
     def test_check_エッジケース_空のinit_pyは違反なしを返すこと(self):
         # Arrange
         rule = RequireAllExportRule()
-        parsed_file = _make_parsed_file("", "__init__.py")
+        source_file = _make_source_file("", "__init__.py")
 
         # Act
-        result = rule.check(parsed_file)
+        result = rule.check(source_file)
 
         # Assert
         assert result == ()
@@ -38,10 +37,10 @@ class TestRequireAllExportRuleCheck:
     def test_check_エッジケース_コメントのみのinit_pyは違反なしを返すこと(self):
         # Arrange
         rule = RequireAllExportRule()
-        parsed_file = _make_parsed_file("# namespace package\n", "__init__.py")
+        source_file = _make_source_file("# namespace package\n", "__init__.py")
 
         # Act
-        result = rule.check(parsed_file)
+        result = rule.check(source_file)
 
         # Assert
         assert result == ()
@@ -49,10 +48,10 @@ class TestRequireAllExportRuleCheck:
     def test_check_エッジケース_docstringのみのinit_pyは違反なしを返すこと(self):
         # Arrange
         rule = RequireAllExportRule()
-        parsed_file = _make_parsed_file('"""Package."""\n', "__init__.py")
+        source_file = _make_source_file('"""Package."""\n', "__init__.py")
 
         # Act
-        result = rule.check(parsed_file)
+        result = rule.check(source_file)
 
         # Assert
         assert result == ()
@@ -60,10 +59,10 @@ class TestRequireAllExportRuleCheck:
     def test_check_正常系_all未定義のinit_pyで違反を1件返すこと(self):
         # Arrange
         rule = RequireAllExportRule()
-        parsed_file = _make_parsed_file("from foo import bar\n", "__init__.py")
+        source_file = _make_source_file("from foo import bar\n", "__init__.py")
 
         # Act
-        result = rule.check(parsed_file)
+        result = rule.check(source_file)
 
         # Assert
         assert len(result) == 1
@@ -71,10 +70,10 @@ class TestRequireAllExportRuleCheck:
     def test_check_正常系_違反のフィールド値が正しいこと(self):
         # Arrange
         rule = RequireAllExportRule()
-        parsed_file = _make_parsed_file("from foo import bar\n", "__init__.py")
+        source_file = _make_source_file("from foo import bar\n", "__init__.py")
 
         # Act
-        result = rule.check(parsed_file)
+        result = rule.check(source_file)
 
         # Assert
         assert len(result) == 1
@@ -89,10 +88,10 @@ class TestRequireAllExportRuleCheck:
         # Arrange
         rule = RequireAllExportRule()
         source = '__all__ = ["Foo"]\nfrom foo import Foo\n'
-        parsed_file = _make_parsed_file(source, "__init__.py")
+        source_file = _make_source_file(source, "__init__.py")
 
         # Act
-        result = rule.check(parsed_file)
+        result = rule.check(source_file)
 
         # Assert
         assert result == ()
@@ -101,10 +100,10 @@ class TestRequireAllExportRuleCheck:
         # Arrange
         rule = RequireAllExportRule()
         source = '__all__ = ["Foo", "Bar"]\n'
-        parsed_file = _make_parsed_file(source, "__init__.py")
+        source_file = _make_source_file(source, "__init__.py")
 
         # Act
-        result = rule.check(parsed_file)
+        result = rule.check(source_file)
 
         # Assert
         assert result == ()
@@ -123,10 +122,10 @@ class TestRequireAllExportRuleCheck:
         ast.fix_missing_locations(aug_assign)
         import_node = ast.parse("from foo import bar\n").body[0]
         tree.body = [import_node, aug_assign]
-        parsed_file = ParsedFile(file_path=Path("__init__.py"), tree=tree, source="")
+        source_file = SourceFile(file_path=Path("__init__.py"), tree=tree, source="")
 
         # Act
-        result = rule.check(parsed_file)
+        result = rule.check(source_file)
 
         # Assert
         assert result == ()

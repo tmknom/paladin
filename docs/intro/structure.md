@@ -26,10 +26,8 @@
 src/
 └── paladin/                      # メインパッケージ（リファレンス実装）
     ├── cli.py                    # CLI エントリポイント（Typer ベース）
-    ├── source/                   # Python ソースコードの解析済み表現
-    │   └── types.py              # ParsedFile / ParsedFiles
     ├── lint/                     # ルールドメインパッケージ
-    │   ├── types.py              # Violation / Violations / RuleMeta
+    │   ├── types.py              # SourceFile / SourceFiles / Violation / Violations / RuleMeta
     │   ├── protocol.py           # Rule Protocol
     │   ├── registry.py           # RuleRegistry
     │   ├── runner.py             # RuleRunner

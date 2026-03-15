@@ -13,7 +13,7 @@ from paladin.lint.registry import RuleRegistry
 from paladin.lint.require_all_export import RequireAllExportRule
 from paladin.lint.require_qualified_third_party import RequireQualifiedThirdPartyRule
 from paladin.lint.runner import RuleRunner
-from paladin.lint.types import RuleMeta, Violation, Violations
+from paladin.lint.types import RuleMeta, SourceFile, SourceFiles, Violation, Violations
 
 __all__ = [
     "NoLocalImportRule",
@@ -24,6 +24,8 @@ __all__ = [
     "RuleMeta",
     "RuleRegistry",
     "RuleRunner",
+    "SourceFile",
+    "SourceFiles",
     "Violation",
     "Violations",
 ]

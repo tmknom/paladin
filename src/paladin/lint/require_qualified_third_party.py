@@ -6,8 +6,7 @@
 import ast
 import sys
 
-from paladin.lint.types import RuleMeta, Violation
-from paladin.source.types import ParsedFile
+from paladin.lint.types import RuleMeta, SourceFile, Violation
 
 
 class RequireQualifiedThirdPartyRule:
@@ -31,21 +30,21 @@ class RequireQualifiedThirdPartyRule:
         """ルールのメタ情報を返す"""
         return self._meta
 
-    def check(self, parsed_file: ParsedFile) -> tuple[Violation, ...]:
+    def check(self, source_file: SourceFile) -> tuple[Violation, ...]:
         """単一ファイルに対する違反判定を行う"""
         violations: list[Violation] = []
-        for node in ast.walk(parsed_file.tree):
+        for node in ast.walk(source_file.tree):
             if isinstance(node, ast.ImportFrom):
-                self._check_import_from(node, violations, parsed_file)
+                self._check_import_from(node, violations, source_file)
             elif isinstance(node, ast.Import):
-                self._check_import_as(node, violations, parsed_file)
+                self._check_import_as(node, violations, source_file)
         return tuple(violations)
 
     def _check_import_from(
         self,
         node: ast.ImportFrom,
         violations: list[Violation],
-        parsed_file: ParsedFile,
+        source_file: SourceFile,
     ) -> None:
         if node.level >= 1:
             return
@@ -57,7 +56,7 @@ class RequireQualifiedThirdPartyRule:
         for alias in node.names:
             violations.append(
                 Violation(
-                    file=parsed_file.file_path,
+                    file=source_file.file_path,
                     line=node.lineno,
                     column=node.col_offset,
                     rule_id=self._meta.rule_id,
@@ -72,7 +71,7 @@ class RequireQualifiedThirdPartyRule:
         self,
         node: ast.Import,
         violations: list[Violation],
-        parsed_file: ParsedFile,
+        source_file: SourceFile,
     ) -> None:
         for alias in node.names:
             if alias.asname is None:
@@ -82,7 +81,7 @@ class RequireQualifiedThirdPartyRule:
                 continue
             violations.append(
                 Violation(
-                    file=parsed_file.file_path,
+                    file=source_file.file_path,
                     line=node.lineno,
                     column=node.col_offset,
                     rule_id=self._meta.rule_id,

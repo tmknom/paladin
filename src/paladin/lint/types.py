@@ -1,11 +1,36 @@
 """ルールドメインの型定義
 
-ルール判定の入出力とメタ情報を表す値オブジェクトを定義する。
+ルール判定の入出力・メタ情報・検査対象を表す値オブジェクトを定義する。
 """
 
+import ast
 from collections.abc import Iterator
 from dataclasses import dataclass
 from pathlib import Path
+
+
+@dataclass(frozen=True)
+class SourceFile:
+    """単一Pythonソースファイルの情報を保持する不変な値オブジェクト"""
+
+    file_path: Path
+    tree: ast.Module
+    source: str
+
+
+@dataclass(frozen=True)
+class SourceFiles:
+    """複数Pythonソースファイルを集約する不変な値オブジェクト"""
+
+    files: tuple[SourceFile, ...]
+
+    def __len__(self) -> int:
+        """ソースファイル数を返す"""
+        return len(self.files)
+
+    def __iter__(self) -> Iterator[SourceFile]:
+        """ソースファイルをイテレーションする"""
+        return iter(self.files)
 
 
 @dataclass(frozen=True)
