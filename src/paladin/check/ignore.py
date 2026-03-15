@@ -3,12 +3,14 @@
 ファイル先頭コメントから ignore-file ディレクティブを抽出し、
 また直前コメントから行単位 ignore ディレクティブを抽出し、
 Violations から該当違反を除外する。
+設定ファイルの per-file-ignores による FileIgnoreDirective 生成も担当する。
 """
 
 import re
 from dataclasses import dataclass
-from pathlib import Path
+from pathlib import Path, PurePath
 
+from paladin.config import PerFileIgnoreEntry
 from paladin.lint.types import SourceFiles, Violation, Violations
 
 
@@ -269,3 +271,65 @@ class ViolationFilter:
             if violation.rule_id in directive.ignored_rules:
                 return True
         return False
+
+
+class ConfigIgnoreResolver:
+    """ProjectConfig のパターンと file_paths を照合して FileIgnoreDirective を生成するリゾルバー
+
+    glob パターンの照合には PurePath.full_match() を使用する。
+    ディレクトリ単位のパターン（例: "tests/**"）が絶対パスに対しても
+    正しくマッチするよう、相対パターンには自動的に "**/" を前置する。
+    """
+
+    def _normalize_glob_pattern(self, pattern: str) -> str:
+        if pattern.startswith("/") or pattern.startswith("**/"):
+            return pattern
+        return "**/" + pattern
+
+    def resolve(
+        self,
+        per_file_ignores: tuple[PerFileIgnoreEntry, ...],
+        file_paths: tuple[Path, ...],
+    ) -> tuple[FileIgnoreDirective, ...]:
+        """各ファイルパスに対してマッチするパターンを照合し、FileIgnoreDirective を返す
+
+        Args:
+            per_file_ignores: ファイルごとのignoreエントリ群
+            file_paths: 照合対象のファイルパス群
+
+        Returns:
+            マッチしたファイルの FileIgnoreDirective のタプル。マッチしないファイルは含まない
+        """
+        if not per_file_ignores or not file_paths:
+            return ()
+
+        result: list[FileIgnoreDirective] = []
+        for file_path in file_paths:
+            matched_entries: list[PerFileIgnoreEntry] = [
+                entry
+                for entry in per_file_ignores
+                if PurePath(str(file_path)).full_match(self._normalize_glob_pattern(entry.pattern))
+            ]
+            if not matched_entries:
+                continue
+
+            if any(entry.ignore_all for entry in matched_entries):
+                result.append(
+                    FileIgnoreDirective(
+                        file_path=file_path,
+                        ignore_all=True,
+                        ignored_rules=frozenset(),
+                    )
+                )
+            else:
+                merged_rules: frozenset[str] = frozenset()
+                for entry in matched_entries:
+                    merged_rules = merged_rules | entry.rule_ids
+                result.append(
+                    FileIgnoreDirective(
+                        file_path=file_path,
+                        ignore_all=False,
+                        ignored_rules=merged_rules,
+                    )
+                )
+        return tuple(result)

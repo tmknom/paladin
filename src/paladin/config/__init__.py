@@ -10,6 +10,7 @@ Docs:
 from paladin.config.app import AppConfig
 from paladin.config.env_var import EnvVarConfig
 from paladin.config.project import PerFileIgnoreEntry, ProjectConfig, ProjectConfigLoader
+from paladin.config.resolver import TargetResolver
 
 __all__ = [
     "AppConfig",
@@ -17,4 +18,5 @@ __all__ = [
     "PerFileIgnoreEntry",
     "ProjectConfig",
     "ProjectConfigLoader",
+    "TargetResolver",
 ]

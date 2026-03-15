@@ -6,18 +6,18 @@
 from pathlib import Path
 
 from paladin.check.collector import FileCollector, PathExcluder
-from paladin.check.config import ConfigIgnoreResolver, RuleFilter
 from paladin.check.context import CheckContext
 from paladin.check.formatter import CheckFormatterFactory
 from paladin.check.ignore import (
+    ConfigIgnoreResolver,
     FileIgnoreDirective,
     FileIgnoreParser,
     LineIgnoreParser,
     ViolationFilter,
 )
 from paladin.check.parser import AstParser
-from paladin.check.resolver import TargetResolver
 from paladin.check.result import CheckReport, CheckResult
+from paladin.check.rule_filter import RuleFilter
 from paladin.foundation.log import log
 from paladin.lint import RuleSet
 
@@ -26,7 +26,7 @@ class CheckOrchestrator:
     """対象列挙と AST 生成の処理フローを制御するオーケストレーター
 
     Flow:
-        1. TargetResolver で context から解析対象パスを解決
+        1. context.targets から解析対象パスを取得
         2. FileCollector で .py ファイルを列挙
         3. PathExcluder で context.exclude パターンを適用
         4. AstParser で各ファイルの AST を生成
@@ -45,7 +45,6 @@ class CheckOrchestrator:
         formatter: CheckFormatterFactory,
         violation_filter: ViolationFilter,
         rule_filter: RuleFilter,
-        target_resolver: TargetResolver,
         path_excluder: PathExcluder,
     ) -> None:
         """CheckOrchestratorを初期化
@@ -57,7 +56,6 @@ class CheckOrchestrator:
             formatter: レポートフォーマッター
             violation_filter: ignore フィルター
             rule_filter: ルール有効/無効フィルター
-            target_resolver: CLI 引数と include を解決するリゾルバー
             path_excluder: exclude パターンによるファイル除外
         """
         self.collector = collector
@@ -66,7 +64,6 @@ class CheckOrchestrator:
         self.formatter = formatter
         self.violation_filter = violation_filter
         self.rule_filter = rule_filter
-        self.target_resolver = target_resolver
         self.path_excluder = path_excluder
 
     @log
@@ -79,8 +76,7 @@ class CheckOrchestrator:
         Returns:
             Check処理のフォーマット済みレポート
         """
-        resolved_targets = self.target_resolver.resolve(context)
-        target_files = self.collector.collect(resolved_targets)
+        target_files = self.collector.collect(context.targets)
         target_files = self.path_excluder.exclude(target_files, context.exclude)
         source_files = self.parser.parse_all(target_files)
         disabled_rule_ids = self.rule_filter.resolve_disabled_rules(

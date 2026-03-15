@@ -18,10 +18,9 @@ class CheckContext:
         処理開始時に生成され、処理完了まで不変のまま保持される
 
     Attributes:
-        targets: CLIから受け取ったターゲットパス群（ファイルまたはディレクトリ）
+        targets: 解析対象パス群（TargetResolver で解決済みのパス）
         format: チェック結果の出力フォーマット
         ignore_rules: 無視するルールID群
-        include: 解析対象パスのincludeパターン群
         exclude: 解析対象パスのexcludeパターン群
         rules: ルールの有効/無効設定
         per_file_ignores: ファイルごとのignore設定
@@ -30,7 +29,6 @@ class CheckContext:
     targets: tuple[Path, ...]
     format: OutputFormat = OutputFormat.TEXT
     ignore_rules: frozenset[str] = frozenset()
-    include: tuple[str, ...] = ()
     exclude: tuple[str, ...] = ()
     rules: dict[str, bool] = field(default_factory=lambda: {})
     per_file_ignores: tuple[PerFileIgnoreEntry, ...] = ()
