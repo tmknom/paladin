@@ -2,43 +2,11 @@ from pathlib import Path
 
 import pytest
 
-from paladin.check.config import ProjectConfig, normalize_glob_pattern
+from paladin.check.config import ProjectConfig
 from paladin.check.context import CheckContext
 from paladin.check.path import PathExcluder, TargetResolver
 from paladin.check.types import TargetFiles
 from paladin.foundation.error.error import ApplicationError
-
-
-class TestNormalizeGlobPattern:
-    def test_normalize_glob_pattern_正常系_相対パターンにダブルスターを前置すること(self):
-        # Arrange / Act
-        result = normalize_glob_pattern("tests/**")
-
-        # Assert
-        assert result == "**/tests/**"
-
-    def test_normalize_glob_pattern_エッジケース_ダブルスター始まりのパターンはそのまま返すこと(
-        self,
-    ):
-        # Arrange / Act
-        result = normalize_glob_pattern("**/tests/**")
-
-        # Assert
-        assert result == "**/tests/**"
-
-    def test_normalize_glob_pattern_エッジケース_スラッシュ始まりのパターンはそのまま返すこと(self):
-        # Arrange / Act
-        result = normalize_glob_pattern("/abs/path")
-
-        # Assert
-        assert result == "/abs/path"
-
-    def test_normalize_glob_pattern_正常系_ファイルパターンにダブルスターを前置すること(self):
-        # Arrange / Act
-        result = normalize_glob_pattern("*.py")
-
-        # Assert
-        assert result == "**/*.py"
 
 
 class TestTargetResolver:

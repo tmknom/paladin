@@ -6,12 +6,12 @@ TargetResolver と、exclude パターンに基づいてファイルを除外す
 
 from pathlib import Path, PurePath
 
-from paladin.check.config import ProjectConfig, normalize_glob_pattern
+from paladin.check.config import ProjectConfig
 from paladin.check.context import CheckContext
 from paladin.check.types import TargetFiles
 from paladin.foundation.error.error import ApplicationError
 
-__all__ = ["PathExcluder", "TargetResolver", "normalize_glob_pattern"]
+__all__ = ["PathExcluder", "TargetResolver"]
 
 
 class TargetResolver:
@@ -70,12 +70,17 @@ class PathExcluder:
         )
         return TargetFiles(files=kept)
 
+    def _normalize_glob_pattern(self, pattern: str) -> str:
+        if pattern.startswith("/") or pattern.startswith("**/"):
+            return pattern
+        return "**/" + pattern
+
     def _normalize_exclude_pattern(self, pattern: str) -> str:
         """Exclude パターンを正規化する
 
         末尾スラッシュがある場合、または拡張子なしかつパス区切りを含まない単純名の場合は
         ディレクトリとして扱い、配下すべてにマッチさせる。
-        それ以外は normalize_glob_pattern() で前置処理を行う。
+        それ以外は _normalize_glob_pattern() で前置処理を行う。
 
         Args:
             pattern: 除外パターン
@@ -86,9 +91,9 @@ class PathExcluder:
         if pattern.endswith("/"):
             # 末尾スラッシュ付きはディレクトリ → 配下すべてにマッチ
             stripped = pattern.rstrip("/")
-            return normalize_glob_pattern(stripped + "/**")
+            return self._normalize_glob_pattern(stripped + "/**")
         # 拡張子なし、パス区切りなし、ワイルドカードなしの単純名 → ディレクトリとして扱う
         stripped = pattern.rstrip("/")
         if "/" not in stripped and "." not in stripped.lstrip(".") and "*" not in stripped:
-            return normalize_glob_pattern(stripped + "/**")
-        return normalize_glob_pattern(pattern)
+            return self._normalize_glob_pattern(stripped + "/**")
+        return self._normalize_glob_pattern(pattern)
