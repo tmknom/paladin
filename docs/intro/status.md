@@ -4,7 +4,7 @@
 
 - Active milestone: M4 (ルール資産の拡充)
 - Current item: R-083
-- Updated: 2026-03-15
+- Updated: 2026-03-15 (R-100)
 
 ## 状態一覧
 
@@ -32,7 +32,7 @@
 | R-092 | ルール個別設定を実装する | Done | `root_packages` の上書き。デフォルト値は R-094 |
 | R-093 | ディレクトリ別設定を実装する | Done | |
 | R-094 | `root_packages` のデフォルト値を動的に取得する | Done | `[project] name` から動的解決。`project_name` 未指定時は `("tests",)` がデフォルト |
-| R-100 | 複数ファイル解析基盤と `no-direct-internal-import` を実装する | Not Started | |
+| R-100 | 複数ファイル解析基盤と `no-direct-internal-import` を実装する | Done | `MultiFileRule` Protocol 導入。`RuleSet` が単一/複数ファイルルールを統合管理 |
 | R-103 | 広域解析時のエラーハンドリングを設計する | Not Started | |
 | R-110 | `suggestion` の品質を高める | Not Started | |
 | R-111 | AI 向け修正指示文を整備する | Not Started | |

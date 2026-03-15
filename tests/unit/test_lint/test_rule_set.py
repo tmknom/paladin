@@ -6,7 +6,7 @@ import pytest
 
 from paladin.lint.rule_set import RuleSet
 from paladin.lint.types import RuleMeta, SourceFile, SourceFiles, Violation, Violations
-from tests.unit.test_check.fakes import FakeRule
+from tests.unit.test_check.fakes import FakeMultiFileRule, FakeRule
 
 
 def _make_source_file(source: str, filename: str = "__init__.py") -> SourceFile:
@@ -431,6 +431,19 @@ class TestRuleSetDefault:
         # Assert: インスタンスが返ること
         assert isinstance(result, RuleSet)
 
+    def test_default_正常系_no_direct_internal_importルールが登録されていること(self):
+        result = RuleSet.default()
+        assert "no-direct-internal-import" in result.rule_ids
+
+    def test_default_正常系_全ルールが登録されていること_5ルール(self):
+        result = RuleSet.default()
+        rule_ids = result.rule_ids
+        assert "require-all-export" in rule_ids
+        assert "no-relative-import" in rule_ids
+        assert "no-local-import" in rule_ids
+        assert "require-qualified-third-party" in rule_ids
+        assert "no-direct-internal-import" in rule_ids
+
 
 class TestRuleSetPerFileDisabled:
     """RuleSet.run の per_file_disabled パラメータのテスト"""
@@ -532,3 +545,115 @@ class TestRuleSetPerFileDisabled:
 
         # Assert: フォールバックで rule-a が disabled されるため違反なし
         assert len(result) == 0
+
+
+class TestRuleSetMultiFileRules:
+    """RuleSet の multi_file_rules 対応テスト"""
+
+    def test_run_正常系_multi_file_rulesの違反をViolationsとして返すこと(self):
+        # Arrange
+        violation = _make_violation()
+        multi_rule = FakeMultiFileRule(violations=(violation,))
+        rule_set = RuleSet(rules=(), multi_file_rules=(multi_rule,))
+        source_files = _make_source_files(("x = 1\n", "__init__.py"))
+
+        # Act
+        result = rule_set.run(source_files)
+
+        # Assert
+        assert isinstance(result, Violations)
+        assert len(result) == 1
+
+    def test_run_正常系_単一ファイルルールと複数ファイルルールの違反が集約されること(self):
+        # Arrange
+        violation = _make_violation()
+        rule = FakeRule(violations=(violation,))
+        multi_rule = FakeMultiFileRule(violations=(violation,))
+        rule_set = RuleSet(rules=(rule,), multi_file_rules=(multi_rule,))
+        source_files = _make_source_files(("x = 1\n", "__init__.py"))
+
+        # Act
+        result = rule_set.run(source_files)
+
+        # Assert: 単一ファイルルール1件 + 複数ファイルルール1件 = 2件
+        assert len(result) == 2
+
+    def test_run_エッジケース_multi_file_rulesが空タプルの場合に既存動作と同じこと(self):
+        # Arrange
+        violation = _make_violation()
+        rule = FakeRule(violations=(violation,))
+        rule_set = RuleSet(rules=(rule,), multi_file_rules=())
+        source_files = _make_source_files(("x = 1\n", "__init__.py"))
+
+        # Act
+        result = rule_set.run(source_files)
+
+        # Assert: 単一ファイルルールのみ実行
+        assert len(result) == 1
+
+    def test_run_正常系_multi_file_rulesがdisabled_rule_idsでスキップされること(self):
+        # Arrange
+        violation = _make_violation()
+        multi_rule = FakeMultiFileRule(rule_id="multi-rule", violations=(violation,))
+        rule_set = RuleSet(rules=(), multi_file_rules=(multi_rule,))
+        source_files = _make_source_files(("x = 1\n", "__init__.py"))
+
+        # Act
+        result = rule_set.run(source_files, disabled_rule_ids=frozenset({"multi-rule"}))
+
+        # Assert: multi-rule がスキップされるため違反なし
+        assert len(result) == 0
+
+    def test_run_エッジケース_multi_file_rulesにper_file_disabledが適用されないこと(self):
+        # Arrange: per_file_disabled で multi-rule を無効化しようとしても効果なし
+        violation = _make_violation()
+        multi_rule = FakeMultiFileRule(rule_id="multi-rule", violations=(violation,))
+        rule_set = RuleSet(rules=(), multi_file_rules=(multi_rule,))
+        source_files = _make_source_files(("x = 1\n", "__init__.py"))
+
+        # Act: per_file_disabled に multi-rule を指定しても multi_file_rules には影響しない
+        result = rule_set.run(
+            source_files,
+            per_file_disabled={Path("__init__.py"): frozenset({"multi-rule"})},
+        )
+
+        # Assert: per_file_disabled は単一ファイルルール専用なので multi-rule は実行される
+        assert len(result) == 1
+
+    def test_rule_ids_正常系_multi_file_rulesのIDも含むこと(self):
+        # Arrange
+        multi_rule = FakeMultiFileRule(rule_id="multi-rule")
+        rule_set = RuleSet(rules=(), multi_file_rules=(multi_rule,))
+
+        # Act
+        result = rule_set.rule_ids
+
+        # Assert
+        assert "multi-rule" in result
+
+    def test_list_rules_正常系_multi_file_rulesのメタ情報も含むこと(self):
+        # Arrange
+        multi_rule = FakeMultiFileRule(rule_id="multi-rule", rule_name="Multi Rule")
+        rule_set = RuleSet(rules=(), multi_file_rules=(multi_rule,))
+
+        # Act
+        result = rule_set.list_rules()
+
+        # Assert
+        assert len(result) == 1
+        assert isinstance(result[0], RuleMeta)
+        assert result[0].rule_id == "multi-rule"
+        assert result[0].rule_name == "Multi Rule"
+
+    def test_find_rule_正常系_multi_file_rulesのrule_idで検索できること(self):
+        # Arrange
+        multi_rule = FakeMultiFileRule(rule_id="multi-rule", rule_name="Multi Rule")
+        rule_set = RuleSet(rules=(), multi_file_rules=(multi_rule,))
+
+        # Act
+        result = rule_set.find_rule("multi-rule")
+
+        # Assert
+        assert result is not None
+        assert isinstance(result, RuleMeta)
+        assert result.rule_id == "multi-rule"
