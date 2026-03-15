@@ -11,7 +11,7 @@ import pytest
 
 from paladin.check import CheckOrchestratorProvider
 from paladin.check.context import CheckContext
-from paladin.config import ProjectConfigLoader, TargetResolver
+from paladin.config import ProjectConfig, ProjectConfigLoader, TargetResolver
 from paladin.foundation.error.error import ApplicationError
 from paladin.foundation.fs.text import TextFileSystemReader
 
@@ -28,6 +28,26 @@ def _load_context(targets: tuple[Path, ...]) -> CheckContext:
         rule_options=config.rule_options,
         overrides=config.overrides,
     )
+
+
+def _load_config_and_context(
+    targets: tuple[Path, ...],
+) -> tuple[CheckContext, ProjectConfig]:
+    """pyproject.toml を読み込み CheckContext と ProjectConfig を返すヘルパー
+
+    rule_options / project_name を provide() に渡す必要があるテストで使用する。
+    """
+    config = ProjectConfigLoader(reader=TextFileSystemReader()).load()
+    resolved_targets = TargetResolver().resolve(targets=targets, include=config.include)
+    context = CheckContext(
+        targets=resolved_targets,
+        exclude=config.exclude,
+        rules=config.rules,
+        per_file_ignores=config.per_file_ignores,
+        rule_options=config.rule_options,
+        overrides=config.overrides,
+    )
+    return context, config
 
 
 class TestIntegrationRuleDisabling:
@@ -219,12 +239,11 @@ class TestIntegrationRuleOptions:
         os.chdir(tmp_path)
 
         try:
-            context = _load_context((tmp_path,))
-            config = ProjectConfigLoader(reader=TextFileSystemReader()).load()
+            context, config = _load_config_and_context((tmp_path,))
             # Act
             report = (
                 CheckOrchestratorProvider()
-                .provide(rule_options=config.rule_options)
+                .provide(rule_options=config.rule_options, project_name=config.project_name)
                 .orchestrate(context)
             )
         finally:
@@ -245,12 +264,11 @@ class TestIntegrationRuleOptions:
         os.chdir(tmp_path)
 
         try:
-            config = ProjectConfigLoader(reader=TextFileSystemReader()).load()
-            context = _load_context((tmp_path,))
+            context, config = _load_config_and_context((tmp_path,))
             # Act
             report = (
                 CheckOrchestratorProvider()
-                .provide(rule_options=config.rule_options)
+                .provide(rule_options=config.rule_options, project_name=config.project_name)
                 .orchestrate(context)
             )
         finally:
@@ -274,18 +292,129 @@ class TestIntegrationRuleOptions:
         os.chdir(tmp_path)
 
         try:
-            config = ProjectConfigLoader(reader=TextFileSystemReader()).load()
-            context = _load_context((tmp_path,))
+            context, config = _load_config_and_context((tmp_path,))
             # Act: 未知ルール ID は警告のみで処理は続行される
             report = (
                 CheckOrchestratorProvider()
-                .provide(rule_options=config.rule_options)
+                .provide(rule_options=config.rule_options, project_name=config.project_name)
                 .orchestrate(context)
             )
         finally:
             os.chdir(original_cwd)
 
         # Assert: 処理が正常に完了していること
+        assert report.exit_code == 0
+
+    def test_check_正常系_project_nameからデフォルトroot_packagesが動的に解決されること(
+        self, tmp_path: Path
+    ):
+        # Arrange: myapp からのインポートを含む .py ファイル
+        src_file = tmp_path / "main.py"
+        src_file.write_text("from myapp.foo import bar\n", encoding="utf-8")
+        # [project] name = "myapp" → root_packages = ("myapp", "tests")
+        pyproject = tmp_path / "pyproject.toml"
+        pyproject.write_text(
+            '[project]\nname = "myapp"\n\n[tool.paladin]\n',
+            encoding="utf-8",
+        )
+        original_cwd = Path.cwd()
+        os.chdir(tmp_path)
+
+        try:
+            context, config = _load_config_and_context((tmp_path,))
+            # Act
+            report = (
+                CheckOrchestratorProvider()
+                .provide(rule_options=config.rule_options, project_name=config.project_name)
+                .orchestrate(context)
+            )
+        finally:
+            os.chdir(original_cwd)
+
+        # Assert: myapp が動的に root_packages に含まれるため違反なし
+        assert report.exit_code == 0
+
+    def test_check_正常系_project_nameのハイフンが正規化されてroot_packagesに使われること(
+        self, tmp_path: Path
+    ):
+        # Arrange: [project] name = "my-app" → 正規化後 "my_app" が root_packages に入る
+        src_file = tmp_path / "main.py"
+        src_file.write_text("from my_app.foo import bar\n", encoding="utf-8")
+        pyproject = tmp_path / "pyproject.toml"
+        pyproject.write_text(
+            '[project]\nname = "my-app"\n\n[tool.paladin]\n',
+            encoding="utf-8",
+        )
+        original_cwd = Path.cwd()
+        os.chdir(tmp_path)
+
+        try:
+            context, config = _load_config_and_context((tmp_path,))
+            # Act
+            report = (
+                CheckOrchestratorProvider()
+                .provide(rule_options=config.rule_options, project_name=config.project_name)
+                .orchestrate(context)
+            )
+        finally:
+            os.chdir(original_cwd)
+
+        # Assert: my_app（正規化後）が root_packages に含まれるため違反なし
+        assert report.exit_code == 0
+
+    def test_check_正常系_rule_optionsのroot_packagesがproject_nameより優先されること(
+        self, tmp_path: Path
+    ):
+        # Arrange: [project] name = "myapp" だが rule_options で root-packages を明示指定
+        src_file = tmp_path / "main.py"
+        src_file.write_text("from explicit_pkg.foo import bar\n", encoding="utf-8")
+        pyproject = tmp_path / "pyproject.toml"
+        pyproject.write_text(
+            '[project]\nname = "myapp"\n\n'
+            '[tool.paladin.rule."require-qualified-third-party"]\n'
+            'root-packages = ["explicit_pkg"]\n',
+            encoding="utf-8",
+        )
+        original_cwd = Path.cwd()
+        os.chdir(tmp_path)
+
+        try:
+            context, config = _load_config_and_context((tmp_path,))
+            # Act
+            report = (
+                CheckOrchestratorProvider()
+                .provide(rule_options=config.rule_options, project_name=config.project_name)
+                .orchestrate(context)
+            )
+        finally:
+            os.chdir(original_cwd)
+
+        # Assert: rule_options の root-packages が優先されるため explicit_pkg は違反なし
+        assert report.exit_code == 0
+
+    def test_check_正常系_projectセクションがない場合testsのみがデフォルトroot_packagesになること(
+        self, tmp_path: Path
+    ):
+        # Arrange: [project] セクションなし → root_packages = ("tests",)
+        src_file = tmp_path / "main.py"
+        src_file.write_text("from tests.foo import bar\n", encoding="utf-8")
+        pyproject = tmp_path / "pyproject.toml"
+        pyproject.write_text("[tool.paladin]\n", encoding="utf-8")
+        original_cwd = Path.cwd()
+        os.chdir(tmp_path)
+
+        try:
+            context, config = _load_config_and_context((tmp_path,))
+            # Act
+            report = (
+                CheckOrchestratorProvider()
+                .provide(rule_options=config.rule_options, project_name=config.project_name)
+                .orchestrate(context)
+            )
+        finally:
+            os.chdir(original_cwd)
+
+        # Assert: tests は root_packages に含まれるため違反なし
         assert report.exit_code == 0
 
 

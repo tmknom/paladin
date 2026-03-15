@@ -40,6 +40,20 @@ class TestProjectConfig:
         assert config.per_file_ignores == ()
         assert config.rules == {}
 
+    def test_ProjectConfig_正常系_project_nameフィールドを保持できること(self):
+        # Arrange / Act
+        config = ProjectConfig(project_name="myapp")
+
+        # Assert
+        assert config.project_name == "myapp"
+
+    def test_ProjectConfig_正常系_デフォルトでproject_nameがNoneであること(self):
+        # Arrange / Act
+        config = ProjectConfig()
+
+        # Assert
+        assert config.project_name is None
+
     def test_ProjectConfig_正常系_デフォルト値でrulesが空dictであること(self):
         # Arrange / Act
         config = ProjectConfig()
@@ -605,3 +619,140 @@ files = ["tests/**"]
         assert len(result.overrides) == 1
         assert result.overrides[0].files == ("tests/**",)
         assert result.overrides[0].rules == {}
+
+    def test_load_正常系_projectセクションのnameからproject_nameを取得すること(self):
+        # Arrange
+        toml_content = """\
+[project]
+name = "myapp"
+"""
+        reader = InMemoryFsReader(content=toml_content)
+        loader = ProjectConfigLoader(reader=reader)
+
+        # Act
+        result = loader.load()
+
+        # Assert
+        assert result.project_name == "myapp"
+
+    def test_load_正常系_project_nameのハイフンがアンダースコアに正規化されること(self):
+        # Arrange
+        toml_content = """\
+[project]
+name = "my-app"
+"""
+        reader = InMemoryFsReader(content=toml_content)
+        loader = ProjectConfigLoader(reader=reader)
+
+        # Act
+        result = loader.load()
+
+        # Assert
+        assert result.project_name == "my_app"
+
+    def test_load_正常系_project_nameのドットがアンダースコアに正規化されること(self):
+        # Arrange
+        toml_content = """\
+[project]
+name = "my.app"
+"""
+        reader = InMemoryFsReader(content=toml_content)
+        loader = ProjectConfigLoader(reader=reader)
+
+        # Act
+        result = loader.load()
+
+        # Assert
+        assert result.project_name == "my_app"
+
+    def test_load_正常系_project_nameの大文字が小文字に正規化されること(self):
+        # Arrange
+        toml_content = """\
+[project]
+name = "MyApp"
+"""
+        reader = InMemoryFsReader(content=toml_content)
+        loader = ProjectConfigLoader(reader=reader)
+
+        # Act
+        result = loader.load()
+
+        # Assert
+        assert result.project_name == "myapp"
+
+    def test_load_正常系_project_nameの連続区切り文字が単一アンダースコアに正規化されること(self):
+        # Arrange
+        toml_content = """\
+[project]
+name = "my--app"
+"""
+        reader = InMemoryFsReader(content=toml_content)
+        loader = ProjectConfigLoader(reader=reader)
+
+        # Act
+        result = loader.load()
+
+        # Assert
+        assert result.project_name == "my_app"
+
+    def test_load_エッジケース_projectセクションがない場合project_nameがNoneであること(self):
+        # Arrange
+        toml_content = """\
+[tool.paladin]
+other_key = "value"
+"""
+        reader = InMemoryFsReader(content=toml_content)
+        loader = ProjectConfigLoader(reader=reader)
+
+        # Act
+        result = loader.load()
+
+        # Assert
+        assert result.project_name is None
+
+    def test_load_エッジケース_projectセクションにnameがない場合project_nameがNoneであること(self):
+        # Arrange
+        toml_content = """\
+[project]
+version = "1.0.0"
+"""
+        reader = InMemoryFsReader(content=toml_content)
+        loader = ProjectConfigLoader(reader=reader)
+
+        # Act
+        result = loader.load()
+
+        # Assert
+        assert result.project_name is None
+
+    def test_load_エッジケース_pyproject_tomlが存在しない場合project_nameがNoneであること(self):
+        # Arrange
+        reader = InMemoryFsReader(
+            error=FileSystemError(message="ファイルが見つかりません", cause=Exception("not found"))
+        )
+        loader = ProjectConfigLoader(reader=reader)
+
+        # Act
+        result = loader.load()
+
+        # Assert
+        assert result.project_name is None
+
+    def test_load_正常系_projectセクションとtool_paladinセクションの両方を読み込めること(self):
+        # Arrange
+        toml_content = """\
+[project]
+name = "my-project"
+
+[tool.paladin.rules]
+no-relative-import = false
+"""
+        reader = InMemoryFsReader(content=toml_content)
+        loader = ProjectConfigLoader(reader=reader)
+
+        # Act
+        result = loader.load()
+
+        # Assert
+        assert result.project_name == "my_project"
+        assert result.rules == {"no-relative-import": False}

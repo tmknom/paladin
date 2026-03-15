@@ -252,11 +252,11 @@ class TestRuleSetDefault:
         assert len(rqtp_violations) == 0
 
     def test_default_正常系_rule_optionsがNoneの場合デフォルト値が使われること(self):
-        # Arrange: デフォルト root_packages = ("paladin", "tests")
+        # Arrange: デフォルト root_packages = ("tests",)（project_name なし）
         rule_set = RuleSet.default(rule_options=None)
-        source_file = _make_source_file_for_import("from paladin.foo import bar\n")
+        source_file = _make_source_file_for_import("from tests.foo import bar\n")
 
-        # Act: paladin はデフォルトの root_packages に含まれるため違反なし
+        # Act: tests はデフォルトの root_packages に含まれるため違反なし
         result = rule_set.run(SourceFiles(files=(source_file,)))
 
         # Assert
@@ -264,9 +264,9 @@ class TestRuleSetDefault:
         assert len(rqtp_violations) == 0
 
     def test_default_正常系_rule_optionsが空dictの場合デフォルト値が使われること(self):
-        # Arrange
+        # Arrange: デフォルト root_packages = ("tests",)（project_name なし）
         rule_set = RuleSet.default(rule_options={})
-        source_file = _make_source_file_for_import("from paladin.foo import bar\n")
+        source_file = _make_source_file_for_import("from tests.foo import bar\n")
 
         # Act
         result = rule_set.run(SourceFiles(files=(source_file,)))
@@ -279,12 +279,12 @@ class TestRuleSetDefault:
         # Arrange: 別ルール ID のエントリのみ（require-qualified-third-party エントリなし）
         rule_options = {"no-relative-import": {"some-param": "value"}}
         rule_set = RuleSet.default(rule_options=rule_options)
-        source_file = _make_source_file_for_import("from paladin.foo import bar\n")
+        source_file = _make_source_file_for_import("from tests.foo import bar\n")
 
         # Act
         result = rule_set.run(SourceFiles(files=(source_file,)))
 
-        # Assert: デフォルトの root_packages が使われるため paladin からのインポートは違反なし
+        # Assert: デフォルトの root_packages が使われるため tests からのインポートは違反なし
         rqtp_violations = [v for v in result.items if v.rule_id == "require-qualified-third-party"]
         assert len(rqtp_violations) == 0
 
@@ -360,6 +360,76 @@ class TestRuleSetDefault:
 
         # Assert: 警告なし
         assert len(caplog.records) == 0
+
+    def test_default_正常系_project_name指定時にデフォルトroot_packagesがproject_nameとtestsになること(
+        self,
+    ):
+        # Arrange: project_name = "myapp" → デフォルト root_packages = ("myapp", "tests")
+        rule_set = RuleSet.default(project_name="myapp")
+        source_file = _make_source_file_for_import("from myapp.foo import bar\n")
+
+        # Act: myapp からのインポートは root_packages に含まれるため違反なし
+        result = rule_set.run(SourceFiles(files=(source_file,)))
+
+        # Assert
+        rqtp_violations = [v for v in result.items if v.rule_id == "require-qualified-third-party"]
+        assert len(rqtp_violations) == 0
+
+    def test_default_正常系_project_name指定時にtestsもデフォルトで内部パッケージになること(
+        self,
+    ):
+        # Arrange: project_name = "myapp" → tests も root_packages に含まれる
+        rule_set = RuleSet.default(project_name="myapp")
+        source_file = _make_source_file_for_import("from tests.foo import bar\n")
+
+        # Act
+        result = rule_set.run(SourceFiles(files=(source_file,)))
+
+        # Assert: tests も root_packages に含まれるため違反なし
+        rqtp_violations = [v for v in result.items if v.rule_id == "require-qualified-third-party"]
+        assert len(rqtp_violations) == 0
+
+    def test_default_正常系_project_nameがNoneの場合testsのみがデフォルトroot_packagesになること(
+        self,
+    ):
+        # Arrange: project_name = None → デフォルト root_packages = ("tests",)
+        rule_set = RuleSet.default(project_name=None)
+        source_file = _make_source_file_for_import("from tests.foo import bar\n")
+
+        # Act
+        result = rule_set.run(SourceFiles(files=(source_file,)))
+
+        # Assert: tests は含まれるため違反なし
+        rqtp_violations = [v for v in result.items if v.rule_id == "require-qualified-third-party"]
+        assert len(rqtp_violations) == 0
+
+    def test_default_正常系_rule_optionsのroot_packagesがproject_nameより優先されること(
+        self,
+    ):
+        # Arrange: rule_options で root-packages を明示指定 → project_name は無視される
+        rule_options = {"require-qualified-third-party": {"root-packages": ["explicit_pkg"]}}
+        rule_set = RuleSet.default(rule_options=rule_options, project_name="myapp")
+
+        # explicit_pkg からのインポートは違反なし
+        source_file = _make_source_file_for_import("from explicit_pkg.foo import bar\n")
+        result = rule_set.run(SourceFiles(files=(source_file,)))
+        rqtp_violations = [v for v in result.items if v.rule_id == "require-qualified-third-party"]
+        assert len(rqtp_violations) == 0
+
+        # myapp からのインポートは rule_options で上書きされたため違反あり
+        source_file2 = _make_source_file_for_import("from myapp.foo import bar\n")
+        result2 = rule_set.run(SourceFiles(files=(source_file2,)))
+        rqtp_violations2 = [
+            v for v in result2.items if v.rule_id == "require-qualified-third-party"
+        ]
+        assert len(rqtp_violations2) == 1
+
+    def test_default_正常系_project_name未指定の場合もデフォルト引数で動作すること(self):
+        # Arrange / Act: project_name を指定しない（デフォルト引数 None）
+        result = RuleSet.default()
+
+        # Assert: インスタンスが返ること
+        assert isinstance(result, RuleSet)
 
 
 class TestRuleSetPerFileDisabled:

@@ -25,19 +25,22 @@ class CheckOrchestratorProvider:
 
     @log
     def provide(
-        self, rule_options: Mapping[str, Mapping[str, object]] | None = None
+        self,
+        rule_options: Mapping[str, Mapping[str, object]] | None = None,
+        project_name: str | None = None,
     ) -> CheckOrchestrator:
         """CheckOrchestratorを構築
 
         Args:
             rule_options: ルール個別設定。None の場合はデフォルト値を使用する
+            project_name: pyproject.toml の [project] name から取得した正規化済みプロジェクト名
 
         Returns:
             設定済みのCheckOrchestrator
         """
         reader = TextFileSystemReader()
         parser = AstParser(reader=reader)
-        rule_set = RuleSet.default(rule_options=rule_options)
+        rule_set = RuleSet.default(rule_options=rule_options, project_name=project_name)
         return CheckOrchestrator(
             collector=FileCollector(),
             parser=parser,

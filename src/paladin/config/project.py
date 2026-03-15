@@ -5,6 +5,7 @@ pyproject.toml の [tool.paladin] セクションを読み込み、
 """
 
 import logging
+import re
 import tomllib
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -36,6 +37,7 @@ class PerFileIgnoreEntry:
 class ProjectConfig:
     """プロジェクト設定を保持する値オブジェクト"""
 
+    project_name: str | None = field(default=None)
     per_file_ignores: tuple[PerFileIgnoreEntry, ...] = field(default=())
     rules: dict[str, bool] = field(default_factory=lambda: {})
     include: tuple[str, ...] = field(default=())
@@ -67,12 +69,14 @@ class ProjectConfigLoader:
             return ProjectConfig()
 
         data = tomllib.loads(content)
+        project_name = self._parse_project_name(data)
         per_file_ignores = self._parse_per_file_ignores(data)
         rules = self._parse_rules(data)
         include, exclude = self._parse_include_exclude(data)
         rule_options = self._parse_rule_options(data)
         overrides = self._parse_overrides(data)
         return ProjectConfig(
+            project_name=project_name,
             per_file_ignores=per_file_ignores,
             rules=rules,
             include=include,
@@ -80,6 +84,22 @@ class ProjectConfigLoader:
             rule_options=rule_options,
             overrides=overrides,
         )
+
+    def _parse_project_name(self, data: dict[str, object]) -> str | None:
+        """TOML データから [project] name をパースして正規化する
+
+        Args:
+            data: tomllib.loads() で解析した TOML データ
+
+        Returns:
+            正規化されたプロジェクト名。セクションまたは name が存在しない場合は None
+        """
+        try:
+            project_section: dict[str, object] = data["project"]  # type: ignore[assignment]
+            name: str = project_section["name"]  # type: ignore[assignment]
+        except KeyError:
+            return None
+        return re.sub(r"[-_.]+", "_", name).lower()
 
     def _parse_include_exclude(
         self, data: dict[str, object]
