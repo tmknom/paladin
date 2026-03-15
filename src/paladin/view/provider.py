@@ -4,14 +4,7 @@
 """
 
 from paladin.foundation.log import log
-from paladin.lint import (
-    NoLocalImportRule,
-    NoRelativeImportRule,
-    RequireAllExportRule,
-    RequireQualifiedThirdPartyRule,
-    Rule,
-    RuleSet,
-)
+from paladin.lint import RuleSet
 from paladin.view.formatter import ViewFormatter
 from paladin.view.orchestrator import ViewOrchestrator
 
@@ -29,14 +22,6 @@ class ViewOrchestratorProvider:
         Returns:
             設定済みの ViewOrchestrator
         """
-        rule_set = RuleSet(rules=self._create_rules())
+        rule_set = RuleSet.default()
         formatter = ViewFormatter()
         return ViewOrchestrator(rule_set=rule_set, formatter=formatter)
-
-    def _create_rules(self) -> tuple[Rule, ...]:
-        return (
-            RequireAllExportRule(),
-            NoRelativeImportRule(),
-            NoLocalImportRule(),
-            RequireQualifiedThirdPartyRule(root_packages=("paladin", "tests")),
-        )

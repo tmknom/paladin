@@ -4,14 +4,7 @@
 """
 
 from paladin.foundation.log import log
-from paladin.lint import (
-    NoLocalImportRule,
-    NoRelativeImportRule,
-    RequireAllExportRule,
-    RequireQualifiedThirdPartyRule,
-    Rule,
-    RuleSet,
-)
+from paladin.lint import RuleSet
 from paladin.list.formatter import ListFormatter
 from paladin.list.orchestrator import ListOrchestrator
 
@@ -29,14 +22,6 @@ class ListOrchestratorProvider:
         Returns:
             設定済みの ListOrchestrator
         """
-        rule_set = RuleSet(rules=self._create_rules())
+        rule_set = RuleSet.default()
         formatter = ListFormatter()
         return ListOrchestrator(rule_set=rule_set, formatter=formatter)
-
-    def _create_rules(self) -> tuple[Rule, ...]:
-        return (
-            RequireAllExportRule(),
-            NoRelativeImportRule(),
-            NoLocalImportRule(),
-            RequireQualifiedThirdPartyRule(root_packages=("paladin", "tests")),
-        )

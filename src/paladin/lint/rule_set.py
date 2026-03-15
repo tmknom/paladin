@@ -3,7 +3,11 @@
 複数 Rule を束ねて管理し、実行・一覧・検索を提供する。
 """
 
+from paladin.lint.no_local_import import NoLocalImportRule
+from paladin.lint.no_relative_import import NoRelativeImportRule
 from paladin.lint.protocol import Rule
+from paladin.lint.require_all_export import RequireAllExportRule
+from paladin.lint.require_qualified_third_party import RequireQualifiedThirdPartyRule
 from paladin.lint.types import RuleMeta, SourceFiles, Violation, Violations
 
 
@@ -13,6 +17,18 @@ class RuleSet:
     def __init__(self, rules: tuple[Rule, ...]) -> None:
         """RuleSetを初期化"""
         self._rules = rules
+
+    @classmethod
+    def default(cls) -> "RuleSet":
+        """プロダクションで使うデフォルトのルール一式を返す"""
+        return cls(
+            rules=(
+                RequireAllExportRule(),
+                NoRelativeImportRule(),
+                NoLocalImportRule(),
+                RequireQualifiedThirdPartyRule(root_packages=("paladin", "tests")),
+            )
+        )
 
     @property
     def rule_ids(self) -> frozenset[str]:

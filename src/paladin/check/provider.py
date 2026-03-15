@@ -11,13 +11,7 @@ from paladin.check.parser import AstParser
 from paladin.check.rule_filter import RuleFilter
 from paladin.foundation.fs.text import TextFileSystemReader
 from paladin.foundation.log import log
-from paladin.lint import (
-    NoLocalImportRule,
-    NoRelativeImportRule,
-    RequireAllExportRule,
-    RequireQualifiedThirdPartyRule,
-    RuleSet,
-)
+from paladin.lint import RuleSet
 
 
 class CheckOrchestratorProvider:
@@ -35,7 +29,7 @@ class CheckOrchestratorProvider:
         """
         reader = TextFileSystemReader()
         parser = AstParser(reader=reader)
-        rule_set = self._create_rule_set()
+        rule_set = RuleSet.default()
         return CheckOrchestrator(
             collector=FileCollector(),
             parser=parser,
@@ -44,20 +38,4 @@ class CheckOrchestratorProvider:
             violation_filter=ViolationFilter(),
             rule_filter=RuleFilter(),
             path_excluder=PathExcluder(),
-        )
-
-    def _create_rule_set(self) -> RuleSet:
-        require_all_export_rule = RequireAllExportRule()
-        no_relative_import_rule = NoRelativeImportRule()
-        no_local_import_rule = NoLocalImportRule()
-        require_qualified_third_party_rule = RequireQualifiedThirdPartyRule(
-            root_packages=("paladin", "tests")
-        )
-        return RuleSet(
-            rules=(
-                require_all_export_rule,
-                no_relative_import_rule,
-                no_local_import_rule,
-                require_qualified_third_party_rule,
-            )
         )
