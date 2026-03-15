@@ -2,6 +2,7 @@ from pathlib import Path
 
 from paladin.check.context import CheckContext
 from paladin.check.types import OutputFormat
+from paladin.config import OverrideEntry
 
 
 class TestCheckContext:
@@ -63,3 +64,20 @@ class TestCheckContext:
 
         # Assert
         assert context.rule_options == {}
+
+    def test_CheckContext_正常系_overridesフィールドを保持できること(self):
+        # Arrange
+        entry = OverrideEntry(files=("tests/**",), rules={"require-all-export": False})
+
+        # Act
+        context = CheckContext(targets=(Path("src/"),), overrides=(entry,))
+
+        # Assert
+        assert context.overrides == (entry,)
+
+    def test_CheckContext_正常系_デフォルトでoverridesが空タプルであること(self):
+        # Arrange & Act
+        context = CheckContext(targets=(Path("src/"),))
+
+        # Assert
+        assert context.overrides == ()

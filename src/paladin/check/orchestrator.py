@@ -15,6 +15,7 @@ from paladin.check.ignore import (
     LineIgnoreParser,
     ViolationFilter,
 )
+from paladin.check.override import OverrideResolver
 from paladin.check.parser import AstParser
 from paladin.check.result import CheckReport, CheckResult
 from paladin.check.rule_filter import RuleFilter
@@ -46,6 +47,7 @@ class CheckOrchestrator:
         violation_filter: ViolationFilter,
         rule_filter: RuleFilter,
         path_excluder: PathExcluder,
+        override_resolver: OverrideResolver,
     ) -> None:
         """CheckOrchestratorを初期化
 
@@ -57,6 +59,7 @@ class CheckOrchestrator:
             violation_filter: ignore フィルター
             rule_filter: ルール有効/無効フィルター
             path_excluder: exclude パターンによるファイル除外
+            override_resolver: ディレクトリ別オーバーライド解決
         """
         self.collector = collector
         self.parser = parser
@@ -65,6 +68,7 @@ class CheckOrchestrator:
         self.violation_filter = violation_filter
         self.rule_filter = rule_filter
         self.path_excluder = path_excluder
+        self.override_resolver = override_resolver
 
     @log
     def orchestrate(self, context: CheckContext) -> CheckReport:
@@ -79,10 +83,26 @@ class CheckOrchestrator:
         target_files = self.collector.collect(context.targets)
         target_files = self.path_excluder.exclude(target_files, context.exclude)
         source_files = self.parser.parse_all(target_files)
-        disabled_rule_ids = self.rule_filter.resolve_disabled_rules(
+        base_disabled = self.rule_filter.resolve_disabled_rules(
             context.rules, self.rule_set.rule_ids
         )
-        violations = self.rule_set.run(source_files, disabled_rule_ids=disabled_rule_ids)
+        per_file_disabled: dict[Path, frozenset[str]] | None = None
+        if context.overrides:
+            per_file_disabled = {}
+            for sf in source_files:
+                merged_rules = self.override_resolver.resolve(
+                    context.overrides, sf.file_path, context.rules
+                )
+                file_disabled = self.rule_filter.resolve_disabled_rules(
+                    merged_rules, self.rule_set.rule_ids
+                )
+                if file_disabled != base_disabled:
+                    per_file_disabled[sf.file_path] = file_disabled
+        violations = self.rule_set.run(
+            source_files,
+            disabled_rule_ids=base_disabled,
+            per_file_disabled=per_file_disabled,
+        )
         file_paths = tuple(sf.file_path for sf in source_files)
         config_directives = ConfigIgnoreResolver().resolve(context.per_file_ignores, file_paths)
         comment_directives = FileIgnoreParser().parse_all(source_files)

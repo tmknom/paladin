@@ -5,6 +5,7 @@
 
 import logging
 from collections.abc import Mapping
+from pathlib import Path
 from typing import ClassVar
 
 from paladin.lint.no_local_import import NoLocalImportRule
@@ -93,17 +94,24 @@ class RuleSet:
         self,
         source_files: SourceFiles,
         disabled_rule_ids: frozenset[str] = frozenset(),
+        per_file_disabled: Mapping[Path, frozenset[str]] | None = None,
     ) -> Violations:
         """全ファイルに全ルールを適用し、違反を集約して返す
 
         Args:
             source_files: 検査対象のソースファイル群
             disabled_rule_ids: スキップするルール ID の frozenset
+            per_file_disabled: ファイルパスごとの disabled_rule_ids。指定されたファイルはこちらを優先使用する
         """
         violations: list[Violation] = []
         for source_file in source_files:
+            effective_disabled = (
+                per_file_disabled.get(source_file.file_path, disabled_rule_ids)
+                if per_file_disabled is not None
+                else disabled_rule_ids
+            )
             for rule in self._rules:
-                if rule.meta.rule_id in disabled_rule_ids:
+                if rule.meta.rule_id in effective_disabled:
                     continue
                 violations.extend(rule.check(source_file))
         return Violations(items=tuple(violations))

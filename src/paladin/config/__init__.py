@@ -9,12 +9,18 @@ Docs:
 
 from paladin.config.app import AppConfig
 from paladin.config.env_var import EnvVarConfig
-from paladin.config.project import PerFileIgnoreEntry, ProjectConfig, ProjectConfigLoader
+from paladin.config.project import (
+    OverrideEntry,
+    PerFileIgnoreEntry,
+    ProjectConfig,
+    ProjectConfigLoader,
+)
 from paladin.config.resolver import TargetResolver
 
 __all__ = [
     "AppConfig",
     "EnvVarConfig",
+    "OverrideEntry",
     "PerFileIgnoreEntry",
     "ProjectConfig",
     "ProjectConfigLoader",

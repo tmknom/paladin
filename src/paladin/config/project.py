@@ -16,6 +16,14 @@ logger = logging.getLogger(__name__)
 
 
 @dataclass(frozen=True)
+class OverrideEntry:
+    """[[tool.paladin.overrides]] の単一エントリを保持する値オブジェクト"""
+
+    files: tuple[str, ...]
+    rules: dict[str, bool]
+
+
+@dataclass(frozen=True)
 class PerFileIgnoreEntry:
     """per-file-ignores の単一エントリを保持する値オブジェクト"""
 
@@ -33,6 +41,7 @@ class ProjectConfig:
     include: tuple[str, ...] = field(default=())
     exclude: tuple[str, ...] = field(default=())
     rule_options: dict[str, dict[str, object]] = field(default_factory=lambda: {})
+    overrides: tuple[OverrideEntry, ...] = field(default=())
 
 
 class ProjectConfigLoader:
@@ -62,12 +71,14 @@ class ProjectConfigLoader:
         rules = self._parse_rules(data)
         include, exclude = self._parse_include_exclude(data)
         rule_options = self._parse_rule_options(data)
+        overrides = self._parse_overrides(data)
         return ProjectConfig(
             per_file_ignores=per_file_ignores,
             rules=rules,
             include=include,
             exclude=exclude,
             rule_options=rule_options,
+            overrides=overrides,
         )
 
     def _parse_include_exclude(
@@ -124,6 +135,34 @@ class ProjectConfigLoader:
             return dict(rule_section)
         except KeyError:
             return {}
+
+    def _parse_overrides(self, data: dict[str, object]) -> tuple[OverrideEntry, ...]:
+        """TOML データから [[tool.paladin.overrides]] 配列テーブルをパースする
+
+        Args:
+            data: tomllib.loads() で解析した TOML データ
+
+        Returns:
+            OverrideEntry のタプル。セクションが存在しない場合は空タプル
+        """
+        try:
+            tool_section: dict[str, object] = data["tool"]  # type: ignore[assignment]
+            paladin_section: dict[str, object] = tool_section["paladin"]  # type: ignore[assignment,index]
+            overrides_list: list[dict[str, object]] = paladin_section["overrides"]  # type: ignore[assignment,index]
+        except KeyError:
+            return ()
+
+        entries: list[OverrideEntry] = []
+        for entry_data in overrides_list:
+            files_raw: list[str] = entry_data.get("files", [])  # type: ignore[assignment]
+            rules_raw: dict[str, bool] = entry_data.get("rules", {})  # type: ignore[assignment]
+            entries.append(
+                OverrideEntry(
+                    files=tuple(files_raw),
+                    rules={k: bool(v) for k, v in rules_raw.items()},
+                )
+            )
+        return tuple(entries)
 
     def _parse_per_file_ignores(self, data: dict[str, object]) -> tuple[PerFileIgnoreEntry, ...]:
         """TOML データから per_file_ignores エントリを解析する
