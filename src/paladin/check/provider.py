@@ -3,6 +3,8 @@
 具象クラスへの依存を隠蔽し、Check層の生成ロジックを一元化する。
 """
 
+from collections.abc import Mapping
+
 from paladin.check.collector import FileCollector, PathExcluder
 from paladin.check.formatter import CheckFormatterFactory
 from paladin.check.ignore import ViolationFilter
@@ -21,15 +23,20 @@ class CheckOrchestratorProvider:
     """
 
     @log
-    def provide(self) -> CheckOrchestrator:
+    def provide(
+        self, rule_options: Mapping[str, Mapping[str, object]] | None = None
+    ) -> CheckOrchestrator:
         """CheckOrchestratorを構築
+
+        Args:
+            rule_options: ルール個別設定。None の場合はデフォルト値を使用する
 
         Returns:
             設定済みのCheckOrchestrator
         """
         reader = TextFileSystemReader()
         parser = AstParser(reader=reader)
-        rule_set = RuleSet.default()
+        rule_set = RuleSet.default(rule_options=rule_options)
         return CheckOrchestrator(
             collector=FileCollector(),
             parser=parser,

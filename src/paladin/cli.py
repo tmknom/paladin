@@ -69,8 +69,13 @@ def check(
         exclude=project_config.exclude,
         rules=project_config.rules,
         per_file_ignores=project_config.per_file_ignores,
+        rule_options=project_config.rule_options,
     )
-    report = CheckOrchestratorProvider().provide().orchestrate(context)
+    report = (
+        CheckOrchestratorProvider()
+        .provide(rule_options=project_config.rule_options)
+        .orchestrate(context)
+    )
     typer.echo(report.text)
     raise typer.Exit(code=report.exit_code)
 
