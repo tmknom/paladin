@@ -14,9 +14,10 @@ class TestListOrchestratorProvider:
 
         # Assert
         assert isinstance(result, ListOrchestrator)
-        assert len(rules) == 4
+        assert len(rules) == 5
         rule_ids = {r.rule_id for r in rules}
         assert "require-all-export" in rule_ids
         assert "no-relative-import" in rule_ids
         assert "no-local-import" in rule_ids
         assert "require-qualified-third-party" in rule_ids
+        assert "no-direct-internal-import" in rule_ids

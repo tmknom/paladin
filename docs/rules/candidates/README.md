@@ -9,4 +9,3 @@
 
 | ルール名 | 概要 |
 |----------|------|
-| [no-direct-internal-import](no-direct-internal-import.md) | 他パッケージの内部モジュールへの直接参照を禁止する |

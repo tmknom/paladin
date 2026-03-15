@@ -6,11 +6,12 @@ Docs:
     - docs/specs/lint/design.md
 """
 
-from paladin.lint.protocol import Rule
+from paladin.lint.protocol import MultiFileRule, Rule
 from paladin.lint.rule_set import RuleSet
 from paladin.lint.types import RuleMeta, SourceFile, SourceFiles, Violation, Violations
 
 __all__ = [
+    "MultiFileRule",
     "Rule",
     "RuleMeta",
     "RuleSet",
