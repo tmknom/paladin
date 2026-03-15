@@ -76,16 +76,16 @@ tests/unit/test_check/
 全体の処理フローは `CheckOrchestrator` が担います。
 
 1. `FileCollector` が解析対象パス群から `.py` ファイルを収集する（`TargetFiles`）
-2. `AstParser` が各ファイルを読み込み AST とソーステキストを生成する（`ParsedFiles`）
+2. `AstParser` が各ファイルを読み込み AST とソーステキストを生成する（`SourceFiles`）
 3. `RuleRunner` が全ルールを全ファイルへ適用し、違反を集約する（`Violations`）
 4. `FileIgnoreParser` がソーステキストのヘッダー領域を走査し、ignore ディレクティブを抽出する（`tuple[FileIgnoreDirective, ...]`）
 5. `ViolationFilter` が ignore ディレクティブに基づいて違反をフィルタリングする（`Violations`）
-6. `CheckResult`（`TargetFiles` + `ParsedFiles` + フィルタリング済み `Violations`）を組み立てる
+6. `CheckResult`（`TargetFiles` + `SourceFiles` + フィルタリング済み `Violations`）を組み立てる
 7. `CheckFormatterFactory` が `CheckContext.format`（`OutputFormat`）に応じて `CheckReportFormatter`（text）または `CheckJsonFormatter`（JSON）へ委譲し、`CheckReport` を生成して返す
 
 ### ルール適用ロジック
 
-`RuleRunner` は全 `ParsedFile` × 全 `Rule` のすべての組み合わせに対してルールを適用し、得られた違反をフラットに集約して `Violations` として返します。
+`RuleRunner` は全 `SourceFile` × 全 `Rule` のすべての組み合わせに対してルールを適用し、得られた違反をフラットに集約して `Violations` として返します。
 
 ## 固有の設計判断
 
@@ -101,7 +101,7 @@ tests/unit/test_check/
 class Rule(Protocol):
     @property
     def meta(self) -> RuleMeta: ...
-    def check(self, parsed_file: ParsedFile) -> tuple[Violation, ...]: ...
+    def check(self, source_file: SourceFile) -> tuple[Violation, ...]: ...
 ```
 
 **トレードオフ**: Protocol に新しいメソッドを追加した場合、既存の全ルール実装がランタイムエラーになる。これは意図的な設計で、インターフェース違反を早期に発見できる。
@@ -115,13 +115,11 @@ class Rule(Protocol):
 **依存グラフ**:
 
 ```
-check/ → lint/ (Rule, RuleRunner, Violation, Violations, RuleMeta)
-check/ → source/ (ParsedFile, ParsedFiles)
+check/ → lint/ (Rule, RuleRunner, SourceFile, SourceFiles, Violation, Violations, RuleMeta)
 rules/ → lint/ (Rule, RuleRegistry, RuleMeta, 具象ルール)
-lint/  → source/ (ParsedFile)
 ```
 
-**トレードオフ**: `check` / `rules` / `lint` / `source` の 4 パッケージに分かれるため、全体の見通しには依存グラフの把握が必要になる。
+**トレードオフ**: `SourceFile` / `SourceFiles` は lint ドメインの型だが、check 層の ignore 機能（`source` フィールド）でも利用している。lint の関心事でないフィールドを含む点はトレードオフだが、型を分離するより凝集度を優先した。
 
 ### フォーマッター群の責務分離
 
@@ -133,13 +131,13 @@ lint/  → source/ (ParsedFile)
 
 **トレードオフ**: 新しい出力形式を追加する場合は、`OutputFormat` への値追加・新しいフォーマッタークラスの実装・`CheckFormatterFactory` の `format()` メソッド拡張の3箇所を変更する必要がある。
 
-### ParsedFile へのソーステキスト保持
+### SourceFile へのソーステキスト保持
 
-**設計の意図**: `ParsedFile` に `source: str` フィールドを追加し、AST と合わせてソーステキストを保持する。
+**設計の意図**: `SourceFile` に `source: str` フィールドを追加し、AST と合わせてソーステキストを保持する。
 
-**なぜそう設計したか**: Python の `ast` モジュールはコメントを AST ノードとして保持しない。ignore ディレクティブはコメントであるため、AST からは抽出できない。`AstParser.parse` がソーステキストを既に保持しているため、`ParsedFile` にそのまま含めるのが最もシンプルな手段である。将来の直前コメント ignore（R-081）でも同じ `source` を流用できる。
+**なぜそう設計したか**: Python の `ast` モジュールはコメントを AST ノードとして保持しない。ignore ディレクティブはコメントであるため、AST からは抽出できない。`AstParser.parse` がソーステキストを既に保持しているため、`SourceFile` にそのまま含めるのが最もシンプルな手段である。将来の直前コメント ignore（R-081）でも同じ `source` を流用できる。
 
-**トレードオフ**: 全 `ParsedFile` がソーステキストをメモリ上に保持し続けるため、大量ファイル解析時のメモリ消費が増加する。現時点では対象ファイル数が限定的で問題にならないが、将来パフォーマンスが問題になった場合は遅延読み込みや ignore 解析後のソース破棄を検討する。
+**トレードオフ**: 全 `SourceFile` がソーステキストをメモリ上に保持し続けるため、大量ファイル解析時のメモリ消費が増加する。現時点では対象ファイル数が限定的で問題にならないが、将来パフォーマンスが問題になった場合は遅延読み込みや ignore 解析後のソース破棄を検討する。
 
 ### ヘッダー領域のみを走査する ignore パーサー
 
@@ -195,18 +193,17 @@ lint/  → source/ (ParsedFile)
 | 依存先 | 用途 |
 |---|---|
 | Python 標準ライブラリ `ast` | Python ソースコードの AST 生成・走査 |
-| `paladin.lint` | ルールドメイン（`Rule`, `RuleRunner`, `Violation`, `Violations`, `RuleMeta`, 具象ルール） |
-| `paladin.source` | AST 解析済み表現（`ParsedFile`, `ParsedFiles`） |
+| `paladin.lint` | ルールドメイン（`Rule`, `RuleRunner`, `SourceFile`, `SourceFiles`, `Violation`, `Violations`, `RuleMeta`, 具象ルール） |
 | `paladin.foundation.fs` | ファイル読み込みの抽象化（`TextFileSystemReaderProtocol`） |
 | `paladin.foundation.log` | ログ出力（`@log` デコレーター） |
 
 ### 想定される拡張ポイント
 
 - **新しいルールの追加**: `Rule` Protocol を実装したクラスを `lint/` に追加し、`CheckOrchestratorProvider._create_runner()` に登録する
-- **複数ファイルにまたがるルール**: `Rule.check()` のシグネチャを `ParsedFiles` を受け取る形に拡張するか、新しい Protocol を定義する
+- **複数ファイルにまたがるルール**: `Rule.check()` のシグネチャを `SourceFiles` を受け取る形に拡張するか、新しい Protocol を定義する
 - **ルール選択機能**: `RuleRunner` が適用するルールを実行時に絞り込める仕組みを追加する
 - **エラーファイルのスキップ**: `AstParser` でエラーを捕捉してスキップし、`CheckResult` に解析失敗情報を追加する
-- **直前コメント ignore（R-081）**: `# paladin: ignore[rule-id]` をサポートする。`ignore.py` に `LineIgnoreParser` / `LineIgnoreDirective` を追加し、`ParsedFile.source` を入力として利用する
+- **直前コメント ignore（R-081）**: `# paladin: ignore[rule-id]` をサポートする。`ignore.py` に `LineIgnoreParser` / `LineIgnoreDirective` を追加し、`SourceFile.source` を入力として利用する
 - **CLI --ignore-rule（R-082）**: 実行時に全ファイルへ適用するルール除外を `ViolationFilter` に追加する。`CheckContext` に `ignored_rules` フィールドを追加して受け渡す
 
 ### 拡張時の注意点

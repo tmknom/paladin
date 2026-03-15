@@ -17,7 +17,7 @@ class TestIntegrationIgnore:
         # Arrange
         init_file = tmp_path / "__init__.py"
         init_file.write_text("# paladin: ignore-file\nfrom foo import bar\n", encoding="utf-8")
-        context = CheckContext(targets=(tmp_path,))
+        context = CheckContext(targets=(tmp_path,), has_cli_targets=True)
 
         # Act
         report = CheckOrchestratorProvider().provide().orchestrate(context)
@@ -34,7 +34,7 @@ class TestIntegrationIgnore:
             "# paladin: ignore-file[require-all-export]\nfrom foo import bar\n",
             encoding="utf-8",
         )
-        context = CheckContext(targets=(tmp_path,))
+        context = CheckContext(targets=(tmp_path,), has_cli_targets=True)
 
         # Act
         report = CheckOrchestratorProvider().provide().orchestrate(context)
@@ -47,7 +47,7 @@ class TestIntegrationIgnore:
         # Arrange
         init_file = tmp_path / "__init__.py"
         init_file.write_text("from foo import bar\n", encoding="utf-8")
-        context = CheckContext(targets=(tmp_path,))
+        context = CheckContext(targets=(tmp_path,), has_cli_targets=True)
 
         # Act
         report = CheckOrchestratorProvider().provide().orchestrate(context)
@@ -74,7 +74,7 @@ class TestIntegrationDirectoryIgnore:
         init_file.write_text('__all__ = ["tests"]\n', encoding="utf-8")
         test_file = tests_dir / "test_main.py"
         test_file.write_text("import paladin\n", encoding="utf-8")
-        context = CheckContext(targets=(tests_dir,))
+        context = CheckContext(targets=(tests_dir,), has_cli_targets=True)
 
         # Act: pyproject.toml が読まれるよう CWD を tmp_path に変更
         original_cwd = Path.cwd()
@@ -106,7 +106,7 @@ class TestIntegrationDirectoryIgnore:
         unit_init.write_text('__all__ = ["unit"]\n', encoding="utf-8")
         test_file = unit_dir / "test_deep.py"
         test_file.write_text("import paladin\n", encoding="utf-8")
-        context = CheckContext(targets=(tests_dir,))
+        context = CheckContext(targets=(tests_dir,), has_cli_targets=True)
 
         # Act
         original_cwd = Path.cwd()
@@ -130,7 +130,7 @@ class TestIntegrationDirectoryIgnore:
         scripts_dir.mkdir()
         script_file = scripts_dir / "deploy.py"
         script_file.write_text("from foo import bar\n", encoding="utf-8")
-        context = CheckContext(targets=(scripts_dir,))
+        context = CheckContext(targets=(scripts_dir,), has_cli_targets=True)
 
         # Act
         original_cwd = Path.cwd()
@@ -156,7 +156,7 @@ class TestIntegrationDirectoryIgnore:
         src_dir.mkdir()
         src_file = src_dir / "main.py"
         src_file.write_text("from foo import bar\n", encoding="utf-8")
-        context = CheckContext(targets=(src_dir,))
+        context = CheckContext(targets=(src_dir,), has_cli_targets=True)
 
         # Act
         original_cwd = Path.cwd()

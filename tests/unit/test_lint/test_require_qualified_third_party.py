@@ -2,12 +2,11 @@ import ast
 from pathlib import Path
 
 from paladin.lint.require_qualified_third_party import RequireQualifiedThirdPartyRule
-from paladin.lint.types import RuleMeta
-from paladin.source.types import ParsedFile
+from paladin.lint.types import RuleMeta, SourceFile
 
 
-def _make_parsed_file(source: str, filename: str = "example.py") -> ParsedFile:
-    return ParsedFile(file_path=Path(filename), tree=ast.parse(source), source=source)
+def _make_source_file(source: str, filename: str = "example.py") -> SourceFile:
+    return SourceFile(file_path=Path(filename), tree=ast.parse(source), source=source)
 
 
 class TestRequireQualifiedThirdPartyRuleMeta:
@@ -40,10 +39,10 @@ class TestRequireQualifiedThirdPartyRuleCheckFromImport:
         # Arrange
         rule = RequireQualifiedThirdPartyRule(root_packages=("paladin",))
         source = "from requests import get\n"
-        parsed_file = _make_parsed_file(source)
+        source_file = _make_source_file(source)
 
         # Act
-        result = rule.check(parsed_file)
+        result = rule.check(source_file)
 
         # Assert
         assert len(result) == 1
@@ -52,10 +51,10 @@ class TestRequireQualifiedThirdPartyRuleCheckFromImport:
         # Arrange
         rule = RequireQualifiedThirdPartyRule(root_packages=("paladin",))
         source = "from requests import get\n"
-        parsed_file = _make_parsed_file(source)
+        source_file = _make_source_file(source)
 
         # Act
-        result = rule.check(parsed_file)
+        result = rule.check(source_file)
 
         # Assert
         assert len(result) == 1
@@ -84,10 +83,10 @@ class TestRequireQualifiedThirdPartyRuleCheckFromImport:
         # Arrange
         rule = RequireQualifiedThirdPartyRule(root_packages=("paladin",))
         source = "from requests import get, post\n"
-        parsed_file = _make_parsed_file(source)
+        source_file = _make_source_file(source)
 
         # Act
-        result = rule.check(parsed_file)
+        result = rule.check(source_file)
 
         # Assert
         assert len(result) == 2
@@ -96,10 +95,10 @@ class TestRequireQualifiedThirdPartyRuleCheckFromImport:
         # Arrange
         rule = RequireQualifiedThirdPartyRule(root_packages=("paladin",))
         source = "from requests.auth import HTTPBasicAuth\n"
-        parsed_file = _make_parsed_file(source)
+        source_file = _make_source_file(source)
 
         # Act
-        result = rule.check(parsed_file)
+        result = rule.check(source_file)
 
         # Assert
         assert len(result) == 1
@@ -112,10 +111,10 @@ class TestRequireQualifiedThirdPartyRuleCheckImportAs:
         # Arrange
         rule = RequireQualifiedThirdPartyRule(root_packages=("paladin",))
         source = "import requests as req\n"
-        parsed_file = _make_parsed_file(source)
+        source_file = _make_source_file(source)
 
         # Act
-        result = rule.check(parsed_file)
+        result = rule.check(source_file)
 
         # Assert
         assert len(result) == 1
@@ -124,10 +123,10 @@ class TestRequireQualifiedThirdPartyRuleCheckImportAs:
         # Arrange
         rule = RequireQualifiedThirdPartyRule(root_packages=("paladin",))
         source = "import requests as req\n"
-        parsed_file = _make_parsed_file(source)
+        source_file = _make_source_file(source)
 
         # Act
-        result = rule.check(parsed_file)
+        result = rule.check(source_file)
 
         # Assert
         assert len(result) == 1
@@ -155,10 +154,10 @@ class TestRequireQualifiedThirdPartyRuleCheckExclusions:
         # Arrange
         rule = RequireQualifiedThirdPartyRule(root_packages=("paladin",))
         source = "from os.path import join\n"
-        parsed_file = _make_parsed_file(source)
+        source_file = _make_source_file(source)
 
         # Act
-        result = rule.check(parsed_file)
+        result = rule.check(source_file)
 
         # Assert
         assert result == ()
@@ -167,10 +166,10 @@ class TestRequireQualifiedThirdPartyRuleCheckExclusions:
         # Arrange
         rule = RequireQualifiedThirdPartyRule(root_packages=("paladin",))
         source = "from paladin.check import Rule\n"
-        parsed_file = _make_parsed_file(source)
+        source_file = _make_source_file(source)
 
         # Act
-        result = rule.check(parsed_file)
+        result = rule.check(source_file)
 
         # Assert
         assert result == ()
@@ -179,10 +178,10 @@ class TestRequireQualifiedThirdPartyRuleCheckExclusions:
         # Arrange
         rule = RequireQualifiedThirdPartyRule(root_packages=("paladin",))
         source = "from . import utils\n"
-        parsed_file = _make_parsed_file(source)
+        source_file = _make_source_file(source)
 
         # Act
-        result = rule.check(parsed_file)
+        result = rule.check(source_file)
 
         # Assert
         assert result == ()
@@ -191,10 +190,10 @@ class TestRequireQualifiedThirdPartyRuleCheckExclusions:
         # Arrange
         rule = RequireQualifiedThirdPartyRule(root_packages=("paladin",))
         source = "import os as operating_system\n"
-        parsed_file = _make_parsed_file(source)
+        source_file = _make_source_file(source)
 
         # Act
-        result = rule.check(parsed_file)
+        result = rule.check(source_file)
 
         # Assert
         assert result == ()
@@ -203,10 +202,10 @@ class TestRequireQualifiedThirdPartyRuleCheckExclusions:
         # Arrange
         rule = RequireQualifiedThirdPartyRule(root_packages=("paladin",))
         source = "import paladin as p\n"
-        parsed_file = _make_parsed_file(source)
+        source_file = _make_source_file(source)
 
         # Act
-        result = rule.check(parsed_file)
+        result = rule.check(source_file)
 
         # Assert
         assert result == ()
@@ -215,10 +214,10 @@ class TestRequireQualifiedThirdPartyRuleCheckExclusions:
         # Arrange
         rule = RequireQualifiedThirdPartyRule(root_packages=("paladin",))
         source = "import requests\n"
-        parsed_file = _make_parsed_file(source)
+        source_file = _make_source_file(source)
 
         # Act
-        result = rule.check(parsed_file)
+        result = rule.check(source_file)
 
         # Assert
         assert result == ()
@@ -227,10 +226,10 @@ class TestRequireQualifiedThirdPartyRuleCheckExclusions:
         # Arrange
         rule = RequireQualifiedThirdPartyRule(root_packages=("paladin", "tests"))
         source = "from tests.unit.test_check.fakes import InMemoryFsReader\n"
-        parsed_file = _make_parsed_file(source)
+        source_file = _make_source_file(source)
 
         # Act
-        result = rule.check(parsed_file)
+        result = rule.check(source_file)
 
         # Assert
         assert result == ()
@@ -239,10 +238,10 @@ class TestRequireQualifiedThirdPartyRuleCheckExclusions:
         # Arrange
         rule = RequireQualifiedThirdPartyRule(root_packages=("paladin", "mylib"))
         source = "from mylib import foo\n"
-        parsed_file = _make_parsed_file(source)
+        source_file = _make_source_file(source)
 
         # Act
-        result = rule.check(parsed_file)
+        result = rule.check(source_file)
 
         # Assert
         assert result == ()
@@ -254,10 +253,10 @@ class TestRequireQualifiedThirdPartyRuleCheckEdgeCases:
     def test_check_エッジケース_空のソースコードは空タプルを返すこと(self):
         # Arrange
         rule = RequireQualifiedThirdPartyRule(root_packages=("paladin",))
-        parsed_file = _make_parsed_file("")
+        source_file = _make_source_file("")
 
         # Act
-        result = rule.check(parsed_file)
+        result = rule.check(source_file)
 
         # Assert
         assert result == ()
@@ -266,10 +265,10 @@ class TestRequireQualifiedThirdPartyRuleCheckEdgeCases:
         # Arrange
         rule = RequireQualifiedThirdPartyRule(root_packages=("paladin",))
         source = "x = 1\nreturn x\n"
-        parsed_file = _make_parsed_file(source)
+        source_file = _make_source_file(source)
 
         # Act
-        result = rule.check(parsed_file)
+        result = rule.check(source_file)
 
         # Assert
         assert result == ()
@@ -279,10 +278,10 @@ class TestRequireQualifiedThirdPartyRuleCheckEdgeCases:
         rule = RequireQualifiedThirdPartyRule(root_packages=("paladin",))
         # from . import utils は node.module=None, node.level=1
         source = "from . import utils\n"
-        parsed_file = _make_parsed_file(source)
+        source_file = _make_source_file(source)
 
         # Act
-        result = rule.check(parsed_file)
+        result = rule.check(source_file)
 
         # Assert
         assert result == ()

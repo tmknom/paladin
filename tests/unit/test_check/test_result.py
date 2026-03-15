@@ -2,29 +2,28 @@ from pathlib import Path
 
 from paladin.check.result import CheckReport, CheckResult, CheckStatus, CheckSummary
 from paladin.check.types import TargetFiles
-from paladin.lint import Violation, Violations
-from paladin.source.types import ParsedFiles
+from paladin.lint import SourceFiles, Violation, Violations
 
 
 class TestCheckResult:
     """CheckResultクラスのテスト"""
 
-    def test_init_正常系_target_filesとparsed_filesとviolationsを保持すること(self):
+    def test_init_正常系_target_filesとsource_filesとviolationsを保持すること(self):
         # Arrange
         target_files = TargetFiles(files=(Path("a.py"),))
-        parsed_files = ParsedFiles(files=())
+        source_files = SourceFiles(files=())
         violations = Violations(items=())
 
         # Act
         result = CheckResult(
             target_files=target_files,
-            parsed_files=parsed_files,
+            source_files=source_files,
             violations=violations,
         )
 
         # Assert
         assert result.target_files == target_files
-        assert result.parsed_files == parsed_files
+        assert result.source_files == source_files
         assert result.violations == violations
 
 
@@ -61,7 +60,7 @@ class TestCheckSummary:
     def _make_check_result(self, violations: tuple[Violation, ...]) -> CheckResult:
         return CheckResult(
             target_files=TargetFiles(files=()),
-            parsed_files=ParsedFiles(files=()),
+            source_files=SourceFiles(files=()),
             violations=Violations(items=violations),
         )
 

@@ -8,8 +8,8 @@ from pathlib import Path
 
 from paladin.check.types import TargetFiles
 from paladin.foundation.log import log
+from paladin.lint.types import SourceFile, SourceFiles
 from paladin.protocol.fs import TextFileSystemReaderProtocol
-from paladin.source.types import ParsedFile, ParsedFiles
 
 
 class AstParser:
@@ -28,7 +28,7 @@ class AstParser:
         self.reader = reader
 
     @log
-    def parse(self, file_path: Path) -> ParsedFile:
+    def parse(self, file_path: Path) -> SourceFile:
         """単一ファイルを読み込み、ASTを生成する
 
         Args:
@@ -43,10 +43,10 @@ class AstParser:
         """
         source = self.reader.read(file_path)
         tree = ast.parse(source)
-        return ParsedFile(file_path=file_path, tree=tree, source=source)
+        return SourceFile(file_path=file_path, tree=tree, source=source)
 
     @log
-    def parse_all(self, target_files: TargetFiles) -> ParsedFiles:
+    def parse_all(self, target_files: TargetFiles) -> SourceFiles:
         """列挙済み全ファイルを順次AST解析する
 
         Args:
@@ -59,5 +59,5 @@ class AstParser:
             FileSystemError: ファイル読み込みエラー時（Fail Fast）
             SyntaxError: Python構文エラー時（Fail Fast）
         """
-        parsed = tuple(self.parse(file_path) for file_path in target_files)
-        return ParsedFiles(files=parsed)
+        files = tuple(self.parse(file_path) for file_path in target_files)
+        return SourceFiles(files=files)

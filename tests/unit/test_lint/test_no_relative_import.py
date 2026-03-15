@@ -2,12 +2,11 @@ import ast
 from pathlib import Path
 
 from paladin.lint.no_relative_import import NoRelativeImportRule
-from paladin.lint.types import RuleMeta
-from paladin.source.types import ParsedFile
+from paladin.lint.types import RuleMeta, SourceFile
 
 
-def _make_parsed_file(source: str, filename: str = "example.py") -> ParsedFile:
-    return ParsedFile(file_path=Path(filename), tree=ast.parse(source), source=source)
+def _make_source_file(source: str, filename: str = "example.py") -> SourceFile:
+    return SourceFile(file_path=Path(filename), tree=ast.parse(source), source=source)
 
 
 class TestNoRelativeImportRuleMeta:
@@ -36,10 +35,10 @@ class TestNoRelativeImportRuleCheck:
     def test_check_正常系_違反のフィールド値が正しいこと(self):
         # Arrange
         rule = NoRelativeImportRule()
-        parsed_file = _make_parsed_file("from .module import Foo\n")
+        source_file = _make_source_file("from .module import Foo\n")
 
         # Act
-        result = rule.check(parsed_file)
+        result = rule.check(source_file)
 
         # Assert
         assert len(result) == 1
@@ -53,10 +52,10 @@ class TestNoRelativeImportRuleCheck:
     def test_check_正常系_絶対インポートのみの場合は空タプルを返すこと(self):
         # Arrange
         rule = NoRelativeImportRule()
-        parsed_file = _make_parsed_file("from myapp.module import Foo\n")
+        source_file = _make_source_file("from myapp.module import Foo\n")
 
         # Act
-        result = rule.check(parsed_file)
+        result = rule.check(source_file)
 
         # Assert
         assert result == ()
@@ -65,10 +64,10 @@ class TestNoRelativeImportRuleCheck:
         # Arrange
         rule = NoRelativeImportRule()
         source = "from . import Foo\nfrom ..bar import Baz\n"
-        parsed_file = _make_parsed_file(source)
+        source_file = _make_source_file(source)
 
         # Act
-        result = rule.check(parsed_file)
+        result = rule.check(source_file)
 
         # Assert
         assert len(result) == 2
@@ -76,10 +75,10 @@ class TestNoRelativeImportRuleCheck:
     def test_check_正常系_importノードは検出対象外であること(self):
         # Arrange
         rule = NoRelativeImportRule()
-        parsed_file = _make_parsed_file("import os\n")
+        source_file = _make_source_file("import os\n")
 
         # Act
-        result = rule.check(parsed_file)
+        result = rule.check(source_file)
 
         # Assert
         assert result == ()
@@ -87,10 +86,10 @@ class TestNoRelativeImportRuleCheck:
     def test_check_エッジケース_空のソースコードは空タプルを返すこと(self):
         # Arrange
         rule = NoRelativeImportRule()
-        parsed_file = _make_parsed_file("")
+        source_file = _make_source_file("")
 
         # Act
-        result = rule.check(parsed_file)
+        result = rule.check(source_file)
 
         # Assert
         assert result == ()

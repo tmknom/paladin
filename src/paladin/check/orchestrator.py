@@ -87,19 +87,19 @@ class CheckOrchestrator:
         resolved_targets = self.target_resolver.resolve(context, config)
         target_files = self.collector.collect(resolved_targets)
         target_files = self.path_excluder.exclude(target_files, config.exclude)
-        parsed_files = self.parser.parse_all(target_files)
+        source_files = self.parser.parse_all(target_files)
         disabled_rule_ids = self.rule_filter.resolve_disabled_rules(config, self.runner.rule_ids)
-        violations = self.runner.run(parsed_files, disabled_rule_ids=disabled_rule_ids)
-        file_paths = tuple(pf.file_path for pf in parsed_files)
+        violations = self.runner.run(source_files, disabled_rule_ids=disabled_rule_ids)
+        file_paths = tuple(sf.file_path for sf in source_files)
         config_directives = ConfigIgnoreResolver().resolve(config, file_paths)
-        comment_directives = FileIgnoreParser().parse_all(parsed_files)
+        comment_directives = FileIgnoreParser().parse_all(source_files)
         merged_directives = self._merge_directives(config_directives, comment_directives)
-        line_directives = LineIgnoreParser().parse_all(parsed_files)
+        line_directives = LineIgnoreParser().parse_all(source_files)
         violations = self.violation_filter.filter(
             violations, merged_directives, line_directives, context.ignore_rules
         )
         result = CheckResult(
-            target_files=target_files, parsed_files=parsed_files, violations=violations
+            target_files=target_files, source_files=source_files, violations=violations
         )
         return self.formatter.format(result, context.format)
 

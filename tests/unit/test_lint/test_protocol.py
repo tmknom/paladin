@@ -1,6 +1,5 @@
 from paladin.lint.protocol import Rule
-from paladin.lint.types import RuleMeta, Violation
-from paladin.source.types import ParsedFile
+from paladin.lint.types import RuleMeta, SourceFile, Violation
 
 
 class TestRuleProtocol:
@@ -20,7 +19,7 @@ class TestRuleProtocol:
                     suggestion="スタブ修正方向",
                 )
 
-            def check(self, parsed_file: ParsedFile) -> tuple[Violation, ...]:
+            def check(self, source_file: SourceFile) -> tuple[Violation, ...]:
                 return ()
 
         stub = StubRule()

@@ -6,8 +6,7 @@ from pathlib import Path
 from paladin.check.formatter import CheckFormatterFactory, CheckJsonFormatter, CheckReportFormatter
 from paladin.check.result import CheckResult
 from paladin.check.types import OutputFormat, TargetFiles
-from paladin.lint import Violation, Violations
-from paladin.source.types import ParsedFiles
+from paladin.lint import SourceFiles, Violation, Violations
 
 
 def _make_violation(
@@ -35,7 +34,7 @@ def _make_violation(
 def _make_check_result(violations: tuple[Violation, ...]) -> CheckResult:
     return CheckResult(
         target_files=TargetFiles(files=()),
-        parsed_files=ParsedFiles(files=()),
+        source_files=SourceFiles(files=()),
         violations=Violations(items=violations),
     )
 

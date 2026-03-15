@@ -5,8 +5,7 @@
 
 import ast
 
-from paladin.lint.types import RuleMeta, Violation
-from paladin.source.types import ParsedFile
+from paladin.lint.types import RuleMeta, SourceFile, Violation
 
 
 class NoRelativeImportRule:
@@ -28,16 +27,16 @@ class NoRelativeImportRule:
         """ルールのメタ情報を返す"""
         return self._meta
 
-    def check(self, parsed_file: ParsedFile) -> tuple[Violation, ...]:
+    def check(self, source_file: SourceFile) -> tuple[Violation, ...]:
         """単一ファイルに対する違反判定を行う"""
         violations: list[Violation] = []
-        for node in ast.walk(parsed_file.tree):
+        for node in ast.walk(source_file.tree):
             if isinstance(node, ast.ImportFrom) and node.level >= 1:
                 level_dots = "." * node.level
                 module = node.module or ""
                 violations.append(
                     Violation(
-                        file=parsed_file.file_path,
+                        file=source_file.file_path,
                         line=node.lineno,
                         column=node.col_offset,
                         rule_id=self._meta.rule_id,

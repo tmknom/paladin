@@ -1,6 +1,66 @@
+import ast
 from pathlib import Path
 
-from paladin.lint.types import RuleMeta, Violation, Violations
+from paladin.lint.types import RuleMeta, SourceFile, SourceFiles, Violation, Violations
+
+
+class TestSourceFile:
+    """SourceFileクラスのテスト"""
+
+    def test_init_正常系_file_pathとtreeとsourceを保持すること(self):
+        # Arrange
+        tree = ast.parse("x = 1\n")
+
+        # Act
+        result = SourceFile(file_path=Path("test.py"), tree=tree, source="x = 1\n")
+
+        # Assert
+        assert result.file_path == Path("test.py")
+        assert isinstance(result.tree, ast.Module)
+        assert result.source == "x = 1\n"
+
+
+class TestSourceFiles:
+    """SourceFilesクラスのテスト"""
+
+    def test_len_正常系_ファイル数を返すこと(self):
+        # Arrange
+        tree = ast.parse("x = 1\n")
+        source_files = SourceFiles(
+            files=(
+                SourceFile(file_path=Path("a.py"), tree=tree, source="x = 1\n"),
+                SourceFile(file_path=Path("b.py"), tree=tree, source="x = 1\n"),
+            )
+        )
+
+        # Act
+        result = len(source_files)
+
+        # Assert
+        assert result == 2
+
+    def test_iter_正常系_SourceFileをイテレーションできること(self):
+        # Arrange
+        tree = ast.parse("x = 1\n")
+        sf_a = SourceFile(file_path=Path("a.py"), tree=tree, source="x = 1\n")
+        sf_b = SourceFile(file_path=Path("b.py"), tree=tree, source="x = 1\n")
+        source_files = SourceFiles(files=(sf_a, sf_b))
+
+        # Act
+        result = list(source_files)
+
+        # Assert
+        assert result == [sf_a, sf_b]
+
+    def test_len_エッジケース_空で0を返すこと(self):
+        # Arrange
+        source_files = SourceFiles(files=())
+
+        # Act
+        result = len(source_files)
+
+        # Assert
+        assert result == 0
 
 
 class TestViolation:

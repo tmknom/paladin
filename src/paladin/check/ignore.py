@@ -9,8 +9,7 @@ import re
 from dataclasses import dataclass
 from pathlib import Path
 
-from paladin.lint.types import Violation, Violations
-from paladin.source.types import ParsedFiles
+from paladin.lint.types import SourceFiles, Violation, Violations
 
 
 @dataclass(frozen=True)
@@ -123,16 +122,16 @@ class FileIgnoreParser:
             ignored_rules=frozenset(),
         )
 
-    def parse_all(self, parsed_files: ParsedFiles) -> tuple[FileIgnoreDirective, ...]:
+    def parse_all(self, source_files: SourceFiles) -> tuple[FileIgnoreDirective, ...]:
         """複数ファイルのディレクティブをタプルで返す
 
         Args:
-            parsed_files: 解析済みファイル群
+            source_files: 検査対象のソースファイル群
 
         Returns:
             各ファイルの FileIgnoreDirective のタプル
         """
-        return tuple(self.parse(pf.file_path, pf.source) for pf in parsed_files)
+        return tuple(self.parse(sf.file_path, sf.source) for sf in source_files)
 
 
 class LineIgnoreParser:
@@ -190,18 +189,18 @@ class LineIgnoreParser:
 
         return tuple(result)
 
-    def parse_all(self, parsed_files: ParsedFiles) -> tuple[LineIgnoreDirective, ...]:
+    def parse_all(self, source_files: SourceFiles) -> tuple[LineIgnoreDirective, ...]:
         """複数ファイルのディレクティブをタプルで返す
 
         Args:
-            parsed_files: 解析済みファイル群
+            source_files: 検査対象のソースファイル群
 
         Returns:
             全ファイルの LineIgnoreDirective を平坦化したタプル
         """
         result: tuple[LineIgnoreDirective, ...] = ()
-        for pf in parsed_files:
-            result = result + self.parse(pf.file_path, pf.source)
+        for sf in source_files:
+            result = result + self.parse(sf.file_path, sf.source)
         return result
 
 

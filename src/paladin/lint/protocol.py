@@ -5,8 +5,7 @@
 
 from typing import Protocol, runtime_checkable
 
-from paladin.lint.types import RuleMeta, Violation
-from paladin.source.types import ParsedFile
+from paladin.lint.types import RuleMeta, SourceFile, Violation
 
 
 @runtime_checkable
@@ -18,11 +17,11 @@ class Rule(Protocol):
         """ルールのメタ情報を返す"""
         ...
 
-    def check(self, parsed_file: ParsedFile) -> tuple[Violation, ...]:
+    def check(self, source_file: SourceFile) -> tuple[Violation, ...]:
         """単一ファイルに対する違反判定を行う
 
         Args:
-            parsed_file: 解析対象ファイル
+            source_file: 検査対象のソースファイル
 
         Returns:
             違反がなければ空タプル、違反があれば Violation のタプル

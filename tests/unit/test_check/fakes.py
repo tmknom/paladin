@@ -2,8 +2,7 @@
 
 from pathlib import Path
 
-from paladin.lint import RuleMeta, Violation
-from paladin.source.types import ParsedFile
+from paladin.lint import RuleMeta, SourceFile, Violation
 
 
 class FakeRule:
@@ -34,7 +33,7 @@ class FakeRule:
         """ルールのメタ情報を返す"""
         return self._meta
 
-    def check(self, parsed_file: ParsedFile) -> tuple[Violation, ...]:
+    def check(self, source_file: SourceFile) -> tuple[Violation, ...]:
         """事前設定した違反リストを返す"""
         return self._violations
 

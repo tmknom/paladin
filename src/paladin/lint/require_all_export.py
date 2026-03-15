@@ -5,8 +5,7 @@
 
 import ast
 
-from paladin.lint.types import RuleMeta, Violation
-from paladin.source.types import ParsedFile
+from paladin.lint.types import RuleMeta, SourceFile, Violation
 
 
 class RequireAllExportRule:
@@ -28,17 +27,17 @@ class RequireAllExportRule:
         """ルールのメタ情報を返す"""
         return self._meta
 
-    def check(self, parsed_file: ParsedFile) -> tuple[Violation, ...]:
+    def check(self, source_file: SourceFile) -> tuple[Violation, ...]:
         """単一ファイルに対する違反判定を行う"""
-        if parsed_file.file_path.name != "__init__.py":
+        if source_file.file_path.name != "__init__.py":
             return ()
-        if not self._has_substantial_code(parsed_file.tree):
+        if not self._has_substantial_code(source_file.tree):
             return ()
-        if self._has_all_definition(parsed_file.tree):
+        if self._has_all_definition(source_file.tree):
             return ()
         return (
             Violation(
-                file=parsed_file.file_path,
+                file=source_file.file_path,
                 line=1,
                 column=0,
                 rule_id=self._meta.rule_id,

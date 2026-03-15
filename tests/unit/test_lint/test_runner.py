@@ -2,17 +2,16 @@ import ast
 from pathlib import Path
 
 from paladin.lint.runner import RuleRunner
-from paladin.lint.types import Violation, Violations
-from paladin.source.types import ParsedFile, ParsedFiles
+from paladin.lint.types import SourceFile, SourceFiles, Violation, Violations
 from tests.unit.test_check.fakes import FakeRule
 
 
-def _make_parsed_file(source: str, filename: str = "__init__.py") -> ParsedFile:
-    return ParsedFile(file_path=Path(filename), tree=ast.parse(source), source=source)
+def _make_source_file(source: str, filename: str = "__init__.py") -> SourceFile:
+    return SourceFile(file_path=Path(filename), tree=ast.parse(source), source=source)
 
 
-def _make_parsed_files(*sources_and_names: tuple[str, str]) -> ParsedFiles:
-    return ParsedFiles(files=tuple(_make_parsed_file(src, name) for src, name in sources_and_names))
+def _make_source_files(*sources_and_names: tuple[str, str]) -> SourceFiles:
+    return SourceFiles(files=tuple(_make_source_file(src, name) for src, name in sources_and_names))
 
 
 def _make_violation(file: str = "src/paladin/__init__.py") -> Violation:
@@ -36,10 +35,10 @@ class TestRuleRunner:
         violation = _make_violation()
         rule = FakeRule(violations=(violation,))
         runner = RuleRunner(rules=(rule,))
-        parsed_files = _make_parsed_files(("x = 1\n", "__init__.py"))
+        source_files = _make_source_files(("x = 1\n", "__init__.py"))
 
         # Act
-        result = runner.run(parsed_files)
+        result = runner.run(source_files)
 
         # Assert
         assert isinstance(result, Violations)
@@ -49,23 +48,23 @@ class TestRuleRunner:
         # Arrange
         rule = FakeRule(violations=())
         runner = RuleRunner(rules=(rule,))
-        parsed_files = _make_parsed_files(("x = 1\n", "__init__.py"))
+        source_files = _make_source_files(("x = 1\n", "__init__.py"))
 
         # Act
-        result = runner.run(parsed_files)
+        result = runner.run(source_files)
 
         # Assert
         assert isinstance(result, Violations)
         assert len(result) == 0
 
-    def test_run_エッジケース_空のParsedFilesで空のViolationsを返すこと(self):
+    def test_run_エッジケース_空のSourceFilesで空のViolationsを返すこと(self):
         # Arrange
         rule = FakeRule(violations=(_make_violation(),))
         runner = RuleRunner(rules=(rule,))
-        parsed_files = ParsedFiles(files=())
+        source_files = SourceFiles(files=())
 
         # Act
-        result = runner.run(parsed_files)
+        result = runner.run(source_files)
 
         # Assert
         assert isinstance(result, Violations)
@@ -76,13 +75,13 @@ class TestRuleRunner:
         violation = _make_violation()
         rule = FakeRule(violations=(violation,))
         runner = RuleRunner(rules=(rule,))
-        parsed_files = _make_parsed_files(
+        source_files = _make_source_files(
             ("x = 1\n", "a/__init__.py"),
             ("y = 2\n", "b/__init__.py"),
         )
 
         # Act
-        result = runner.run(parsed_files)
+        result = runner.run(source_files)
 
         # Assert
         assert isinstance(result, Violations)
@@ -113,10 +112,10 @@ class TestRuleRunner:
         rule_a = FakeRule(rule_id="rule-a", violations=(violation_a,))
         rule_b = FakeRule(rule_id="rule-b", violations=(violation_b,))
         runner = RuleRunner(rules=(rule_a, rule_b))
-        parsed_files = _make_parsed_files(("x = 1\n", "__init__.py"))
+        source_files = _make_source_files(("x = 1\n", "__init__.py"))
 
         # Act
-        result = runner.run(parsed_files, disabled_rule_ids=frozenset({"rule-a"}))
+        result = runner.run(source_files, disabled_rule_ids=frozenset({"rule-a"}))
 
         # Assert
         assert len(result) == 1
@@ -128,10 +127,10 @@ class TestRuleRunner:
         rule_a = FakeRule(rule_id="rule-a", violations=(violation,))
         rule_b = FakeRule(rule_id="rule-b", violations=(violation,))
         runner = RuleRunner(rules=(rule_a, rule_b))
-        parsed_files = _make_parsed_files(("x = 1\n", "__init__.py"))
+        source_files = _make_source_files(("x = 1\n", "__init__.py"))
 
         # Act
-        result = runner.run(parsed_files, disabled_rule_ids=frozenset())
+        result = runner.run(source_files, disabled_rule_ids=frozenset())
 
         # Assert: 両ルールが実行される
         assert len(result) == 2
@@ -141,10 +140,10 @@ class TestRuleRunner:
         violation = _make_violation()
         rule = FakeRule(violations=(violation,))
         runner = RuleRunner(rules=(rule,))
-        parsed_files = _make_parsed_files(("x = 1\n", "__init__.py"))
+        source_files = _make_source_files(("x = 1\n", "__init__.py"))
 
         # Act: デフォルト引数（引数なし）で呼び出す
-        result = runner.run(parsed_files)
+        result = runner.run(source_files)
 
         # Assert
         assert len(result) == 1

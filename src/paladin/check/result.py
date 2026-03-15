@@ -7,8 +7,7 @@ import enum
 from dataclasses import dataclass
 
 from paladin.check.types import TargetFiles
-from paladin.lint import Violations
-from paladin.source.types import ParsedFiles
+from paladin.lint import SourceFiles, Violations
 
 
 @dataclass(frozen=True)
@@ -18,8 +17,8 @@ class CheckResult:
     target_files: TargetFiles
     """列挙された解析対象ファイル群"""
 
-    parsed_files: ParsedFiles
-    """AST解析結果群"""
+    source_files: SourceFiles
+    """ソースファイル群（AST・ソーステキストを含む）"""
 
     violations: Violations
     """ルール違反一覧"""

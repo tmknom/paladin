@@ -5,8 +5,7 @@
 
 import ast
 
-from paladin.lint.types import RuleMeta, Violation
-from paladin.source.types import ParsedFile
+from paladin.lint.types import RuleMeta, SourceFile, Violation
 
 
 class NoLocalImportRule:
@@ -28,12 +27,12 @@ class NoLocalImportRule:
         """ルールのメタ情報を返す"""
         return self._meta
 
-    def check(self, parsed_file: ParsedFile) -> tuple[Violation, ...]:
+    def check(self, source_file: SourceFile) -> tuple[Violation, ...]:
         """単一ファイルに対する違反判定を行う"""
         violations: list[Violation] = []
-        top_level_nodes = _get_top_level_nodes(parsed_file.tree)
+        top_level_nodes = _get_top_level_nodes(source_file.tree)
         for node in top_level_nodes:
-            self._visit(node, class_name=None, violations=violations, parsed_file=parsed_file)
+            self._visit(node, class_name=None, violations=violations, source_file=source_file)
         return tuple(violations)
 
     def _visit(
@@ -41,28 +40,28 @@ class NoLocalImportRule:
         node: ast.AST,
         class_name: str | None,
         violations: list[Violation],
-        parsed_file: ParsedFile,
+        source_file: SourceFile,
     ) -> None:
         if isinstance(node, ast.ClassDef):
-            self._visit_class(node, violations, parsed_file)
+            self._visit_class(node, violations, source_file)
         elif isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
             self._visit_function(
-                node, class_name=class_name, violations=violations, parsed_file=parsed_file
+                node, class_name=class_name, violations=violations, source_file=source_file
             )
 
     def _visit_class(
         self,
         class_node: ast.ClassDef,
         violations: list[Violation],
-        parsed_file: ParsedFile,
+        source_file: SourceFile,
     ) -> None:
         for node in class_node.body:
             if isinstance(node, (ast.Import, ast.ImportFrom)):
                 scope = f"クラス {class_node.name}"
-                violations.append(self._make_violation(node, scope, parsed_file))
+                violations.append(self._make_violation(node, scope, source_file))
             elif isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
                 self._visit_function(
-                    node, class_name=class_node.name, violations=violations, parsed_file=parsed_file
+                    node, class_name=class_node.name, violations=violations, source_file=source_file
                 )
 
     def _visit_function(
@@ -70,36 +69,36 @@ class NoLocalImportRule:
         func_node: ast.FunctionDef | ast.AsyncFunctionDef,
         class_name: str | None,
         violations: list[Violation],
-        parsed_file: ParsedFile,
+        source_file: SourceFile,
     ) -> None:
         if class_name is not None:
             scope = f"メソッド {class_name}.{func_node.name}"
         else:
             scope = f"関数 {func_node.name}"
-        self._collect_in_body(func_node.body, scope, violations, parsed_file)
+        self._collect_in_body(func_node.body, scope, violations, source_file)
 
     def _collect_in_body(
         self,
         body: list[ast.stmt],
         scope: str,
         violations: list[Violation],
-        parsed_file: ParsedFile,
+        source_file: SourceFile,
     ) -> None:
         for node in body:
             if isinstance(node, (ast.Import, ast.ImportFrom)):
-                violations.append(self._make_violation(node, scope, parsed_file))
+                violations.append(self._make_violation(node, scope, source_file))
             elif isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
                 inner_scope = f"関数 {node.name}"
-                self._collect_in_body(node.body, inner_scope, violations, parsed_file)
+                self._collect_in_body(node.body, inner_scope, violations, source_file)
 
     def _make_violation(
         self,
         node: ast.Import | ast.ImportFrom,
         scope: str,
-        parsed_file: ParsedFile,
+        source_file: SourceFile,
     ) -> Violation:
         return Violation(
-            file=parsed_file.file_path,
+            file=source_file.file_path,
             line=node.lineno,
             column=node.col_offset,
             rule_id=self._meta.rule_id,

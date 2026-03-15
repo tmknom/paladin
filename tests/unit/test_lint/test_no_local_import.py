@@ -2,12 +2,11 @@ import ast
 from pathlib import Path
 
 from paladin.lint.no_local_import import NoLocalImportRule
-from paladin.lint.types import RuleMeta
-from paladin.source.types import ParsedFile
+from paladin.lint.types import RuleMeta, SourceFile
 
 
-def _make_parsed_file(source: str, filename: str = "example.py") -> ParsedFile:
-    return ParsedFile(file_path=Path(filename), tree=ast.parse(source), source=source)
+def _make_source_file(source: str, filename: str = "example.py") -> SourceFile:
+    return SourceFile(file_path=Path(filename), tree=ast.parse(source), source=source)
 
 
 class TestNoLocalImportRuleMeta:
@@ -37,10 +36,10 @@ class TestNoLocalImportRuleCheck:
         # Arrange
         rule = NoLocalImportRule()
         source = "def foo():\n    import os\n"
-        parsed_file = _make_parsed_file(source)
+        source_file = _make_source_file(source)
 
         # Act
-        result = rule.check(parsed_file)
+        result = rule.check(source_file)
 
         # Assert
         assert len(result) == 1
@@ -49,10 +48,10 @@ class TestNoLocalImportRuleCheck:
         # Arrange
         rule = NoLocalImportRule()
         source = "def foo():\n    from os import path\n"
-        parsed_file = _make_parsed_file(source)
+        source_file = _make_source_file(source)
 
         # Act
-        result = rule.check(parsed_file)
+        result = rule.check(source_file)
 
         # Assert
         assert len(result) == 1
@@ -61,10 +60,10 @@ class TestNoLocalImportRuleCheck:
         # Arrange
         rule = NoLocalImportRule()
         source = "def foo():\n    import os\n"
-        parsed_file = _make_parsed_file(source)
+        source_file = _make_source_file(source)
 
         # Act
-        result = rule.check(parsed_file)
+        result = rule.check(source_file)
 
         # Assert
         assert len(result) == 1
@@ -85,10 +84,10 @@ class TestNoLocalImportRuleCheck:
         # Arrange
         rule = NoLocalImportRule()
         source = "class Foo:\n    import os\n"
-        parsed_file = _make_parsed_file(source)
+        source_file = _make_source_file(source)
 
         # Act
-        result = rule.check(parsed_file)
+        result = rule.check(source_file)
 
         # Assert
         assert len(result) == 1
@@ -98,10 +97,10 @@ class TestNoLocalImportRuleCheck:
         # Arrange
         rule = NoLocalImportRule()
         source = "class Foo:\n    def bar(self):\n        import os\n"
-        parsed_file = _make_parsed_file(source)
+        source_file = _make_source_file(source)
 
         # Act
-        result = rule.check(parsed_file)
+        result = rule.check(source_file)
 
         # Assert
         assert len(result) == 1
@@ -111,10 +110,10 @@ class TestNoLocalImportRuleCheck:
         # Arrange
         rule = NoLocalImportRule()
         source = "def outer():\n    def inner():\n        import os\n"
-        parsed_file = _make_parsed_file(source)
+        source_file = _make_source_file(source)
 
         # Act
-        result = rule.check(parsed_file)
+        result = rule.check(source_file)
 
         # Assert
         assert len(result) == 1
@@ -124,10 +123,10 @@ class TestNoLocalImportRuleCheck:
         # Arrange
         rule = NoLocalImportRule()
         source = "async def foo():\n    import os\n"
-        parsed_file = _make_parsed_file(source)
+        source_file = _make_source_file(source)
 
         # Act
-        result = rule.check(parsed_file)
+        result = rule.check(source_file)
 
         # Assert
         assert len(result) == 1
@@ -137,10 +136,10 @@ class TestNoLocalImportRuleCheck:
         # Arrange
         rule = NoLocalImportRule()
         source = "def foo():\n    import os\ndef bar():\n    from sys import argv\n"
-        parsed_file = _make_parsed_file(source)
+        source_file = _make_source_file(source)
 
         # Act
-        result = rule.check(parsed_file)
+        result = rule.check(source_file)
 
         # Assert
         assert len(result) == 2
@@ -149,10 +148,10 @@ class TestNoLocalImportRuleCheck:
         # Arrange
         rule = NoLocalImportRule()
         source = "import os\nfrom sys import argv\n"
-        parsed_file = _make_parsed_file(source)
+        source_file = _make_source_file(source)
 
         # Act
-        result = rule.check(parsed_file)
+        result = rule.check(source_file)
 
         # Assert
         assert result == ()
@@ -166,10 +165,10 @@ class TestNoLocalImportRuleCheck:
             "if TYPE_CHECKING:\n"
             "    import os\n"
         )
-        parsed_file = _make_parsed_file(source)
+        source_file = _make_source_file(source)
 
         # Act
-        result = rule.check(parsed_file)
+        result = rule.check(source_file)
 
         # Assert
         assert result == ()
@@ -183,10 +182,10 @@ class TestNoLocalImportRuleCheck:
             "if typing.TYPE_CHECKING:\n"
             "    import os\n"
         )
-        parsed_file = _make_parsed_file(source)
+        source_file = _make_source_file(source)
 
         # Act
-        result = rule.check(parsed_file)
+        result = rule.check(source_file)
 
         # Assert
         assert result == ()
@@ -194,10 +193,10 @@ class TestNoLocalImportRuleCheck:
     def test_check_エッジケース_空のソースコードは空タプルを返すこと(self):
         # Arrange
         rule = NoLocalImportRule()
-        parsed_file = _make_parsed_file("")
+        source_file = _make_source_file("")
 
         # Act
-        result = rule.check(parsed_file)
+        result = rule.check(source_file)
 
         # Assert
         assert result == ()
@@ -206,10 +205,10 @@ class TestNoLocalImportRuleCheck:
         # Arrange
         rule = NoLocalImportRule()
         source = "def foo():\n    x = 1\n    return x\n"
-        parsed_file = _make_parsed_file(source)
+        source_file = _make_source_file(source)
 
         # Act
-        result = rule.check(parsed_file)
+        result = rule.check(source_file)
 
         # Assert
         assert result == ()
