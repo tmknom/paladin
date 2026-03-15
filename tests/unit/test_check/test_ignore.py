@@ -12,7 +12,7 @@ from paladin.check.ignore import (
     ViolationFilter,
 )
 from paladin.config import PerFileIgnoreEntry, ProjectConfig
-from paladin.lint.types import SourceFile, SourceFiles, Violation, Violations
+from paladin.lint import SourceFile, SourceFiles, Violation, Violations
 
 
 def _make_violation(

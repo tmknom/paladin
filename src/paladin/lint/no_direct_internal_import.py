@@ -124,6 +124,53 @@ class NoDirectInternalImportRule:
 
         return ".".join(package_parts[:2])
 
+    def _resolve_own_packages(self, file_path: Path) -> frozenset[str]:
+        """ファイルが属する「自パッケージ」のセットを返す
+
+        通常は _resolve_package_key の結果のみ。
+        テストファイル（tests/ 配下の test_xxx/test_yyy.py）の場合は、
+        対応するプロダクションパッケージも同一視する。
+
+        例: tests/unit/test_view/test_provider.py
+              -> {"unit.test_view", "paladin.view"}  # "test_" を除去して対応パッケージを算出
+        """
+        package_key = self._resolve_package_key(file_path)
+        own: set[str] = set()
+        if package_key is not None:
+            own.add(package_key)
+
+        # tests/ 配下かどうかを判定する
+        if "tests" not in file_path.parts:
+            return frozenset(own)
+
+        # tests/ 以降のパス部分から対応プロダクションパッケージを算出する
+        # tests/unit/test_view/test_provider.py
+        #   -> tests アンカー以降: ["unit", "test_view"]
+        #   -> "test_" を除いた最後のディレクトリ名: "view"
+        #   -> root_packages の先頭 + "view" = "paladin.view"
+        dir_parts = file_path.parts[:-1]
+        tests_index = -1
+        for i, p in enumerate(dir_parts):
+            if p == "tests":
+                tests_index = i
+
+        if tests_index < 0:
+            return frozenset(own)
+
+        after_tests = list(dir_parts[tests_index + 1 :])
+        # "test_" プレフィックスを持つディレクトリのみを順番に抽出して連結する
+        # tests/unit/test_foundation/test_error/ → ["foundation", "error"]
+        #   → "foundation.error" → "paladin.foundation.error"
+        test_dirs = [p[len("test_") :] for p in after_tests if p.startswith("test_")]
+        if not test_dirs:
+            return frozenset(own)
+
+        production_subpkg = ".".join(test_dirs)
+        for root_pkg in self._root_packages:
+            own.add(f"{root_pkg}.{production_subpkg}")
+
+        return frozenset(own)
+
     def _collect_exports(self, source_file: SourceFile) -> set[str]:
         """__init__.py の AST から公開シンボルセットを収集する
 
@@ -163,7 +210,7 @@ class NoDirectInternalImportRule:
     ) -> list[Violation]:
         """1ファイルの ImportFrom ノードを走査して違反を収集する"""
         violations: list[Violation] = []
-        file_package = self._resolve_package_key(source_file.file_path) or ""
+        own_packages = self._resolve_own_packages(source_file.file_path)
 
         for node in ast.walk(source_file.tree):
             if not isinstance(node, ast.ImportFrom):
@@ -183,8 +230,8 @@ class NoDirectInternalImportRule:
 
             import_package = ".".join(segments[:2])
 
-            # 同一パッケージ内のインポートは対象外
-            if file_package == import_package:
+            # 同一パッケージ（またはテストの対応プロダクションパッケージ）は対象外
+            if import_package in own_packages:
                 continue
 
             # インポートモジュール自体がサブパッケージ（__init__.py を持つ）なら対象外

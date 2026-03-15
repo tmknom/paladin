@@ -12,8 +12,7 @@ from paladin.check.result import CheckReport
 from paladin.check.rule_filter import RuleFilter
 from paladin.check.types import OutputFormat
 from paladin.config import OverrideEntry, PerFileIgnoreEntry
-from paladin.lint import RuleSet
-from paladin.lint.types import Violation
+from paladin.lint import RuleSet, Violation
 from tests.unit.test_check.fakes import FakeRule, InMemoryFsReader
 
 
