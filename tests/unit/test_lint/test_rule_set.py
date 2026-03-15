@@ -208,3 +208,24 @@ class TestRuleSet:
 
         # Assert
         assert result is None
+
+
+class TestRuleSetDefault:
+    """RuleSet.default() クラスメソッドのテスト"""
+
+    def test_default_正常系_RuleSetインスタンスを返すこと(self):
+        result = RuleSet.default()
+        assert isinstance(result, RuleSet)
+
+    def test_default_正常系_全ルールが登録されていること(self):
+        result = RuleSet.default()
+        rule_ids = result.rule_ids
+        assert "require-all-export" in rule_ids
+        assert "no-relative-import" in rule_ids
+        assert "no-local-import" in rule_ids
+        assert "require-qualified-third-party" in rule_ids
+
+    def test_default_正常系_呼び出すたびに独立したインスタンスを返すこと(self):
+        a = RuleSet.default()
+        b = RuleSet.default()
+        assert a is not b

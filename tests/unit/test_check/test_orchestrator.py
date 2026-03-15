@@ -11,7 +11,7 @@ from paladin.check.result import CheckReport
 from paladin.check.rule_filter import RuleFilter
 from paladin.check.types import OutputFormat
 from paladin.config import PerFileIgnoreEntry
-from paladin.lint import RequireAllExportRule, RuleSet
+from paladin.lint import RuleSet
 from paladin.lint.types import Violation
 from tests.unit.test_check.fakes import FakeRule, InMemoryFsReader
 
@@ -27,7 +27,7 @@ class TestCheckOrchestrator:
         py_file.write_text("x = 1\n")
         reader = InMemoryFsReader(contents={str(py_file.resolve()): "x = 1\n"})
         parser = AstParser(reader=reader)
-        rule_set = RuleSet(rules=(RequireAllExportRule(),))
+        rule_set = RuleSet(rules=(FakeRule(violations=()),))
         orchestrator = CheckOrchestrator(
             collector=FileCollector(),
             parser=parser,
@@ -52,7 +52,17 @@ class TestCheckOrchestrator:
         init_file.write_text("from foo import bar\n")
         reader = InMemoryFsReader(contents={str(init_file.resolve()): "from foo import bar\n"})
         parser = AstParser(reader=reader)
-        rule_set = RuleSet(rules=(RequireAllExportRule(),))
+        violation = Violation(
+            file=init_file.resolve(),
+            line=1,
+            column=0,
+            rule_id="fake-rule",
+            rule_name="Fake Rule",
+            message="violation",
+            reason="reason",
+            suggestion="suggestion",
+        )
+        rule_set = RuleSet(rules=(FakeRule(violations=(violation,)),))
         orchestrator = CheckOrchestrator(
             collector=FileCollector(),
             parser=parser,
@@ -77,7 +87,7 @@ class TestCheckOrchestrator:
         py_file.write_text("x = 1\n")
         reader = InMemoryFsReader(contents={str(py_file.resolve()): "x = 1\n"})
         parser = AstParser(reader=reader)
-        rule_set = RuleSet(rules=(RequireAllExportRule(),))
+        rule_set = RuleSet(rules=(FakeRule(violations=()),))
         orchestrator = CheckOrchestrator(
             collector=FileCollector(),
             parser=parser,
@@ -103,7 +113,7 @@ class TestCheckOrchestrator:
         py_file.write_text("x = 1\n")
         reader = InMemoryFsReader(contents={str(py_file.resolve()): "x = 1\n"})
         parser = AstParser(reader=reader)
-        rule_set = RuleSet(rules=(RequireAllExportRule(),))
+        rule_set = RuleSet(rules=(FakeRule(violations=()),))
         orchestrator = CheckOrchestrator(
             collector=FileCollector(),
             parser=parser,
@@ -132,7 +142,17 @@ class TestCheckOrchestrator:
             contents={str(init_file.resolve()): "# paladin: ignore-file\nfrom foo import bar\n"}
         )
         parser = AstParser(reader=reader)
-        rule_set = RuleSet(rules=(RequireAllExportRule(),))
+        violation = Violation(
+            file=init_file.resolve(),
+            line=1,
+            column=0,
+            rule_id="fake-rule",
+            rule_name="Fake Rule",
+            message="violation",
+            reason="reason",
+            suggestion="suggestion",
+        )
+        rule_set = RuleSet(rules=(FakeRule(violations=(violation,)),))
         orchestrator = CheckOrchestrator(
             collector=FileCollector(),
             parser=parser,
@@ -156,16 +176,26 @@ class TestCheckOrchestrator:
     ):
         # Arrange
         init_file = tmp_path / "__init__.py"
-        init_file.write_text("# paladin: ignore-file[require-all-export]\nfrom foo import bar\n")
+        init_file.write_text("# paladin: ignore-file[fake-rule]\nfrom foo import bar\n")
         reader = InMemoryFsReader(
             contents={
                 str(init_file.resolve()): (
-                    "# paladin: ignore-file[require-all-export]\nfrom foo import bar\n"
+                    "# paladin: ignore-file[fake-rule]\nfrom foo import bar\n"
                 )
             }
         )
         parser = AstParser(reader=reader)
-        rule_set = RuleSet(rules=(RequireAllExportRule(),))
+        violation = Violation(
+            file=init_file.resolve(),
+            line=1,
+            column=0,
+            rule_id="fake-rule",
+            rule_name="Fake Rule",
+            message="violation",
+            reason="reason",
+            suggestion="suggestion",
+        )
+        rule_set = RuleSet(rules=(FakeRule(violations=(violation,)),))
         orchestrator = CheckOrchestrator(
             collector=FileCollector(),
             parser=parser,
@@ -455,7 +485,17 @@ class TestCheckOrchestrator:
         init_file.write_text("from foo import bar\n")
         reader = InMemoryFsReader(contents={str(init_file.resolve()): "from foo import bar\n"})
         parser = AstParser(reader=reader)
-        rule_set = RuleSet(rules=(RequireAllExportRule(),))
+        violation = Violation(
+            file=init_file.resolve(),
+            line=1,
+            column=0,
+            rule_id="fake-rule",
+            rule_name="Fake Rule",
+            message="violation",
+            reason="reason",
+            suggestion="suggestion",
+        )
+        rule_set = RuleSet(rules=(FakeRule(violations=(violation,)),))
         orchestrator = CheckOrchestrator(
             collector=FileCollector(),
             parser=parser,
@@ -482,7 +522,7 @@ class TestCheckOrchestrator:
         py_file.write_text("x = 1\n")
         reader = InMemoryFsReader(contents={str(py_file.resolve()): "x = 1\n"})
         parser = AstParser(reader=reader)
-        rule_set = RuleSet(rules=(RequireAllExportRule(),))
+        rule_set = RuleSet(rules=(FakeRule(violations=()),))
         orchestrator = CheckOrchestrator(
             collector=FileCollector(),
             parser=parser,
@@ -506,7 +546,7 @@ class TestCheckOrchestrator:
         py_file.write_text("x = 1\n")
         reader = InMemoryFsReader(contents={str(py_file.resolve()): "x = 1\n"})
         parser = AstParser(reader=reader)
-        rule_set = RuleSet(rules=(RequireAllExportRule(),))
+        rule_set = RuleSet(rules=(FakeRule(violations=()),))
         orchestrator = CheckOrchestrator(
             collector=FileCollector(),
             parser=parser,
