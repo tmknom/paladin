@@ -6,7 +6,7 @@
 from pathlib import Path
 
 from paladin.check.collector import FileCollector, PathExcluder
-from paladin.check.config import ConfigIgnoreResolver, ProjectConfigLoader, RuleFilter
+from paladin.check.config import ConfigIgnoreResolver, RuleFilter
 from paladin.check.context import CheckContext
 from paladin.check.formatter import CheckFormatterFactory
 from paladin.check.ignore import (
@@ -26,13 +26,12 @@ class CheckOrchestrator:
     """対象列挙と AST 生成の処理フローを制御するオーケストレーター
 
     Flow:
-        1. ProjectConfigLoader で設定を読み込む
-        2. TargetResolver で解析対象パスを解決
-        3. FileCollector で .py ファイルを列挙
-        4. PathExcluder で exclude パターンを適用
-        5. AstParser で各ファイルの AST を生成
-        6. RuleSet でルールを適用し Violations を収集
-        7. CheckReportFormatter で CheckReport に変換して返す
+        1. TargetResolver で context から解析対象パスを解決
+        2. FileCollector で .py ファイルを列挙
+        3. PathExcluder で context.exclude パターンを適用
+        4. AstParser で各ファイルの AST を生成
+        5. RuleSet でルールを適用し Violations を収集
+        6. CheckReportFormatter で CheckReport に変換して返す
 
     Returns:
         CheckReport: フォーマット済みレポート文字列と終了コードを含む実行結果
@@ -45,7 +44,6 @@ class CheckOrchestrator:
         rule_set: RuleSet,
         formatter: CheckFormatterFactory,
         violation_filter: ViolationFilter,
-        config_loader: ProjectConfigLoader,
         rule_filter: RuleFilter,
         target_resolver: TargetResolver,
         path_excluder: PathExcluder,
@@ -58,7 +56,6 @@ class CheckOrchestrator:
             rule_set: ルール管理・実行
             formatter: レポートフォーマッター
             violation_filter: ignore フィルター
-            config_loader: プロジェクト設定ローダー
             rule_filter: ルール有効/無効フィルター
             target_resolver: CLI 引数と include を解決するリゾルバー
             path_excluder: exclude パターンによるファイル除外
@@ -68,7 +65,6 @@ class CheckOrchestrator:
         self.rule_set = rule_set
         self.formatter = formatter
         self.violation_filter = violation_filter
-        self.config_loader = config_loader
         self.rule_filter = rule_filter
         self.target_resolver = target_resolver
         self.path_excluder = path_excluder
@@ -83,15 +79,16 @@ class CheckOrchestrator:
         Returns:
             Check処理のフォーマット済みレポート
         """
-        config = self.config_loader.load()
-        resolved_targets = self.target_resolver.resolve(context, config)
+        resolved_targets = self.target_resolver.resolve(context)
         target_files = self.collector.collect(resolved_targets)
-        target_files = self.path_excluder.exclude(target_files, config.exclude)
+        target_files = self.path_excluder.exclude(target_files, context.exclude)
         source_files = self.parser.parse_all(target_files)
-        disabled_rule_ids = self.rule_filter.resolve_disabled_rules(config, self.rule_set.rule_ids)
+        disabled_rule_ids = self.rule_filter.resolve_disabled_rules(
+            context.rules, self.rule_set.rule_ids
+        )
         violations = self.rule_set.run(source_files, disabled_rule_ids=disabled_rule_ids)
         file_paths = tuple(sf.file_path for sf in source_files)
-        config_directives = ConfigIgnoreResolver().resolve(config, file_paths)
+        config_directives = ConfigIgnoreResolver().resolve(context.per_file_ignores, file_paths)
         comment_directives = FileIgnoreParser().parse_all(source_files)
         merged_directives = self._merge_directives(config_directives, comment_directives)
         line_directives = LineIgnoreParser().parse_all(source_files)

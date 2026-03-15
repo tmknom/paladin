@@ -9,8 +9,12 @@ Docs:
 
 from paladin.config.app import AppConfig
 from paladin.config.env_var import EnvVarConfig
+from paladin.config.project import PerFileIgnoreEntry, ProjectConfig, ProjectConfigLoader
 
 __all__ = [
     "AppConfig",
     "EnvVarConfig",
+    "PerFileIgnoreEntry",
+    "ProjectConfig",
+    "ProjectConfigLoader",
 ]

@@ -3,10 +3,11 @@
 CLIから受け取ったパラメータを不変のまま処理完了まで保持する。
 """
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 
 from paladin.check.types import OutputFormat
+from paladin.config import PerFileIgnoreEntry
 
 
 @dataclass(frozen=True)
@@ -20,8 +21,16 @@ class CheckContext:
         targets: CLIから受け取ったターゲットパス群（ファイルまたはディレクトリ）
         format: チェック結果の出力フォーマット
         ignore_rules: 無視するルールID群
+        include: 解析対象パスのincludeパターン群
+        exclude: 解析対象パスのexcludeパターン群
+        rules: ルールの有効/無効設定
+        per_file_ignores: ファイルごとのignore設定
     """
 
     targets: tuple[Path, ...]
     format: OutputFormat = OutputFormat.TEXT
     ignore_rules: frozenset[str] = frozenset()
+    include: tuple[str, ...] = ()
+    exclude: tuple[str, ...] = ()
+    rules: dict[str, bool] = field(default_factory=lambda: {})
+    per_file_ignores: tuple[PerFileIgnoreEntry, ...] = ()

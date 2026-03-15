@@ -4,7 +4,7 @@
 """
 
 from paladin.check.collector import FileCollector, PathExcluder
-from paladin.check.config import ProjectConfigLoader, RuleFilter
+from paladin.check.config import RuleFilter
 from paladin.check.formatter import CheckFormatterFactory
 from paladin.check.ignore import ViolationFilter
 from paladin.check.orchestrator import CheckOrchestrator
@@ -37,14 +37,12 @@ class CheckOrchestratorProvider:
         reader = TextFileSystemReader()
         parser = AstParser(reader=reader)
         rule_set = self._create_rule_set()
-        config_loader = ProjectConfigLoader(reader=TextFileSystemReader())
         return CheckOrchestrator(
             collector=FileCollector(),
             parser=parser,
             rule_set=rule_set,
             formatter=CheckFormatterFactory(),
             violation_filter=ViolationFilter(),
-            config_loader=config_loader,
             rule_filter=RuleFilter(),
             target_resolver=TargetResolver(),
             path_excluder=PathExcluder(),
