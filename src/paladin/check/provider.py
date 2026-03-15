@@ -12,7 +12,7 @@ from paladin.check.orchestrator import CheckOrchestrator
 from paladin.check.override import OverrideResolver
 from paladin.check.parser import AstParser
 from paladin.check.rule_filter import RuleFilter
-from paladin.foundation.fs.text import TextFileSystemReader
+from paladin.foundation.fs import TextFileSystemReader
 from paladin.foundation.log import log
 from paladin.lint import RuleSet
 

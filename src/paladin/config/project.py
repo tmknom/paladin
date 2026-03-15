@@ -10,8 +10,8 @@ import tomllib
 from dataclasses import dataclass, field
 from pathlib import Path
 
-from paladin.foundation.fs.error import FileSystemError
-from paladin.protocol.fs import TextFileSystemReaderProtocol
+from paladin.foundation.fs import FileSystemError
+from paladin.protocol import TextFileSystemReaderProtocol
 
 logger = logging.getLogger(__name__)
 

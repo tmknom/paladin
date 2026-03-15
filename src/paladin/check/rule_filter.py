@@ -5,7 +5,7 @@
 
 import logging
 
-from paladin.lint.protocol import Rule
+from paladin.lint import Rule
 
 logger = logging.getLogger(__name__)
 

@@ -11,7 +11,7 @@ from dataclasses import dataclass
 from pathlib import Path, PurePath
 
 from paladin.config import PerFileIgnoreEntry
-from paladin.lint.types import SourceFiles, Violation, Violations
+from paladin.lint import SourceFiles, Violation, Violations
 
 
 @dataclass(frozen=True)

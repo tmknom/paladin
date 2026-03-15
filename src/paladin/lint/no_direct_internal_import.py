@@ -50,21 +50,50 @@ class NoDirectInternalImportRule:
         return tuple(violations)
 
     def _build_package_exports(self, source_files: SourceFiles) -> dict[str, set[str]]:
-        """__init__.py を解析して、パッケージパス -> 公開シンボルセットのマッピングを構築する"""
+        """__init__.py を解析して、パッケージパス -> 公開シンボルセットのマッピングを構築する
+
+        キーは先頭2セグメントではなく正確なパッケージパス（全セグメント）を使用する。
+        例: src/paladin/foundation/model/__init__.py -> "paladin.foundation.model"
+        """
         package_exports: dict[str, set[str]] = {}
 
         for source_file in source_files:
             if source_file.file_path.name != "__init__.py":
                 continue
 
-            package_key = self._resolve_package_key(source_file.file_path)
-            if package_key is None:
+            exact_key = self._resolve_exact_package_path(source_file.file_path)
+            if exact_key is None:
                 continue
 
             exports = self._collect_exports(source_file)
-            package_exports[package_key] = exports
+            package_exports[exact_key] = exports
 
         return package_exports
+
+    def _resolve_exact_package_path(self, file_path: Path) -> str | None:
+        """__init__.py のファイルパスから正確なパッケージパスを取得する
+
+        例: src/paladin/foundation/model/__init__.py -> "paladin.foundation.model"
+             src/paladin/check/__init__.py           -> "paladin.check"
+        """
+        dir_parts = file_path.parts[:-1]  # ファイル名を除く
+
+        anchor_index = -1
+        for i, p in enumerate(dir_parts):
+            if p in _NON_PACKAGE_DIRS:
+                anchor_index = i
+
+        if anchor_index >= 0:
+            package_parts = list(dir_parts[anchor_index + 1 :])
+        else:
+            package_parts = [
+                p for p in dir_parts if not p.startswith(".") and p not in _NON_PACKAGE_DIRS
+            ]
+
+        if len(package_parts) < 2:
+            return None
+
+        return ".".join(package_parts)
 
     def _resolve_package_key(self, file_path: Path) -> str | None:
         """ファイルパスからパッケージキー（先頭2セグメント）を取得する
@@ -158,6 +187,11 @@ class NoDirectInternalImportRule:
             if file_package == import_package:
                 continue
 
+            # インポートモジュール自体がサブパッケージ（__init__.py を持つ）なら対象外
+            # 例: from paladin.foundation.model import X → paladin.foundation.model はサブパッケージ
+            if node.module in package_exports:
+                continue
+
             for alias in node.names:
                 name = alias.name
                 if self._should_report(name, import_package, package_exports):
@@ -178,7 +212,7 @@ class NoDirectInternalImportRule:
 
         exports = package_exports[import_package]
         if not exports:
-            # __init__.py が存在するが公開情報がない場合もヒューリスティック検出
+            # __init__.py が存在するがエクスポートが空の場合もヒューリスティック検出
             return True
 
         # __init__.py で公開されているシンボルのみを違反として報告
