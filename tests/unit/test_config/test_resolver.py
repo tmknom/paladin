@@ -3,7 +3,7 @@ from pathlib import Path
 import pytest
 
 from paladin.config.resolver import TargetResolver
-from paladin.foundation.error.error import ApplicationError
+from paladin.foundation.error import ApplicationError
 
 
 class TestTargetResolver:

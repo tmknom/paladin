@@ -9,11 +9,10 @@ from pathlib import Path
 
 import pytest
 
-from paladin.check import CheckOrchestratorProvider
-from paladin.check.context import CheckContext
+from paladin.check import CheckContext, CheckOrchestratorProvider
 from paladin.config import ProjectConfig, ProjectConfigLoader, TargetResolver
-from paladin.foundation.error.error import ApplicationError
-from paladin.foundation.fs.text import TextFileSystemReader
+from paladin.foundation.error import ApplicationError
+from paladin.foundation.fs import TextFileSystemReader
 
 
 def _load_context(targets: tuple[Path, ...]) -> CheckContext:

@@ -257,6 +257,68 @@ class TestNoDirectInternalImportRuleEdgeCases:
         assert len(result) == 0
 
 
+class TestNoDirectInternalImportRuleTestFiles:
+    """tests/ 配下のファイルに対するテスト対応パッケージの同一視テスト"""
+
+    def test_check_正常系_テストファイルが対応パッケージの内部モジュールをインポートしても違反しないこと(
+        self,
+    ):
+        # Arrange: tests/unit/test_view/test_provider.py から from paladin.view.formatter import X
+        # test_view → paladin.view として同一視するため対象外
+        source = "from paladin.view.formatter import ViewFormatter\n"
+        source_files = _make_source_files(
+            (source, "tests/unit/test_view/test_provider.py"),
+        )
+        rule = NoDirectInternalImportRule(root_packages=("paladin",))
+
+        result = rule.check(source_files)
+
+        assert len(result) == 0
+
+    def test_check_正常系_テストファイルが別パッケージの内部モジュールをインポートすると違反すること(
+        self,
+    ):
+        # Arrange: tests/unit/test_view/test_provider.py から from paladin.check.orchestrator import X
+        # test_view → paladin.view であり paladin.check は別パッケージなので違反
+        source = "from paladin.check.orchestrator import CheckOrchestrator\n"
+        source_files = _make_source_files(
+            (source, "tests/unit/test_view/test_provider.py"),
+        )
+        rule = NoDirectInternalImportRule(root_packages=("paladin",))
+
+        result = rule.check(source_files)
+
+        assert len(result) == 1
+
+    def test_check_正常系_絶対パスのテストファイルも対応パッケージを同一視すること(self):
+        # Arrange: 絶対パス tests/unit/test_transform/test_transformer.py
+        # test_transform → paladin.transform として同一視
+        source = "from paladin.transform.types import TransformedDatetime\n"
+        source_files = _make_source_files(
+            (source, "/Users/owner/code/paladin/tests/unit/test_transform/test_transformer.py"),
+        )
+        rule = NoDirectInternalImportRule(root_packages=("paladin",))
+
+        result = rule.check(source_files)
+
+        assert len(result) == 0
+
+    def test_check_正常系_テストファイルが複数のroot_packagesに対して対応パッケージを同一視すること(
+        self,
+    ):
+        # Arrange: root_packages=("myapp", "tests") のとき
+        # tests/unit/test_view/test_provider.py → myapp.view も同一視
+        source = "from myapp.view.formatter import ViewFormatter\n"
+        source_files = _make_source_files(
+            (source, "tests/unit/test_view/test_provider.py"),
+        )
+        rule = NoDirectInternalImportRule(root_packages=("myapp", "tests"))
+
+        result = rule.check(source_files)
+
+        assert len(result) == 0
+
+
 class TestNoDirectInternalImportRuleAbsolutePath:
     """NoDirectInternalImportRule の絶対パスでの動作テスト"""
 
