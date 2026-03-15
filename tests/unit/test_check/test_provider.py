@@ -59,3 +59,20 @@ class TestCheckOrchestratorProvider:
 
         # Assert
         assert isinstance(result.path_excluder, PathExcluder)
+
+    def test_provide_正常系_rule_optionsを渡してCheckOrchestratorが返ること(self):
+        # Arrange
+        rule_options = {"require-qualified-third-party": {"root-packages": ["myapp"]}}
+
+        # Act
+        result = CheckOrchestratorProvider().provide(rule_options=rule_options)
+
+        # Assert
+        assert isinstance(result, CheckOrchestrator)
+
+    def test_provide_正常系_rule_optionsなしで従来通り動作すること(self):
+        # Act
+        result = CheckOrchestratorProvider().provide()
+
+        # Assert
+        assert isinstance(result, CheckOrchestrator)

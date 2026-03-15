@@ -44,3 +44,22 @@ class TestCheckContext:
 
         # Assert
         assert context.ignore_rules == frozenset()
+
+    def test_init_正常系_rule_optionsを保持できること(self):
+        # Arrange & Act
+        context = CheckContext(
+            targets=(Path("src/"),),
+            rule_options={"require-qualified-third-party": {"root-packages": ["myapp"]}},
+        )
+
+        # Assert
+        assert context.rule_options == {
+            "require-qualified-third-party": {"root-packages": ["myapp"]}
+        }
+
+    def test_init_エッジケース_rule_optionsのデフォルトが空dictであること(self):
+        # Arrange & Act
+        context = CheckContext(targets=(Path("src/"),))
+
+        # Assert
+        assert context.rule_options == {}

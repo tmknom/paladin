@@ -63,6 +63,24 @@ class TestProjectConfig:
         # Assert
         assert config.rules == {"no-relative-import": False}
 
+    def test_ProjectConfig_正常系_rule_optionsフィールドを保持できること(self):
+        # Arrange / Act
+        config = ProjectConfig(
+            rule_options={"require-qualified-third-party": {"root-packages": ["paladin", "myapp"]}}
+        )
+
+        # Assert
+        assert config.rule_options == {
+            "require-qualified-third-party": {"root-packages": ["paladin", "myapp"]}
+        }
+
+    def test_ProjectConfig_正常系_デフォルトでrule_optionsが空dictであること(self):
+        # Arrange / Act
+        config = ProjectConfig()
+
+        # Assert
+        assert config.rule_options == {}
+
     def test_ProjectConfig_正常系_per_file_ignoresを保持できること(self):
         # Arrange
         entry = PerFileIgnoreEntry(
@@ -369,6 +387,75 @@ other_key = "value"
 
         # Assert
         assert result.exclude == ()
+
+    def test_load_正常系_ruleセクションのルール個別設定を含むProjectConfigを返すこと(self):
+        # Arrange
+        toml_content = """\
+[tool.paladin.rule."require-qualified-third-party"]
+root-packages = ["paladin", "myapp"]
+"""
+        reader = InMemoryFsReader(content=toml_content)
+        loader = ProjectConfigLoader(reader=reader)
+
+        # Act
+        result = loader.load()
+
+        # Assert
+        assert result.rule_options == {
+            "require-qualified-third-party": {"root-packages": ["paladin", "myapp"]}
+        }
+
+    def test_load_正常系_複数ルールの個別設定を読み込めること(self):
+        # Arrange
+        toml_content = """\
+[tool.paladin.rule."require-qualified-third-party"]
+root-packages = ["paladin", "myapp"]
+
+[tool.paladin.rule."other-rule"]
+some-param = "value"
+"""
+        reader = InMemoryFsReader(content=toml_content)
+        loader = ProjectConfigLoader(reader=reader)
+
+        # Act
+        result = loader.load()
+
+        # Assert
+        assert "require-qualified-third-party" in result.rule_options
+        assert "other-rule" in result.rule_options
+        assert result.rule_options["require-qualified-third-party"] == {
+            "root-packages": ["paladin", "myapp"]
+        }
+
+    def test_load_エッジケース_ruleセクションがない場合rule_optionsが空dictになること(self):
+        # Arrange
+        toml_content = """\
+[tool.paladin]
+other_key = "value"
+"""
+        reader = InMemoryFsReader(content=toml_content)
+        loader = ProjectConfigLoader(reader=reader)
+
+        # Act
+        result = loader.load()
+
+        # Assert
+        assert result.rule_options == {}
+
+    def test_load_エッジケース_tool_paladinセクションがない場合rule_optionsが空dictになること(self):
+        # Arrange
+        toml_content = """\
+[tool.other]
+key = "value"
+"""
+        reader = InMemoryFsReader(content=toml_content)
+        loader = ProjectConfigLoader(reader=reader)
+
+        # Act
+        result = loader.load()
+
+        # Assert
+        assert result.rule_options == {}
 
     def test_load_エッジケース_tool_paladinセクションがない場合includeとexcludeが空タプルになること(
         self,
