@@ -2,7 +2,7 @@ from pathlib import Path
 
 import pytest
 
-from paladin.check.collector import FileCollector
+from paladin.check.collector import FileCollector, PathExcluder
 from paladin.check.types import TargetFiles
 
 
@@ -145,3 +145,103 @@ class TestFileCollector:
 
         # Assert
         assert len(result) == 0
+
+
+class TestPathExcluder:
+    def test_exclude_正常系_excludeパターンにマッチするファイルを除外すること(self):
+        # Arrange
+        files = TargetFiles(files=(Path(".venv/lib/foo.py"),))
+        excluder = PathExcluder()
+
+        # Act
+        result = excluder.exclude(files, patterns=(".venv/",))
+
+        # Assert
+        assert Path(".venv/lib/foo.py") not in result.files
+
+    def test_exclude_正常系_マッチしないファイルは残ること(self):
+        # Arrange
+        files = TargetFiles(files=(Path("src/main.py"),))
+        excluder = PathExcluder()
+
+        # Act
+        result = excluder.exclude(files, patterns=(".venv/",))
+
+        # Assert
+        assert Path("src/main.py") in result.files
+
+    def test_exclude_正常系_globパターンでマッチするファイルを除外すること(self):
+        # Arrange
+        files = TargetFiles(files=(Path("src/foo_pb2.py"),))
+        excluder = PathExcluder()
+
+        # Act
+        result = excluder.exclude(files, patterns=("**/*_pb2.py",))
+
+        # Assert
+        assert Path("src/foo_pb2.py") not in result.files
+
+    def test_exclude_エッジケース_空のpatternsでファイルをそのまま返すこと(self):
+        # Arrange
+        files = TargetFiles(files=(Path("src/main.py"), Path("src/sub.py")))
+        excluder = PathExcluder()
+
+        # Act
+        result = excluder.exclude(files, patterns=())
+
+        # Assert
+        assert result.files == files.files
+
+    def test_exclude_エッジケース_空のTargetFilesで空を返すこと(self):
+        # Arrange
+        files = TargetFiles(files=())
+        excluder = PathExcluder()
+
+        # Act
+        result = excluder.exclude(files, patterns=(".venv/",))
+
+        # Assert
+        assert result.files == ()
+
+    def test_exclude_正常系_複数のexcludeパターンを適用できること(self):
+        # Arrange
+        files = TargetFiles(
+            files=(
+                Path(".venv/lib/foo.py"),
+                Path("build/out.py"),
+                Path("src/main.py"),
+            )
+        )
+        excluder = PathExcluder()
+
+        # Act
+        result = excluder.exclude(files, patterns=(".venv/", "build/"))
+
+        # Assert
+        assert Path(".venv/lib/foo.py") not in result.files
+        assert Path("build/out.py") not in result.files
+        assert Path("src/main.py") in result.files
+
+    def test_exclude_正常系_絶対パスに対してexcludeパターンがマッチすること(self):
+        # Arrange
+        files = TargetFiles(files=(Path("/abs/path/.venv/foo.py"),))
+        excluder = PathExcluder()
+
+        # Act
+        result = excluder.exclude(files, patterns=(".venv/",))
+
+        # Assert
+        assert Path("/abs/path/.venv/foo.py") not in result.files
+
+    def test_exclude_正常系_ディレクトリパスの末尾スラッシュの有無によらずマッチすること(self):
+        # Arrange: 末尾スラッシュなし ".venv" でも除外される
+        files = TargetFiles(files=(Path(".venv/lib/foo.py"),))
+        excluder = PathExcluder()
+
+        # Act
+        result_with_slash = excluder.exclude(files, patterns=(".venv/",))
+        result_without_slash = excluder.exclude(files, patterns=(".venv",))
+
+        # Assert
+        assert Path(".venv/lib/foo.py") not in result_with_slash.files
+        assert Path(".venv/lib/foo.py") not in result_without_slash.files

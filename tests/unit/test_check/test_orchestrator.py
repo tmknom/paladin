@@ -3,14 +3,14 @@ from pathlib import Path
 
 import pytest
 
-from paladin.check.collector import FileCollector
+from paladin.check.collector import FileCollector, PathExcluder
 from paladin.check.config import ProjectConfigLoader, RuleFilter
 from paladin.check.context import CheckContext
 from paladin.check.formatter import CheckFormatterFactory
 from paladin.check.ignore import ViolationFilter
 from paladin.check.orchestrator import CheckOrchestrator
 from paladin.check.parser import AstParser
-from paladin.check.path import PathExcluder, TargetResolver
+from paladin.check.resolver import TargetResolver
 from paladin.check.result import CheckReport
 from paladin.check.types import OutputFormat
 from paladin.foundation.error.error import ApplicationError

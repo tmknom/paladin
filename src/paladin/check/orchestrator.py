@@ -5,7 +5,7 @@
 
 from pathlib import Path
 
-from paladin.check.collector import FileCollector
+from paladin.check.collector import FileCollector, PathExcluder
 from paladin.check.config import ConfigIgnoreResolver, ProjectConfigLoader, RuleFilter
 from paladin.check.context import CheckContext
 from paladin.check.formatter import CheckFormatterFactory
@@ -16,7 +16,7 @@ from paladin.check.ignore import (
     ViolationFilter,
 )
 from paladin.check.parser import AstParser
-from paladin.check.path import PathExcluder, TargetResolver
+from paladin.check.resolver import TargetResolver
 from paladin.check.result import CheckReport, CheckResult
 from paladin.foundation.log import log
 from paladin.lint import RuleSet

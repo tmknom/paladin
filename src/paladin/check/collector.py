@@ -1,11 +1,13 @@
-"""Check層のファイル収集
+"""Check層のファイル収集・除外機能
 
 パイプライン第1段階として、解析対象を確定する。
 """
 
-from pathlib import Path
+from pathlib import Path, PurePath
 
 from paladin.check.types import TargetFiles
+
+__all__ = ["FileCollector", "PathExcluder"]
 
 
 class FileCollector:
@@ -66,3 +68,55 @@ class FileCollector:
         """
         for py_file in path.rglob("*.py"):
             collected.add(py_file.resolve())
+
+
+class PathExcluder:
+    """exclude パターンに基づいてファイルパスを除外する純粋計算クラス"""
+
+    def exclude(self, files: TargetFiles, patterns: tuple[str, ...]) -> TargetFiles:
+        """Exclude パターンにマッチするファイルを除外した TargetFiles を返す
+
+        Args:
+            files: フィルタリング対象のファイル群
+            patterns: 除外パターンのタプル（glob パターン可）
+
+        Returns:
+            マッチしなかったファイルのみを含む TargetFiles
+        """
+        if not patterns:
+            return files
+
+        normalized = [self._normalize_exclude_pattern(p) for p in patterns]
+
+        kept = tuple(
+            f for f in files.files if not any(PurePath(str(f)).full_match(p) for p in normalized)
+        )
+        return TargetFiles(files=kept)
+
+    def _normalize_glob_pattern(self, pattern: str) -> str:
+        if pattern.startswith("/") or pattern.startswith("**/"):
+            return pattern
+        return "**/" + pattern
+
+    def _normalize_exclude_pattern(self, pattern: str) -> str:
+        """Exclude パターンを正規化する
+
+        末尾スラッシュがある場合、または拡張子なしかつパス区切りを含まない単純名の場合は
+        ディレクトリとして扱い、配下すべてにマッチさせる。
+        それ以外は _normalize_glob_pattern() で前置処理を行う。
+
+        Args:
+            pattern: 除外パターン
+
+        Returns:
+            正規化済みパターン
+        """
+        if pattern.endswith("/"):
+            # 末尾スラッシュ付きはディレクトリ → 配下すべてにマッチ
+            stripped = pattern.rstrip("/")
+            return self._normalize_glob_pattern(stripped + "/**")
+        # 拡張子なし、パス区切りなし、ワイルドカードなしの単純名 → ディレクトリとして扱う
+        stripped = pattern.rstrip("/")
+        if "/" not in stripped and "." not in stripped.lstrip(".") and "*" not in stripped:
+            return self._normalize_glob_pattern(stripped + "/**")
+        return self._normalize_glob_pattern(pattern)
