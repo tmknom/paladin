@@ -1,10 +1,11 @@
 from paladin.check import CheckOrchestratorProvider
+from paladin.check.collector import PathExcluder
 from paladin.check.config import ProjectConfigLoader, RuleFilter
 from paladin.check.formatter import CheckFormatterFactory
 from paladin.check.ignore import ViolationFilter
 from paladin.check.orchestrator import CheckOrchestrator
 from paladin.check.parser import AstParser
-from paladin.check.path import PathExcluder, TargetResolver
+from paladin.check.resolver import TargetResolver
 from paladin.lint import RuleSet
 
 
