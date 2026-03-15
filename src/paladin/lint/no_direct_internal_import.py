@@ -75,16 +75,22 @@ class NoDirectInternalImportRule:
 
         例: src/paladin/foundation/model/__init__.py -> "paladin.foundation.model"
              src/paladin/check/__init__.py           -> "paladin.check"
+             tests/unit/fakes/__init__.py            -> "tests.unit.fakes"
         """
         dir_parts = file_path.parts[:-1]  # ファイル名を除く
 
         anchor_index = -1
+        anchor_name = ""
         for i, p in enumerate(dir_parts):
             if p in _NON_PACKAGE_DIRS:
                 anchor_index = i
+                anchor_name = p
 
         if anchor_index >= 0:
             package_parts = list(dir_parts[anchor_index + 1 :])
+            # tests は Python インポートパスの一部なので先頭に復元する
+            if anchor_name == "tests":
+                package_parts = ["tests", *package_parts]
         else:
             package_parts = [
                 p for p in dir_parts if not p.startswith(".") and p not in _NON_PACKAGE_DIRS
@@ -101,18 +107,24 @@ class NoDirectInternalImportRule:
         例: src/paladin/check/__init__.py -> "paladin.check"
              src/paladin/check/foo.py    -> "paladin.check"
              /abs/path/src/paladin/check/foo.py -> "paladin.check"
+             tests/unit/test_check/foo.py -> "tests.unit"
         """
         dir_parts = file_path.parts[:-1]  # ファイル名を除く
 
         # _NON_PACKAGE_DIRS の最後の出現位置をアンカーとして使用する
         # （絶対パスでも相対パスでも正しく動作させるため）
         anchor_index = -1
+        anchor_name = ""
         for i, p in enumerate(dir_parts):
             if p in _NON_PACKAGE_DIRS:
                 anchor_index = i
+                anchor_name = p
 
         if anchor_index >= 0:
             package_parts = list(dir_parts[anchor_index + 1 :])
+            # tests は Python インポートパスの一部なので先頭に復元する
+            if anchor_name == "tests":
+                package_parts = ["tests", *package_parts]
         else:
             # フォールバック: アンカーが見つからない場合は旧ロジック
             package_parts = [
@@ -132,7 +144,7 @@ class NoDirectInternalImportRule:
         対応するプロダクションパッケージも同一視する。
 
         例: tests/unit/test_view/test_provider.py
-              -> {"unit.test_view", "paladin.view"}  # "test_" を除去して対応パッケージを算出
+              -> {"tests.unit", "paladin.view"}  # _resolve_package_key + "test_" 除去で対応パッケージを算出
         """
         package_key = self._resolve_package_key(file_path)
         own: set[str] = set()
@@ -231,7 +243,9 @@ class NoDirectInternalImportRule:
             import_package = ".".join(segments[:2])
 
             # 同一パッケージ（またはテストの対応プロダクションパッケージ）は対象外
-            if import_package in own_packages:
+            # own_packages が import_package より深い階層を持つ場合もプレフィックス一致で判定する
+            # 例: own = {"paladin.foundation.error"}, import = "paladin.foundation" → 除外
+            if self._is_own_package(import_package, own_packages):
                 continue
 
             # インポートモジュール自体がサブパッケージ（__init__.py を持つ）なら対象外
@@ -245,6 +259,17 @@ class NoDirectInternalImportRule:
                     violations.append(self._make_violation(source_file, node, name, import_package))
 
         return violations
+
+    def _is_own_package(self, import_package: str, own_packages: frozenset[str]) -> bool:
+        """import_package が自パッケージセットに属するかを判定する
+
+        完全一致に加え、own_packages の要素が import_package のサブパッケージである場合もマッチする。
+        例: import_package = "paladin.foundation", own = {"paladin.foundation.error"} -> True
+        """
+        if import_package in own_packages:
+            return True
+        prefix = import_package + "."
+        return any(pkg.startswith(prefix) for pkg in own_packages)
 
     def _should_report(
         self,

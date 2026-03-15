@@ -13,7 +13,7 @@ from paladin.check.rule_filter import RuleFilter
 from paladin.check.types import OutputFormat
 from paladin.config import OverrideEntry, PerFileIgnoreEntry
 from paladin.lint import RuleSet, Violation
-from tests.unit.test_check.fakes import FakeRule, InMemoryFsReader
+from tests.unit.fakes import FakeRule, InMemoryFsReader
 
 
 class TestCheckOrchestrator:

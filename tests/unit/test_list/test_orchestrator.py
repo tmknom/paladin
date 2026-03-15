@@ -4,7 +4,7 @@ from paladin.lint import Rule, RuleSet
 from paladin.list.context import ListContext
 from paladin.list.formatter import ListFormatter
 from paladin.list.orchestrator import ListOrchestrator
-from tests.unit.test_check.fakes import FakeRule
+from tests.unit.fakes import FakeRule
 
 
 class TestListOrchestrator:

@@ -59,6 +59,7 @@ from myapp.services.data import DataLoaderProtocol
 - インポート先がサブパッケージ（`__init__.py` を持つ）の場合は検出対象外とする。例えば `from myapp.foundation.model import Foo` の `myapp.foundation.model` がサブパッケージであれば、そのパッケージの公開 API を経由したインポートとして扱う
 - 相対インポートによる内部モジュール直接参照は `no-relative-import` で別途検出するため、このルールは絶対インポートのみを対象とする
 - 同一パッケージ内での内部モジュール参照（自パッケージの内部実装を自身で参照する場合）は検出対象外とする
+- テストファイルは対応するプロダクションパッケージと同一視する。たとえば `tests/unit/test_check/test_orchestrator.py` のパッケージは `paladin.check` と解決され、`paladin.check` 内部への直接参照は同一パッケージとして検出対象外となる。対応パッケージは `test_` プレフィックスを除去したディレクトリ名をルートパッケージ名に結合して算出する
 
 ## 既存ツールとの関係
 

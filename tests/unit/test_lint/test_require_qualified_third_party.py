@@ -225,7 +225,7 @@ class TestRequireQualifiedThirdPartyRuleCheckExclusions:
     def test_check_正常系_testsパッケージのfrom_importは違反なしを返すこと(self):
         # Arrange
         rule = RequireQualifiedThirdPartyRule(root_packages=("paladin", "tests"))
-        source = "from tests.unit.test_check.fakes import InMemoryFsReader\n"
+        source = "from tests.unit.fakes import InMemoryFsReader\n"
         source_file = _make_source_file(source)
 
         # Act
