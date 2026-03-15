@@ -14,25 +14,6 @@ from paladin.foundation.fs.error import FileSystemError
 from paladin.lint.protocol import Rule
 from paladin.protocol.fs import TextFileSystemReaderProtocol
 
-
-def normalize_glob_pattern(pattern: str) -> str:
-    """相対 glob パターンに **/ を前置し、絶対パスにもマッチできるようにする
-
-    PurePath.full_match() は相対パターンを先頭固定で照合するため、
-    絶対パスに対して "tests/**" のような相対パターンはマッチしない。
-    "**/" を前置することで、パスのどの位置でもマッチするようになる。
-
-    Args:
-        pattern: glob パターン
-
-    Returns:
-        正規化済みの glob パターン
-    """
-    if pattern.startswith("/") or pattern.startswith("**/"):
-        return pattern
-    return "**/" + pattern
-
-
 logger = logging.getLogger(__name__)
 
 
@@ -214,6 +195,11 @@ class ConfigIgnoreResolver:
     正しくマッチするよう、相対パターンには自動的に "**/" を前置する。
     """
 
+    def _normalize_glob_pattern(self, pattern: str) -> str:
+        if pattern.startswith("/") or pattern.startswith("**/"):
+            return pattern
+        return "**/" + pattern
+
     def resolve(
         self,
         config: ProjectConfig,
@@ -236,7 +222,7 @@ class ConfigIgnoreResolver:
             matched_entries: list[PerFileIgnoreEntry] = [
                 entry
                 for entry in config.per_file_ignores
-                if PurePath(str(file_path)).full_match(normalize_glob_pattern(entry.pattern))
+                if PurePath(str(file_path)).full_match(self._normalize_glob_pattern(entry.pattern))
             ]
             if not matched_entries:
                 continue
