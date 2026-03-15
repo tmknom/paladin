@@ -200,10 +200,9 @@ class LineIgnoreParser:
         Returns:
             全ファイルの LineIgnoreDirective を平坦化したタプル
         """
-        result: tuple[LineIgnoreDirective, ...] = ()
-        for sf in source_files:
-            result = result + self.parse(sf.file_path, sf.source)
-        return result
+        return tuple(
+            directive for sf in source_files for directive in self.parse(sf.file_path, sf.source)
+        )
 
 
 class ViolationFilter:
