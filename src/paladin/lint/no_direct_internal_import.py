@@ -42,12 +42,37 @@ class NoDirectInternalImportRule:
             return ()
 
         package_exports = self._build_package_exports(source_files)
+        src_root = self._infer_src_root(source_files)
         violations: list[Violation] = []
 
         for source_file in source_files:
-            violations.extend(self._check_file(source_file, package_exports))
+            violations.extend(self._check_file(source_file, package_exports, src_root))
 
         return tuple(violations)
+
+    def _infer_src_root(self, source_files: SourceFiles) -> Path | None:
+        """source_files のパスから src/ ディレクトリを推定する
+
+        _NON_PACKAGE_DIRS に含まれるアンカー（src or tests）の親ディレクトリを
+        プロジェクトルートとして算出し、<project_root>/src を返す。
+        """
+        for source_file in source_files:
+            parts = source_file.file_path.parts
+            for i, part in enumerate(parts):
+                if part in _NON_PACKAGE_DIRS:
+                    project_root = Path(*parts[:i]) if i > 0 else Path()
+                    src_root = project_root / "src"
+                    if src_root.is_dir():
+                        return src_root
+        return None
+
+    def _is_subpackage_on_filesystem(self, module_path: str, src_root: Path | None) -> bool:
+        """module_path に対応する src/ 配下のディレクトリに __init__.py が存在するかを確認する"""
+        if src_root is None:
+            return False
+        segments = module_path.split(".")
+        package_dir = src_root.joinpath(*segments)
+        return (package_dir / "__init__.py").is_file()
 
     def _build_package_exports(self, source_files: SourceFiles) -> dict[str, set[str]]:
         """__init__.py を解析して、パッケージパス -> 公開シンボルセットのマッピングを構築する
@@ -219,6 +244,7 @@ class NoDirectInternalImportRule:
         self,
         source_file: SourceFile,
         package_exports: dict[str, set[str]],
+        src_root: Path | None = None,
     ) -> list[Violation]:
         """1ファイルの ImportFrom ノードを走査して違反を収集する"""
         violations: list[Violation] = []
@@ -251,6 +277,9 @@ class NoDirectInternalImportRule:
             # インポートモジュール自体がサブパッケージ（__init__.py を持つ）なら対象外
             # 例: from paladin.foundation.model import X → paladin.foundation.model はサブパッケージ
             if node.module in package_exports:
+                continue
+            # source_files に含まれない __init__.py はファイルシステムで確認する
+            if self._is_subpackage_on_filesystem(node.module, src_root):
                 continue
 
             for alias in node.names:

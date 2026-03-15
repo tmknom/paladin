@@ -205,6 +205,24 @@ class TestNoDirectInternalImportRuleInitPy:
         # Assert: フォールバックで3階層以上のインポートを検出
         assert len(result) == 1
 
+    def test_check_正常系_インポートモジュール自体がサブパッケージなら検出しないこと(self):
+        # Arrange: paladin/check/orchestrator/__init__.py が source_files に存在する
+        # node.module ("paladin.check.orchestrator") が package_exports のキーになるため
+        # L280（node.module in package_exports の continue）に到達する
+        init_source = '__all__ = ["CheckOrchestrator"]\n'
+        import_source = "from paladin.check.orchestrator import CheckOrchestrator\n"
+        source_files = _make_source_files(
+            (init_source, "src/paladin/check/orchestrator/__init__.py"),
+            (import_source, "src/other/module.py"),
+        )
+        rule = NoDirectInternalImportRule(root_packages=("paladin",))
+
+        # Act
+        result = rule.check(source_files)
+
+        # Assert: paladin.check.orchestrator はサブパッケージとして認識されるため対象外
+        assert len(result) == 0
+
 
 class TestNoDirectInternalImportRuleEdgeCases:
     """NoDirectInternalImportRule のエッジケーステスト"""
@@ -251,6 +269,44 @@ class TestNoDirectInternalImportRuleEdgeCases:
         source = "from paladin.check.orchestrator import CheckOrchestrator\n"
         source_files = _make_source_files((source, "src/other/module.py"))
         rule = NoDirectInternalImportRule(root_packages=())
+
+        result = rule.check(source_files)
+
+        assert len(result) == 0
+
+    def test_check_エッジケース_ファイル名がtestsの場合でも違反を検出すること(self):
+        # Arrange: file_path.parts の末尾が "tests"（拡張子なし）の場合
+        # file_path.parts に "tests" が含まれる（L180 を通過）が、
+        # dir_parts（ファイル名除く）には "tests" がなく tests_index < 0（L195 到達）
+        source = "from paladin.lint.types import SourceFile\n"
+        source_files = _make_source_files((source, "src/paladin/check/tests"))
+        rule = NoDirectInternalImportRule(root_packages=("paladin",))
+
+        result = rule.check(source_files)
+
+        assert len(result) == 1
+
+    def test_check_エッジケース_moduleがNoneのImportFromノードを無視すること(self):
+        # Arrange: level=0, module=None の ImportFrom は通常の ast.parse では生成されない
+        # ガード節（L259）のカバレッジを確保するため AST を直接構築する
+        tree = ast.parse("")
+        import_node = ast.ImportFrom(module=None, names=[ast.alias(name="X")], level=0)
+        import_node.lineno = 1
+        import_node.col_offset = 0
+        tree.body.append(import_node)
+        source_file = SourceFile(file_path=Path("src/other/module.py"), tree=tree, source="")
+        source_files = SourceFiles(files=(source_file,))
+        rule = NoDirectInternalImportRule(root_packages=("paladin",))
+
+        result = rule.check(source_files)
+
+        assert len(result) == 0
+
+    def test_check_エッジケース_3階層以上の外部パッケージインポートは検出しないこと(self):
+        # Arrange: 3階層だが root_packages 外のパッケージ（L267 到達）
+        source = "from urllib.parse.something import quote\n"
+        source_files = _make_source_files((source, "src/other/module.py"))
+        rule = NoDirectInternalImportRule(root_packages=("paladin",))
 
         result = rule.check(source_files)
 
@@ -384,3 +440,58 @@ class TestNoDirectInternalImportRuleAbsolutePath:
         result = rule.check(source_files)
 
         assert len(result) == 0
+
+
+class TestNoDirectInternalImportRuleSubpackageFallback:
+    """スコープ外サブパッケージのファイルシステムフォールバックテスト"""
+
+    def test_check_正常系_解析スコープ外のサブパッケージは違反を検出しないこと(
+        self, tmp_path: Path
+    ):
+        # Arrange: tmp_path/src/paladin/foundation/fs/__init__.py を作成する
+        fs_pkg = tmp_path / "src" / "paladin" / "foundation" / "fs"
+        fs_pkg.mkdir(parents=True)
+        (fs_pkg / "__init__.py").write_text('__all__ = ["FileSystemError"]\n')
+
+        # テストファイルは tmp_path 配下に配置して _infer_src_root が src/ を発見できるようにする
+        import_source = "from paladin.foundation.fs import FileSystemError\n"
+        source_files = _make_source_files(
+            (import_source, str(tmp_path / "tests" / "unit" / "test_something.py")),
+        )
+        rule = NoDirectInternalImportRule(root_packages=("paladin",))
+
+        result = rule.check(source_files)
+
+        # paladin.foundation.fs はサブパッケージ（__init__.py あり）なので対象外
+        assert len(result) == 0
+
+    def test_check_正常系_解析スコープ外にサブパッケージが存在しない場合はヒューリスティック検出すること(
+        self, tmp_path: Path
+    ):
+        # Arrange: tmp_path/src/paladin/check/ は存在するが orchestrator/ ディレクトリはない
+        check_pkg = tmp_path / "src" / "paladin" / "check"
+        check_pkg.mkdir(parents=True)
+
+        import_source = "from paladin.check.orchestrator import CheckOrchestrator\n"
+        source_files = _make_source_files(
+            (import_source, str(tmp_path / "tests" / "unit" / "test_something.py")),
+        )
+        rule = NoDirectInternalImportRule(root_packages=("paladin",))
+
+        result = rule.check(source_files)
+
+        # paladin.check.orchestrator に __init__.py が存在しないのでヒューリスティック検出
+        assert len(result) == 1
+
+    def test_check_正常系_srcディレクトリが存在しない場合は既存動作を維持すること(self):
+        # Arrange: 合成パス（src/ ディレクトリが実在しない）を使用する
+        import_source = "from paladin.check.orchestrator import CheckOrchestrator\n"
+        source_files = _make_source_files(
+            (import_source, "nonexistent_project/tests/unit/test_something.py"),
+        )
+        rule = NoDirectInternalImportRule(root_packages=("paladin",))
+
+        result = rule.check(source_files)
+
+        # _infer_src_root が None を返すため既存のヒューリスティック検出が機能する
+        assert len(result) == 1
