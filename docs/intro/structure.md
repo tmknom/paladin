@@ -117,8 +117,7 @@ docs/
 │   ├── README.md                 # ドキュメント索引
 │   ├── concept.md                # 基本方針
 │   ├── interface.md              # CLI インターフェイス設計草案
-│   ├── requirements.md           # 要件定義
-│   ├── roadmap.md                # 開発ロードマップ
+│   ├── specifications.md         # 全体仕様
 │   └── structure.md              # プロジェクト構造（本ドキュメント）
 └── specs/                        # モジュール別仕様書
     ├── README.md                 # 仕様書索引
