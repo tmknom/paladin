@@ -8,8 +8,6 @@ from pathlib import Path
 
 from paladin.foundation.error import ApplicationError
 
-__all__ = ["TargetResolver"]
-
 
 class TargetResolver:
     """CLI 引数と設定ファイルの include を解決して解析対象パスを返す純粋計算クラス"""

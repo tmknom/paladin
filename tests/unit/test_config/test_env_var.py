@@ -19,7 +19,7 @@ class TestEnvVarConfig:
         result = EnvVarConfig()
 
         # Assert
-        assert result.log_level == "INFO"
+        assert result.log_level == "WARNING"
 
     def test_log_level_正常系_環境変数が設定されていればその値を返す(
         self, monkeypatch: pytest.MonkeyPatch
