@@ -72,24 +72,22 @@ def check(
         rule_options=project_config.rule_options,
         overrides=project_config.overrides,
     )
-    report = (
-        CheckOrchestratorProvider()
-        .provide(
-            rule_options=project_config.rule_options,
-            project_name=project_config.project_name,
-        )
-        .orchestrate(context)
+    orchestrator = CheckOrchestratorProvider().provide(
+        rule_options=project_config.rule_options,
+        project_name=project_config.project_name,
     )
-    typer.echo(report.text)
-    raise typer.Exit(code=report.exit_code)
+    result = orchestrator.orchestrate(context)
+    typer.echo(result.text)
+    raise typer.Exit(code=result.exit_code)
 
 
 @app.command(name="list")
 def list_rules() -> None:
     """利用可能なルールの一覧を表示する"""
     context = ListContext()
-    text = ListOrchestratorProvider().provide().orchestrate(context)
-    typer.echo(text)
+    orchestrator = ListOrchestratorProvider().provide()
+    result = orchestrator.orchestrate(context)
+    typer.echo(result)
 
 
 @app.command()
@@ -98,15 +96,17 @@ def view(
 ) -> None:
     """指定されたルールの詳細を表示する"""
     context = ViewContext(rule_id=rule_id)
-    text = ViewOrchestratorProvider().provide().orchestrate(context)
-    typer.echo(text)
+    orchestrator = ViewOrchestratorProvider().provide()
+    result = orchestrator.orchestrate(context)
+    typer.echo(result)
 
 
 @app.command()
 def version() -> None:
     """パッケージのバージョン文字列を表示する"""
-    text = VersionOrchestratorProvider().provide().orchestrate()
-    typer.echo(text)
+    orchestrator = VersionOrchestratorProvider().provide()
+    result = orchestrator.orchestrate()
+    typer.echo(result)
 
 
 @app.command()
