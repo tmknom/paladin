@@ -1,5 +1,5 @@
-from paladin.lint.protocol import MultiFileRule, Rule
-from paladin.lint.types import RuleMeta, SourceFile, SourceFiles, Violation
+from paladin.rule.protocol import MultiFileRule, Rule
+from paladin.rule.types import RuleMeta, SourceFile, SourceFiles, Violation
 
 
 class TestRuleProtocol:

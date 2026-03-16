@@ -4,7 +4,7 @@
 """
 
 from paladin.foundation.log import log
-from paladin.lint import RuleSet
+from paladin.rule import RuleSet
 from paladin.view.formatter import ViewFormatter
 from paladin.view.orchestrator import ViewOrchestrator
 

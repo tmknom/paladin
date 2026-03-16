@@ -1,6 +1,6 @@
 """ViewFormatterクラスのテスト"""
 
-from paladin.lint import RuleMeta
+from paladin.rule import RuleMeta
 from paladin.view.formatter import ViewFormatter
 
 

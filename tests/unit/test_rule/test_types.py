@@ -1,7 +1,7 @@
 import ast
 from pathlib import Path
 
-from paladin.lint.types import RuleMeta, SourceFile, SourceFiles, Violation, Violations
+from paladin.rule.types import RuleMeta, SourceFile, SourceFiles, Violation, Violations
 
 
 class TestSourceFile:

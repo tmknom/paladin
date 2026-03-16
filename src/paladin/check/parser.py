@@ -8,8 +8,8 @@ from pathlib import Path
 
 from paladin.check.types import TargetFiles
 from paladin.foundation.log import log
-from paladin.lint import SourceFile, SourceFiles
 from paladin.protocol import TextFileSystemReaderProtocol
+from paladin.rule import SourceFile, SourceFiles
 
 
 class AstParser:

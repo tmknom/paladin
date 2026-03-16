@@ -1,6 +1,6 @@
 """ViewOrchestratorクラスのテスト"""
 
-from paladin.lint import Rule, RuleSet
+from paladin.rule import Rule, RuleSet
 from paladin.view.context import ViewContext
 from paladin.view.formatter import ViewFormatter
 from paladin.view.orchestrator import ViewOrchestrator

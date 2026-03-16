@@ -1,8 +1,8 @@
 import ast
 from pathlib import Path
 
-from paladin.lint.no_relative_import import NoRelativeImportRule
-from paladin.lint.types import RuleMeta, SourceFile
+from paladin.rule.no_relative_import import NoRelativeImportRule
+from paladin.rule.types import RuleMeta, SourceFile
 
 
 def _make_source_file(source: str, filename: str = "example.py") -> SourceFile:

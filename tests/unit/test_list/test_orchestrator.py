@@ -1,9 +1,9 @@
 """ListOrchestratorクラスのテスト"""
 
-from paladin.lint import Rule, RuleSet
 from paladin.list.context import ListContext
 from paladin.list.formatter import ListFormatter
 from paladin.list.orchestrator import ListOrchestrator
+from paladin.rule import Rule, RuleSet
 from tests.unit.fakes import FakeRule
 
 

@@ -6,7 +6,7 @@ import pytest
 from paladin.check.parser import AstParser
 from paladin.check.types import TargetFiles
 from paladin.foundation.fs import FileSystemError
-from paladin.lint import SourceFile
+from paladin.rule import SourceFile
 from tests.unit.fakes import InMemoryFsReader
 
 

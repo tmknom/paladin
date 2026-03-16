@@ -6,7 +6,7 @@
 import ast
 from pathlib import Path
 
-from paladin.lint.types import RuleMeta, SourceFile, SourceFiles, Violation
+from paladin.rule.types import RuleMeta, SourceFile, SourceFiles, Violation
 
 # src レイアウト固有のディレクトリ名（パッケージセグメントから除外する）
 _NON_PACKAGE_DIRS: frozenset[str] = frozenset({"src", "tests"})

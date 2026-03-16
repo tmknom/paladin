@@ -1,8 +1,8 @@
 import ast
 from pathlib import Path
 
-from paladin.lint.no_local_import import NoLocalImportRule
-from paladin.lint.types import RuleMeta, SourceFile
+from paladin.rule.no_local_import import NoLocalImportRule
+from paladin.rule.types import RuleMeta, SourceFile
 
 
 def _make_source_file(source: str, filename: str = "example.py") -> SourceFile:

@@ -6,7 +6,7 @@ from pathlib import Path
 from paladin.check.formatter import CheckFormatterFactory, CheckJsonFormatter, CheckReportFormatter
 from paladin.check.result import CheckResult
 from paladin.check.types import OutputFormat, TargetFiles
-from paladin.lint import SourceFiles, Violation, Violations
+from paladin.rule import SourceFiles, Violation, Violations
 
 
 def _make_violation(

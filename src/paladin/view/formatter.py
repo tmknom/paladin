@@ -3,7 +3,7 @@
 単一ルールのメタ情報をラベル付き詳細テキストに変換する。
 """
 
-from paladin.lint import RuleMeta
+from paladin.rule import RuleMeta
 
 _LABEL_RULE_ID = "Rule ID:"
 _LABEL_NAME = "Name:"

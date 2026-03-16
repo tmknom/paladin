@@ -4,8 +4,8 @@ from pathlib import Path
 
 import pytest
 
-from paladin.lint.rule_set import RuleSet
-from paladin.lint.types import RuleMeta, SourceFile, SourceFiles, Violation, Violations
+from paladin.rule.rule_set import RuleSet
+from paladin.rule.types import RuleMeta, SourceFile, SourceFiles, Violation, Violations
 from tests.unit.fakes import FakeMultiFileRule, FakeRule
 
 
@@ -308,7 +308,7 @@ class TestRuleSetDefault:
         rule_options = {"unknown-rule": {"key": "value"}}
 
         # Act
-        with caplog.at_level(logging.WARNING, logger="paladin.lint.rule_set"):
+        with caplog.at_level(logging.WARNING, logger="paladin.rule.rule_set"):
             RuleSet.default(rule_options=rule_options)
 
         # Assert
@@ -321,7 +321,7 @@ class TestRuleSetDefault:
         rule_options = {"require-qualified-third-party": {"unknown-param": "value"}}
 
         # Act
-        with caplog.at_level(logging.WARNING, logger="paladin.lint.rule_set"):
+        with caplog.at_level(logging.WARNING, logger="paladin.rule.rule_set"):
             RuleSet.default(rule_options=rule_options)
 
         # Assert
@@ -336,7 +336,7 @@ class TestRuleSetDefault:
         }
 
         # Act
-        with caplog.at_level(logging.WARNING, logger="paladin.lint.rule_set"):
+        with caplog.at_level(logging.WARNING, logger="paladin.rule.rule_set"):
             rule_set = RuleSet.default(rule_options=rule_options)
 
         # Assert1: 警告が出力されること
@@ -355,7 +355,7 @@ class TestRuleSetDefault:
         rule_options = {"require-qualified-third-party": {"root-packages": ["myapp"]}}
 
         # Act
-        with caplog.at_level(logging.WARNING, logger="paladin.lint.rule_set"):
+        with caplog.at_level(logging.WARNING, logger="paladin.rule.rule_set"):
             RuleSet.default(rule_options=rule_options)
 
         # Assert: 警告なし

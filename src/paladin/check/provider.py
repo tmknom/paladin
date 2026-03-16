@@ -14,7 +14,7 @@ from paladin.check.parser import AstParser
 from paladin.check.rule_filter import RuleFilter
 from paladin.foundation.fs import TextFileSystemReader
 from paladin.foundation.log import log
-from paladin.lint import RuleSet
+from paladin.rule import RuleSet
 
 
 class CheckOrchestratorProvider:
