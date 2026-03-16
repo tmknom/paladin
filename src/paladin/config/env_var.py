@@ -24,5 +24,5 @@ class EnvVarConfig(pydantic_settings.BaseSettings):
         extra="forbid",
     )
 
-    log_level: LogLevel = "INFO"
+    log_level: LogLevel = "WARNING"
     tmp_dir: Path | None = None
