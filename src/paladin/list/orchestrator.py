@@ -5,7 +5,7 @@
 
 from paladin.foundation.log import log
 from paladin.list.context import ListContext
-from paladin.list.formatter import ListFormatter
+from paladin.list.formatter import ListFormatterFactory
 from paladin.rule import RuleSet
 
 
@@ -15,7 +15,7 @@ class ListOrchestrator:
     def __init__(
         self,
         rule_set: RuleSet,
-        formatter: ListFormatter,
+        formatter: ListFormatterFactory,
     ) -> None:
         """ListOrchestratorを初期化する"""
         self.rule_set = rule_set
@@ -25,4 +25,4 @@ class ListOrchestrator:
     def orchestrate(self, context: ListContext) -> str:
         """全ルール一覧をフォーマットした文字列を返す"""
         rules = self.rule_set.list_rules()
-        return self.formatter.format(rules)
+        return self.formatter.format(rules, context.format)

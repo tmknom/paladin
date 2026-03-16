@@ -3,12 +3,17 @@
 CLIから受け取ったパラメータを不変のまま処理完了まで保持する。
 """
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
+
+from paladin.check import OutputFormat
 
 
 @dataclass(frozen=True)
 class ListContext:
     """List処理の実行時コンテキスト
 
-    現時点ではフィールドなし。将来 --format 等を追加する余地がある。
+    Attributes:
+        format: 出力フォーマット（text または json）。
     """
+
+    format: OutputFormat = field(default=OutputFormat.TEXT)
