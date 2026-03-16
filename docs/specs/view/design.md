@@ -6,7 +6,7 @@
 
 ### システム構成
 
-`view` モジュールは `paladin view <RULE_ID>` コマンドに対応するビジネスロジック層です。CLI から指定された RULE_ID に対応するルールの詳細メタ情報を `RuleSet` から検索し、`ViewFormatter` でラベル付きテキスト形式に整形して返します。
+`view` モジュールは `paladin view <RULE_ID>` コマンドに対応するビジネスロジック層です。CLI から指定された RULE_ID に対応するルールの詳細メタ情報を `RuleSet` から検索し、`ViewFormatterFactory` でラベル付きテキスト形式または JSON 形式に整形して返します。
 
 外部 I/O は持たず、ルール検索とテキスト整形のみを担う純粋な処理として実装されています。
 
@@ -29,23 +29,26 @@
 |---|---|
 | `paladin.rule.RuleSet` | 登録済みルールの管理と単一ルール検索（`find_rule`） |
 | `paladin.rule.RuleMeta` | ルールメタ情報の型定義 |
+| `paladin.check.OutputFormat` | 出力形式の列挙型（TEXT / JSON） |
 | `paladin.foundation.log` | ログ出力（`@log` デコレーター） |
 
 ### 2.3 主要コンポーネント
 
 | コンポーネント | クラス名 | 役割 |
 |---|---|---|
-| コンテキスト | `ViewContext` | 実行時パラメータの保持（`rule_id: str`） |
+| コンテキスト | `ViewContext` | 実行時パラメータの保持（`rule_id: str`, `format: OutputFormat`） |
 | プロバイダー | `ViewOrchestratorProvider` | 依存関係の組み立て（Composition Root） |
 | オーケストレーター | `ViewOrchestrator` | ルール検索とフォーマットの処理フロー制御 |
-| フォーマッター | `ViewFormatter` | `RuleMeta` をラベル付き詳細テキストに変換 |
+| テキストフォーマッター | `ViewTextFormatter` | `RuleMeta` をラベル付き詳細テキストに変換 |
+| JSON フォーマッター | `ViewJsonFormatter` | `RuleMeta` を JSON 形式に変換 |
+| フォーマッターファクトリー | `ViewFormatterFactory` | `OutputFormat` に応じたフォーマッターを選択 |
 
 ### 2.4 処理フロー概略
 
-1. `ViewOrchestratorProvider.provide()` が `RuleSet`・`ViewFormatter` を組み立てて `ViewOrchestrator` を返す
-2. CLI が `ViewContext(rule_id=...)` を組み立て `ViewOrchestrator.orchestrate(context)` を呼び出す
+1. `ViewOrchestratorProvider.provide()` が `RuleSet`・`ViewFormatterFactory` を組み立てて `ViewOrchestrator` を返す
+2. CLI が `ViewContext(rule_id=..., format=...)` を組み立て `ViewOrchestrator.orchestrate(context)` を呼び出す
 3. `RuleSet.find_rule(rule_id)` でルールを検索する
-4. ルールが見つかれば `ViewFormatter.format(rule)` で詳細テキストを返し、見つからなければエラーメッセージを返す
+4. ルールが見つかれば `ViewFormatterFactory.format(rule, context.format)` で整形文字列を返し、見つからなければ `ViewFormatterFactory.format_error(message, context.format)` でエラーを返す
 
 ## 3. 重要な設計判断
 
@@ -57,13 +60,13 @@
 
 **トレードオフ**: パッケージ数が増えるが、各パッケージの責務が単純になる。
 
-### 3.2 Formatter の責務分離
+### 3.2 Formatter の責務分離と Factory パターン
 
-**設計の意図**: テキスト整形ロジックを `ViewOrchestrator` から切り出し、`ViewFormatter` として独立させる。
+**設計の意図**: テキスト整形ロジックを `ViewOrchestrator` から切り出し、`ViewFormatterFactory` が `OutputFormat` に応じて `ViewTextFormatter` / `ViewJsonFormatter` を選択する。
 
-**なぜそう設計したか**: 整形形式（text / JSON 等）は出力先によって異なりうる関心事であり、処理フロー制御とは変更理由が異なる。`check` モジュールの `CheckFormatterFactory` と同様の設計方針で、将来の出力形式追加に備える。
+**なぜそう設計したか**: 整形形式（text / JSON）は出力先によって異なる関心事であり、処理フロー制御とは変更理由が異なる。`check` モジュールの `CheckFormatterFactory` と同一パターンを採用することでプロジェクト全体の一貫性を維持する。
 
-**トレードオフ**: 現状は text 形式のみのためクラス分離の恩恵が小さいが、JSON 形式等が追加された際に変更コストを抑えられる。
+**トレードオフ**: クラス数が増えるが、各クラスの責務が単純になり、出力形式の追加が容易になる。
 
 ### 3.3 存在しないルール ID はエラーメッセージで返す（例外を投げない）
 
@@ -92,10 +95,10 @@ CLI 層
 ビジネスロジック層
   view/
     __init__.py       # 公開 API（ViewContext / ViewOrchestrator / ViewOrchestratorProvider）
-    context.py        # ViewContext（実行時パラメータ: rule_id）
+    context.py        # ViewContext（実行時パラメータ: rule_id, format）
     provider.py       # ViewOrchestratorProvider（Composition Root）
     orchestrator.py   # ViewOrchestrator（処理フロー制御）
-    formatter.py      # ViewFormatter（ラベル付き詳細テキスト生成）
+    formatter.py      # ViewTextFormatter / ViewJsonFormatter / ViewFormatterFactory
       ↓ find_rule() / format()
 rule パッケージ（ルールドメイン）
   rule/
@@ -109,20 +112,22 @@ rule パッケージ（ルールドメイン）
 
 ```
 CLI 層
-  view(rule_id=...)
-    └─ ViewContext(rule_id=rule_id)
+  view(rule_id=..., format=...)
+    └─ ViewContext(rule_id=rule_id, format=format)
          ↓
 ViewOrchestratorProvider.provide()
-    ├─ RuleSet.default()   ← 登録済みルール一式を生成
-    └─ ViewFormatter()
+    ├─ RuleSet.default()          ← 登録済みルール一式を生成
+    └─ ViewFormatterFactory()
+         ├─ ViewTextFormatter()
+         └─ ViewJsonFormatter()
          ↓ ViewOrchestrator を返す
 ViewOrchestrator.orchestrate(context)
     ├─ RuleSet.find_rule(context.rule_id)
-    │    ├─ [見つかった] ViewFormatter.format(rule) → str（詳細テキスト）
-    │    └─ [未発見]    エラーメッセージ → str
+    │    ├─ [見つかった] ViewFormatterFactory.format(rule, context.format) → str
+    │    └─ [未発見]    ViewFormatterFactory.format_error(message, context.format) → str
          ↓
 CLI 層
-  typer.echo(text)   ← テキストを標準出力へ表示
+  typer.echo(text)   ← テキストまたは JSON を標準出力へ表示
 ```
 
 ## 5. 重要な制約と注意点
@@ -147,12 +152,12 @@ CLI 層
 
 ### 想定される拡張ポイント
 
-- **出力形式の追加（JSON 等）**: `ViewFormatter` を複数実装し、`ViewOrchestratorProvider` で切り替えるか、フォーマット引数を `orchestrate()` に追加する
+- **出力形式の追加**: `ViewFormatterFactory` に新しいフォーマッタークラスと分岐を追加する
 - **フィルタ・検索機能**: `ViewContext` に追加フィールドを設けることで対応できる
 
 ### 拡張時の注意点
 
-- 出力形式を追加した場合、`ViewFormatter` を差し替えるか拡張するかを `provider.py` で制御する
+- 出力形式を追加した場合、`OutputFormat` enum・`ViewFormatterFactory` の両方を変更する
 - `ViewOrchestrator.orchestrate()` のシグネチャを変更すると CLI 層の呼び出し箇所も変更が必要になる
 
 ## 7. 関連ドキュメント

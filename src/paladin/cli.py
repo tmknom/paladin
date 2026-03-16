@@ -93,9 +93,10 @@ def list_rules() -> None:
 @app.command()
 def view(
     rule_id: Annotated[str, typer.Argument(help="詳細を表示するルール ID")],
+    format: Annotated[OutputFormat, typer.Option("--format", help="出力形式")] = OutputFormat.TEXT,
 ) -> None:
     """指定されたルールの詳細を表示する"""
-    context = ViewContext(rule_id=rule_id)
+    context = ViewContext(rule_id=rule_id, format=format)
     orchestrator = ViewOrchestratorProvider().provide()
     result = orchestrator.orchestrate(context)
     typer.echo(result)
