@@ -4,7 +4,7 @@
 """
 
 from paladin.foundation.log import log
-from paladin.list.formatter import ListFormatter
+from paladin.list.formatter import ListFormatterFactory
 from paladin.list.orchestrator import ListOrchestrator
 from paladin.rule import RuleSet
 
@@ -23,5 +23,5 @@ class ListOrchestratorProvider:
             設定済みの ListOrchestrator
         """
         rule_set = RuleSet.default()
-        formatter = ListFormatter()
+        formatter = ListFormatterFactory()
         return ListOrchestrator(rule_set=rule_set, formatter=formatter)

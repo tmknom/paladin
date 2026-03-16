@@ -1,12 +1,15 @@
-"""ルール一覧のテキスト整形
+"""ルール一覧の整形
 
-ルールメタ情報を列幅揃えの一覧テキストに変換する。
+ルールメタ情報を列幅揃えの一覧テキストまたは JSON に変換する。
 """
 
+import json
+
+from paladin.check import OutputFormat
 from paladin.rule import RuleMeta
 
 
-class ListFormatter:
+class ListTextFormatter:
     """tuple[RuleMeta, ...] を text 形式の文字列に変換する"""
 
     def format(self, rules: tuple[RuleMeta, ...]) -> str:
@@ -26,3 +29,39 @@ class ListFormatter:
             rule_name_col = f"{rule.rule_name:<{max_name_len}}"
             lines.append(f"{rule_id_col}  {rule_name_col}  {rule.summary}")
         return "\n".join(lines)
+
+
+class ListJsonFormatter:
+    """tuple[RuleMeta, ...] を JSON 形式の文字列に変換する"""
+
+    def format(self, rules: tuple[RuleMeta, ...]) -> str:
+        """ルール一覧を {"rules": [...]} 形式の JSON 文字列に変換する
+
+        ルールが0件の場合は {"rules": []} を返す。
+        """
+        data = {
+            "rules": [
+                {
+                    "rule_id": rule.rule_id,
+                    "rule_name": rule.rule_name,
+                    "summary": rule.summary,
+                }
+                for rule in rules
+            ]
+        }
+        return json.dumps(data, ensure_ascii=False, indent=2)
+
+
+class ListFormatterFactory:
+    """OutputFormat に応じたフォーマッターを選択する"""
+
+    def __init__(self) -> None:
+        """ListFormatterFactory を初期化する"""
+        self._text_formatter = ListTextFormatter()
+        self._json_formatter = ListJsonFormatter()
+
+    def format(self, rules: tuple[RuleMeta, ...], output_format: OutputFormat) -> str:
+        """OutputFormat に応じた形式で tuple[RuleMeta, ...] を文字列に変換する"""
+        if output_format == OutputFormat.JSON:
+            return self._json_formatter.format(rules)
+        return self._text_formatter.format(rules)

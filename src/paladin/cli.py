@@ -82,9 +82,11 @@ def check(
 
 
 @app.command(name="list")
-def list_rules() -> None:
+def list_rules(
+    format: Annotated[OutputFormat, typer.Option("--format", help="出力形式")] = OutputFormat.TEXT,
+) -> None:
     """利用可能なルールの一覧を表示する"""
-    context = ListContext()
+    context = ListContext(format=format)
     orchestrator = ListOrchestratorProvider().provide()
     result = orchestrator.orchestrate(context)
     typer.echo(result)

@@ -96,6 +96,39 @@ class TestIntegrationListCLI:
         assert "no-local-import" in result.stdout
         assert "require-qualified-third-party" in result.stdout
 
+    def test_list_正常系_format_json指定でrulesキーを含むJSON出力とexit_code_0を返すこと(self):
+        # Act
+        cmd = [sys.executable, "-m", "paladin.cli", "list", "--format", "json"]
+        result = subprocess.run(cmd, capture_output=True, text=True, timeout=10)
+
+        # Assert
+        assert result.returncode == 0
+        data = json.loads(result.stdout)
+        assert "rules" in data
+        # 各要素に rule_id / rule_name / summary が含まれる
+        assert len(data["rules"]) > 0
+        assert "rule_id" in data["rules"][0]
+        assert "rule_name" in data["rules"][0]
+        assert "summary" in data["rules"][0]
+
+    def test_list_正常系_format_text指定で既存のテキスト出力が維持されること(self):
+        # Act
+        cmd = [sys.executable, "-m", "paladin.cli", "list", "--format", "text"]
+        result = subprocess.run(cmd, capture_output=True, text=True, timeout=10)
+
+        # Assert
+        assert result.returncode == 0
+        assert "require-all-export" in result.stdout
+
+    def test_list_エッジケース_format未指定でデフォルトのテキスト出力が維持されること(self):
+        # Act
+        cmd = [sys.executable, "-m", "paladin.cli", "list"]
+        result = subprocess.run(cmd, capture_output=True, text=True, timeout=10)
+
+        # Assert
+        assert result.returncode == 0
+        assert "require-all-export" in result.stdout
+
 
 class TestIntegrationViewCLI:
     """view サブコマンドの統合テスト"""

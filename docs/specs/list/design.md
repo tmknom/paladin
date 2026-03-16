@@ -32,38 +32,44 @@
 | `paladin.rule.RuleMeta` | ルール表示データの型 |
 | `paladin.foundation.log` | `@log` デコレータによる処理ログ |
 
-### 2.3 主要コンポーネント
+### 2.3 外部システム依存（追加）
+
+| 依存先 | 用途 |
+|---|---|
+| `paladin.check.OutputFormat` | 出力形式の列挙（text / json） |
+
+### 2.4 主要コンポーネント
 
 | コンポーネント | 責務 |
 |---|---|
-| `ListContext` | CLI から受け取る実行時パラメータを保持する不変オブジェクト |
+| `ListContext` | CLI から受け取る実行時パラメータを保持する不変オブジェクト（`format` フィールドを持つ） |
 | `ListOrchestrator` | ルール一覧の取得と整形を制御する処理フロー管理 |
-| `ListFormatter` | `tuple[RuleMeta, ...]` を整列されたテキストに変換する整形担当 |
+| `ListTextFormatter` | `tuple[RuleMeta, ...]` を整列されたテキストに変換する整形担当 |
+| `ListJsonFormatter` | `tuple[RuleMeta, ...]` を `{"rules": [...]}` 形式の JSON に変換する整形担当 |
+| `ListFormatterFactory` | `OutputFormat` に応じて `ListTextFormatter` または `ListJsonFormatter` を選択しディスパッチ |
 | `ListOrchestratorProvider` | `ListOrchestrator` とその依存をインスタンス化する Composition Root |
 
-### 2.4 処理フロー概略
+### 2.5 処理フロー概略
 
-1. CLI が `ListContext` を生成し `ListOrchestrator.orchestrate()` を呼び出す
+1. CLI が `ListContext(format=format)` を生成し `ListOrchestrator.orchestrate()` を呼び出す
 2. `ListOrchestrator` が `RuleSet.list_rules()` でルールメタ情報を取得する
-3. `ListFormatter.format()` がメタ情報を整列テキストに変換する
+3. `ListFormatterFactory.format(rules, context.format)` が `OutputFormat` に応じた形式で整形する
 4. CLI が受け取った文字列を標準出力に表示する
 
 ## 3. 重要な設計判断
 
-### 3.1 `ListContext` を空フィールドで定義する理由
+### 3.1 `ListContext` に `format` フィールドを持つ理由
 
-現時点では `paladin list` にオプションは存在しないが、他のサブコマンド（`check` 等）と同じく `ListContext` を CLI 境界として定義している。
+他のサブコマンド（`check` / `view` 等）と同じく `ListContext` を CLI 境界として定義している。`format: OutputFormat` フィールドを追加することで、CLI から出力形式を受け取り Orchestrator に伝達できる。`Context` オブジェクトなしで直接引数を渡す設計では、オプション追加のたびに `orchestrate()` のシグネチャが変わりやすい。
 
-将来 `--format json` 等のオプションを追加する場合、CLI 側と Orchestrator 側の変更がコンテキストフィールドの追加に留まり、インターフェースを壊さずに拡張できる。`Context` オブジェクトなしで直接引数を渡す設計では、オプション追加のたびに `orchestrate()` のシグネチャが変わりやすい。
+### 3.2 整形責務を `ListFormatterFactory` に分離する理由
 
-### 3.2 整形責務を `ListFormatter` に分離する理由
-
-整形ロジックを `ListOrchestrator` に直接書く設計と比較したとき、`ListFormatter` への分離には以下の利点がある。
+整形ロジックを `ListOrchestrator` に直接書く設計と比較したとき、`ListFormatterFactory` への分離には以下の利点がある。
 
 - Orchestrator は処理フローの制御に専念でき、整形仕様の変更が Orchestrator に影響しない
-- 将来 JSON 形式など別の出力形式を追加する場合、`ListFormatterFactory` パターンへ拡張しやすい（`check` モジュールで実績あり）
+- `OutputFormat` に応じたディスパッチが `ListFormatterFactory` 内に閉じており、新しい出力形式の追加が容易
 
-トレードオフとして、クラス数が増えるが、各クラスの責務が単純になるため保守コストは低い。
+`view` モジュールの `ViewFormatterFactory` と同一パターンを採用し、プロジェクト全体の一貫性を維持している。トレードオフとして、クラス数が増えるが、各クラスの責務が単純になるため保守コストは低い。
 
 ### 3.3 `RuleSet` を直接 Orchestrator に注入する理由
 
@@ -79,12 +85,16 @@ flowchart TD
     Provider["ListOrchestratorProvider\n(provider.py)\nComposition Root"]
     Orchestrator["ListOrchestrator\n(orchestrator.py)\n処理フロー制御"]
     RuleSet["RuleSet\n(paladin.rule)"]
-    Formatter["ListFormatter\n(formatter.py)"]
+    Factory["ListFormatterFactory\n(formatter.py)"]
+    TextFmt["ListTextFormatter"]
+    JsonFmt["ListJsonFormatter"]
 
     CLI -->|ListContext| Provider
     Provider -->|生成・注入| Orchestrator
     Orchestrator -->|list_rules()| RuleSet
-    Orchestrator -->|format()| Formatter
+    Orchestrator -->|format(rules, format)| Factory
+    Factory --> TextFmt
+    Factory --> JsonFmt
 ```
 
 ファイルレイアウト:
@@ -92,8 +102,8 @@ flowchart TD
 ```
 src/paladin/list/
     __init__.py      # 公開 API (ListContext / ListOrchestrator / ListOrchestratorProvider)
-    context.py       # ListContext: 実行時パラメータの不変オブジェクト
-    formatter.py     # ListFormatter: テキスト整形
+    context.py       # ListContext: 実行時パラメータの不変オブジェクト（format フィールドを含む）
+    formatter.py     # ListTextFormatter / ListJsonFormatter / ListFormatterFactory
     orchestrator.py  # ListOrchestrator: 処理フロー制御
     provider.py      # ListOrchestratorProvider: Composition Root
 ```
@@ -106,15 +116,15 @@ sequenceDiagram
     participant Provider as ListOrchestratorProvider
     participant Orchestrator as ListOrchestrator
     participant RuleSet
-    participant Formatter as ListFormatter
+    participant Factory as ListFormatterFactory
 
     CLI->>Provider: provide()
     Provider-->>CLI: ListOrchestrator
     CLI->>Orchestrator: orchestrate(ListContext)
     Orchestrator->>RuleSet: list_rules()
     RuleSet-->>Orchestrator: tuple[RuleMeta, ...]
-    Orchestrator->>Formatter: format(rules)
-    Formatter-->>Orchestrator: str
+    Orchestrator->>Factory: format(rules, context.format)
+    Factory-->>Orchestrator: str
     Orchestrator-->>CLI: str
     CLI->>CLI: typer.echo(text)
 ```
@@ -127,19 +137,18 @@ sequenceDiagram
 
 ### 5.2 ルール登録順序への依存
 
-`ListFormatter` が出力するルールの順序は `RuleSet` に登録された順序に依存する。ソートや並び替えの責務は `list` モジュールではなく `RuleSet` 側が持つ。
+`ListFormatterFactory` が出力するルールの順序は `RuleSet` に登録された順序に依存する。ソートや並び替えの責務は `list` モジュールではなく `RuleSet` 側が持つ。
 
 ## 6. 将来の拡張性
 
 ### 想定される拡張ポイント
 
-- `--format json` オプション追加: `ListContext` にフォーマット種別フィールドを追加し、`ListFormatterFactory` を導入する（`check` モジュールの `CheckFormatterFactory` が参考実装）
 - フィルタリング: `ListContext` にフィルタ条件を追加し、`ListOrchestrator.orchestrate()` 内でフィルタ処理を追加する
 
 ### 拡張時の注意点
 
-- `ListFormatter` の整形仕様を変更する場合、列幅の計算ロジック（最大長ベースのパディング）は `formatter.py` に閉じているため、影響範囲が限定される
-- 新しいフォーマットを追加する場合は既存の `ListFormatter` を変更せず、新しいクラスを追加して `Provider` で切り替える設計を推奨する
+- `ListTextFormatter` の整形仕様を変更する場合、列幅の計算ロジック（最大長ベースのパディング）は `formatter.py` に閉じているため、影響範囲が限定される
+- 新しいフォーマットを追加する場合は `ListFormatterFactory.format()` にディスパッチ条件を追加し、対応する Formatter クラスを `formatter.py` に追加する
 
 ## 7. 関連ドキュメント
 
