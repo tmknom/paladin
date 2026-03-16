@@ -8,7 +8,7 @@
 
 `paladin list` コマンドの実行フローを担うモジュール。CLI から `ListContext` を受け取り、`ListOrchestrator` がルール一覧の取得とテキスト整形を制御し、整形済み文字列を CLI に返す。CLI 層はその文字列を標準出力に表示する。
 
-依存するルール情報は `paladin.lint` モジュールの `RuleSet` を通じて取得する。`list` モジュール自身はルール管理の責務を持たず、取得したメタ情報の整形のみを担う。
+依存するルール情報は `paladin.rule` モジュールの `RuleSet` を通じて取得する。`list` モジュール自身はルール管理の責務を持たず、取得したメタ情報の整形のみを担う。
 
 ### 設計方針
 
@@ -28,8 +28,8 @@
 
 | 依存先 | 用途 |
 |---|---|
-| `paladin.lint.RuleSet` | ルールメタ情報の取得（`list_rules()`） |
-| `paladin.lint.RuleMeta` | ルール表示データの型 |
+| `paladin.rule.RuleSet` | ルールメタ情報の取得（`list_rules()`） |
+| `paladin.rule.RuleMeta` | ルール表示データの型 |
 | `paladin.foundation.log` | `@log` デコレータによる処理ログ |
 
 ### 2.3 主要コンポーネント
@@ -67,7 +67,7 @@
 
 ### 3.3 `RuleSet` を直接 Orchestrator に注入する理由
 
-`list` モジュールの関心はルールの管理ではなく一覧表示のみである。ルール管理の責務は `paladin.lint.RuleSet` が持つ設計になっているため、`list` モジュールが `RuleSet` を介してのみルール情報を取得することで、モジュール間の関心が明確に分離される。
+`list` モジュールの関心はルールの管理ではなく一覧表示のみである。ルール管理の責務は `paladin.rule.RuleSet` が持つ設計になっているため、`list` モジュールが `RuleSet` を介してのみルール情報を取得することで、モジュール間の関心が明確に分離される。
 
 ## 4. アーキテクチャ概要
 
@@ -78,7 +78,7 @@ flowchart TD
     CLI["CLI (cli.py)"]
     Provider["ListOrchestratorProvider\n(provider.py)\nComposition Root"]
     Orchestrator["ListOrchestrator\n(orchestrator.py)\n処理フロー制御"]
-    RuleSet["RuleSet\n(paladin.lint)"]
+    RuleSet["RuleSet\n(paladin.rule)"]
     Formatter["ListFormatter\n(formatter.py)"]
 
     CLI -->|ListContext| Provider

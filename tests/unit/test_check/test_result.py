@@ -2,7 +2,7 @@ from pathlib import Path
 
 from paladin.check.result import CheckReport, CheckResult, CheckStatus, CheckSummary
 from paladin.check.types import TargetFiles
-from paladin.lint import SourceFiles, Violation, Violations
+from paladin.rule import SourceFiles, Violation, Violations
 
 
 class TestCheckResult:

@@ -3,8 +3,8 @@
 import ast
 from pathlib import Path
 
-from paladin.lint.no_direct_internal_import import NoDirectInternalImportRule
-from paladin.lint.types import RuleMeta, SourceFile, SourceFiles
+from paladin.rule.no_direct_internal_import import NoDirectInternalImportRule
+from paladin.rule.types import RuleMeta, SourceFile, SourceFiles
 
 
 def _make_source_file(source: str, filename: str = "example.py") -> SourceFile:
@@ -98,9 +98,9 @@ class TestNoDirectInternalImportRuleCheck:
         assert len(result) == 0
 
     def test_check_正常系_異なるサブパッケージのインポートは検出すること(self):
-        # Arrange: paladin/check/foo.py から from paladin.lint.types import SourceFile
-        # 先頭2セグメントが異なる（paladin.check vs paladin.lint）なので対象
-        source = "from paladin.lint.types import SourceFile\n"
+        # Arrange: paladin/check/foo.py から from paladin.rule.types import SourceFile
+        # 先頭2セグメントが異なる（paladin.check vs paladin.rule）なので対象
+        source = "from paladin.rule.types import SourceFile\n"
         source_files = _make_source_files((source, "src/paladin/check/foo.py"))
         rule = NoDirectInternalImportRule(root_packages=("paladin",))
 
@@ -219,7 +219,7 @@ class TestNoDirectInternalImportRuleEdgeCases:
     def test_check_正常系_複数ファイルの違反を集約して返すこと(self):
         # Arrange: 2ファイルそれぞれから違反
         source1 = "from paladin.check.orchestrator import CheckOrchestrator\n"
-        source2 = "from paladin.lint.types import SourceFile\n"
+        source2 = "from paladin.rule.types import SourceFile\n"
         source_files = _make_source_files(
             (source1, "src/other/module1.py"),
             (source2, "src/other/module2.py"),
@@ -253,7 +253,7 @@ class TestNoDirectInternalImportRuleEdgeCases:
         # Arrange: file_path.parts の末尾が "tests"（拡張子なし）の場合
         # file_path.parts に "tests" が含まれる（L180 を通過）が、
         # dir_parts（ファイル名除く）には "tests" がなく tests_index < 0（L195 到達）
-        source = "from paladin.lint.types import SourceFile\n"
+        source = "from paladin.rule.types import SourceFile\n"
         source_files = _make_source_files((source, "src/paladin/check/tests"))
         rule = NoDirectInternalImportRule(root_packages=("paladin",))
 
@@ -377,8 +377,8 @@ class TestNoDirectInternalImportRuleAbsolutePath:
         assert len(result) == 0
 
     def test_check_正常系_絶対パスで異なるサブパッケージのインポートは検出すること(self):
-        # Arrange: 絶対パスの paladin/check/foo.py から from paladin.lint.types import SourceFile
-        source = "from paladin.lint.types import SourceFile\n"
+        # Arrange: 絶対パスの paladin/check/foo.py から from paladin.rule.types import SourceFile
+        source = "from paladin.rule.types import SourceFile\n"
         source_files = _make_source_files(
             (source, "/Users/owner/code/paladin/src/paladin/check/foo.py"),
         )

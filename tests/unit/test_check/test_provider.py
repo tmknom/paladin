@@ -5,7 +5,7 @@ from paladin.check.ignore import ViolationFilter
 from paladin.check.orchestrator import CheckOrchestrator
 from paladin.check.parser import AstParser
 from paladin.check.rule_filter import RuleFilter
-from paladin.lint import RuleSet
+from paladin.rule import RuleSet
 
 
 class TestCheckOrchestratorProvider:

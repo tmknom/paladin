@@ -7,7 +7,7 @@ Protocol を定義する。ルール具象クラスへの直接依存を排除�
 
 from typing import Protocol, runtime_checkable
 
-from paladin.lint.types import RuleMeta, SourceFile, SourceFiles, Violation
+from paladin.rule.types import RuleMeta, SourceFile, SourceFiles, Violation
 
 
 @runtime_checkable

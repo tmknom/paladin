@@ -26,14 +26,14 @@
 src/
 └── paladin/                      # メインパッケージ（リファレンス実装）
     ├── cli.py                    # CLI エントリポイント（Typer ベース）
-    ├── lint/                     # ルールドメインパッケージ
+    ├── rule/                     # ルールドメインパッケージ
     │   ├── types.py              # SourceFile / SourceFiles / Violation / Violations / RuleMeta
-    │   ├── protocol.py           # Rule Protocol
-    │   ├── registry.py           # RuleRegistry
-    │   ├── runner.py             # RuleRunner
+    │   ├── protocol.py           # Rule / MultiFileRule Protocol
+    │   ├── rule_set.py           # RuleSet
     │   ├── require_all_export.py # RequireAllExportRule
     │   ├── no_relative_import.py # NoRelativeImportRule
     │   ├── no_local_import.py    # NoLocalImportRule
+    │   ├── no_direct_internal_import.py  # NoDirectInternalImportRule
     │   └── require_qualified_third_party.py  # RequireQualifiedThirdPartyRule
     ├── check/                    # check コマンドのビジネスロジック
     │   ├── context.py            # CheckContext（実行コンテキスト）

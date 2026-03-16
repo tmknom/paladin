@@ -14,7 +14,7 @@
 
 - **Composition Root パターン**: `ViewOrchestratorProvider` が依存関係を一箇所で組み立て、CLI 層はプロバイダーのみに依存する
 - **責務分離**: 処理フロー制御（`ViewOrchestrator`）とテキスト整形（`ViewFormatter`）を別クラスに分離する
-- **lint モジュールへの依存**: ルール定義とルール管理は `lint` パッケージに置き、`view` モジュールは参照するだけにとどめる
+- **rule モジュールへの依存**: ルール定義とルール管理は `rule` パッケージに置き、`view` モジュールは参照するだけにとどめる
 - **副作用なし**: ファイル I/O やネットワークアクセスを持たない純粋な処理として実装する
 
 ## 2. 設計の全体像
@@ -27,8 +27,8 @@
 
 | 依存先 | 用途 |
 |---|---|
-| `paladin.lint.RuleSet` | 登録済みルールの管理と単一ルール検索（`find_rule`） |
-| `paladin.lint.RuleMeta` | ルールメタ情報の型定義 |
+| `paladin.rule.RuleSet` | 登録済みルールの管理と単一ルール検索（`find_rule`） |
+| `paladin.rule.RuleMeta` | ルールメタ情報の型定義 |
 | `paladin.foundation.log` | ログ出力（`@log` デコレーター） |
 
 ### 2.3 主要コンポーネント
@@ -73,13 +73,13 @@
 
 **トレードオフ**: プログラム的に「エラーか否か」を判定しにくくなるが、このコマンドはユーザー向け表示のみを目的とするため問題にならない。
 
-### 3.4 RuleSet を lint パッケージに集約する
+### 3.4 RuleSet を rule パッケージに集約する
 
-**設計の意図**: ルール定義（`Rule` Protocol・`RuleSet`・`RuleMeta` 等）は独立した `lint` パッケージに置き、`view` モジュールはそれらを参照するだけにとどめる。
+**設計の意図**: ルール定義（`Rule` Protocol・`RuleSet`・`RuleMeta` 等）は独立した `rule` パッケージに置き、`view` モジュールはそれらを参照するだけにとどめる。
 
-**なぜそう設計したか**: `check` コマンドが適用するルール群と `view` コマンドが詳細表示するルール群は同一である。重複管理を避けるために `lint` パッケージを単一の情報源として利用する。`RuleSet.default()` を呼ぶだけでプロダクション用のルール一式が得られるため、`ViewOrchestratorProvider` での組み立てが簡潔になる。
+**なぜそう設計したか**: `check` コマンドが適用するルール群と `view` コマンドが詳細表示するルール群は同一である。重複管理を避けるために `rule` パッケージを単一の情報源として利用する。`RuleSet.default()` を呼ぶだけでプロダクション用のルール一式が得られるため、`ViewOrchestratorProvider` での組み立てが簡潔になる。
 
-**トレードオフ**: `check`・`list`・`view` がすべて `lint` に依存する構造になるため、依存グラフの把握が必要になる。
+**トレードオフ**: `check`・`list`・`view` がすべて `rule` に依存する構造になるため、依存グラフの把握が必要になる。
 
 ## 4. アーキテクチャ概要
 
@@ -97,8 +97,8 @@ CLI 層
     orchestrator.py   # ViewOrchestrator（処理フロー制御）
     formatter.py      # ViewFormatter（ラベル付き詳細テキスト生成）
       ↓ find_rule() / format()
-lint パッケージ（ルールドメイン）
-  lint/
+rule パッケージ（ルールドメイン）
+  rule/
     rule_set.py       # RuleSet（find_rule / list_rules / run）
     types.py          # RuleMeta
     protocol.py       # Rule Protocol
@@ -137,9 +137,9 @@ CLI 層
 
 `view` モジュールが表示するルール一覧は `RuleSet.default()` が一元管理している。新しいルールを追加する場合は以下の手順を踏むこと。
 
-1. `lint/` パッケージに `Rule` Protocol を満たすクラスを実装する
-2. `lint/__init__.py` の `__all__` にクラス名を追加する
-3. `lint/rule_set.py` の `RuleSet.default()` のタプルに追加する
+1. `rule/` パッケージに `Rule` Protocol を満たすクラスを実装する
+2. `rule/__init__.py` の `__all__` にクラス名を追加する
+3. `rule/rule_set.py` の `RuleSet.default()` のタプルに追加する
 
 `check`・`list`・`view` はすべて `RuleSet.default()` を共有するため、1 箇所の変更で全コマンドに反映される。
 

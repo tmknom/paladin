@@ -1,7 +1,7 @@
 """ListFormatterクラスのテスト"""
 
-from paladin.lint import RuleMeta
 from paladin.list.formatter import ListFormatter
+from paladin.rule import RuleMeta
 
 
 def _make_rule_meta(

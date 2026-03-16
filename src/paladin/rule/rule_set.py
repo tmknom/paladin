@@ -8,13 +8,13 @@ from collections.abc import Mapping
 from pathlib import Path
 from typing import ClassVar
 
-from paladin.lint.no_direct_internal_import import NoDirectInternalImportRule
-from paladin.lint.no_local_import import NoLocalImportRule
-from paladin.lint.no_relative_import import NoRelativeImportRule
-from paladin.lint.protocol import MultiFileRule, Rule
-from paladin.lint.require_all_export import RequireAllExportRule
-from paladin.lint.require_qualified_third_party import RequireQualifiedThirdPartyRule
-from paladin.lint.types import RuleMeta, SourceFiles, Violation, Violations
+from paladin.rule.no_direct_internal_import import NoDirectInternalImportRule
+from paladin.rule.no_local_import import NoLocalImportRule
+from paladin.rule.no_relative_import import NoRelativeImportRule
+from paladin.rule.protocol import MultiFileRule, Rule
+from paladin.rule.require_all_export import RequireAllExportRule
+from paladin.rule.require_qualified_third_party import RequireQualifiedThirdPartyRule
+from paladin.rule.types import RuleMeta, SourceFiles, Violation, Violations
 
 logger = logging.getLogger(__name__)
 

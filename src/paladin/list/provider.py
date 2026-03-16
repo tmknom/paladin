@@ -4,9 +4,9 @@
 """
 
 from paladin.foundation.log import log
-from paladin.lint import RuleSet
 from paladin.list.formatter import ListFormatter
 from paladin.list.orchestrator import ListOrchestrator
+from paladin.rule import RuleSet
 
 
 class ListOrchestratorProvider:

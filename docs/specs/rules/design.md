@@ -15,7 +15,7 @@
 
 - **Composition Root パターン**: `ListOrchestratorProvider` / `ViewOrchestratorProvider` が依存関係を一箇所で組み立て、CLI 層はプロバイダーのみに依存する
 - **責務分離**: 処理フロー制御（Orchestrator）とテキスト整形（Formatter）を別クラスに分離する
-- **lint モジュールへの依存**: ルール定義とレジストリは `lint` パッケージに置き、list / view モジュールは参照するだけにとどめる
+- **rule モジュールへの依存**: ルール定義とレジストリは `rule` パッケージに置き、list / view モジュールは参照するだけにとどめる
 - **副作用なし**: ファイル I/O やネットワークアクセスを持たない純粋な処理として実装する
 
 ## 設計の全体像
@@ -30,10 +30,10 @@
 
 | 依存先 | 用途 |
 |---|---|
-| `paladin.lint.RuleRegistry` | 登録済みルールのメタ情報一覧の管理・単一ルール検索 |
-| `paladin.lint.Rule` | ルール実装が満たすべき契約の参照 |
-| `paladin.lint.RuleMeta` | ルールメタ情報の型定義 |
-| `paladin.lint` （具象ルール群） | `RequireAllExportRule` / `NoRelativeImportRule` / `NoLocalImportRule` / `RequireQualifiedThirdPartyRule` |
+| `paladin.rule.RuleRegistry` | 登録済みルールのメタ情報一覧の管理・単一ルール検索 |
+| `paladin.rule.Rule` | ルール実装が満たすべき契約の参照 |
+| `paladin.rule.RuleMeta` | ルールメタ情報の型定義 |
+| `paladin.rule` （具象ルール群） | `RequireAllExportRule` / `NoRelativeImportRule` / `NoLocalImportRule` / `RequireQualifiedThirdPartyRule` |
 | `paladin.foundation.log` | ログ出力（`@log` デコレーター） |
 
 ### 主要コンポーネント（list モジュール）
@@ -86,13 +86,13 @@
 
 **トレードオフ**: 現状は text 形式のみのためクラス分離の恩恵が小さいが、JSON 形式等が追加された際に変更コストを抑えられる。
 
-### lint パッケージのルール定義を利用する
+### rule パッケージのルール定義を利用する
 
-**設計の意図**: ルール定義（`Rule` Protocol・`RuleRegistry`・`RuleMeta` 等）は独立した `lint` パッケージに置き、list / view モジュールはそれらを参照するだけにとどめる。
+**設計の意図**: ルール定義（`Rule` Protocol・`RuleRegistry`・`RuleMeta` 等）は独立した `rule` パッケージに置き、list / view モジュールはそれらを参照するだけにとどめる。
 
-**なぜそう設計したか**: `check` コマンドが適用するルール群と `list` コマンドが一覧表示するルール群は同一である。重複管理を避けるために、ルール定義の単一の情報源として `lint` パッケージを利用する。
+**なぜそう設計したか**: `check` コマンドが適用するルール群と `list` コマンドが一覧表示するルール群は同一である。重複管理を避けるために、ルール定義の単一の情報源として `rule` パッケージを利用する。
 
-**トレードオフ**: `check`・`list`・`view` がどちらも `lint` に依存する構造になるため、全体の依存グラフの把握が必要になる。
+**トレードオフ**: `check`・`list`・`view` がどちらも `rule` に依存する構造になるため、全体の依存グラフの把握が必要になる。
 
 ## アーキテクチャ概要
 
@@ -116,11 +116,11 @@ CLI層
     orchestrator.py          # ViewOrchestrator
     formatter.py             # ViewFormatter（詳細表示）
       ↓ list_rules() / find_rule() / format()
-lint パッケージ（ルールドメイン）
-  lint/
-    registry.py              # RuleRegistry（list_rules / find_rule）
+rule パッケージ（ルールドメイン）
+  rule/
+    rule_set.py              # RuleSet（list_rules / find_rule / run）
     types.py                 # RuleMeta
-    protocol.py              # Rule Protocol
+    protocol.py              # Rule / MultiFileRule Protocol
     require_all_export.py    # RequireAllExportRule
     no_relative_import.py    # NoRelativeImportRule
     no_local_import.py       # NoLocalImportRule
@@ -175,8 +175,8 @@ CLI層
 
 list / view モジュールが表示するルール一覧は、`ListOrchestratorProvider._create_rules()` と `ViewOrchestratorProvider._create_rules()` のタプルで管理されている。新しいルールを追加する場合は、以下の手順を踏むこと。
 
-1. `lint/` パッケージに `Rule` Protocol を満たすクラスを実装する
-2. `lint/__init__.py` の `__all__` にクラス名を追加する
+1. `rule/` パッケージに `Rule` Protocol を満たすクラスを実装する
+2. `rule/__init__.py` の `__all__` にクラス名を追加する
 3. `ListOrchestratorProvider._create_rules()` のタプルに追加する
 4. `ViewOrchestratorProvider._create_rules()` のタプルに追加する
 5. `check` の `CheckOrchestratorProvider._create_runner()` にも同様に追加する
@@ -189,7 +189,7 @@ list / view モジュールが表示するルール一覧は、`ListOrchestrator
 
 - **出力形式の追加（JSON 等）**: `ListFormatter` / `ViewFormatter` を複数実装し、`*OrchestratorProvider` で切り替えるか、フォーマット引数を `orchestrate()` に追加する
 - **ルール絞り込み機能**: `ListContext` にフィルタ条件を追加する
-- **ルール定義の拡充**: `lint` パッケージへ新しいルールを追加する
+- **ルール定義の拡充**: `rule` パッケージへ新しいルールを追加する
 
 ### 拡張時の注意点
 
@@ -200,7 +200,7 @@ list / view モジュールが表示するルール一覧は、`ListOrchestrator
 
 | 変更内容 | 主な変更対象 | 備考 |
 |---|---|---|
-| 新しいルールを追加 | `lint/` に新ファイル、`lint/__init__.py`（`__all__`）、`list/provider.py`・`view/provider.py`・`check` の `CheckOrchestratorProvider` も変更 | 3箇所の Provider 変更が必要 |
+| 新しいルールを追加 | `rule/` に新ファイル、`rule/__init__.py`（`__all__`）、`list/provider.py`・`view/provider.py`・`check` の `CheckOrchestratorProvider` も変更 | 3箇所の Provider 変更が必要 |
 | 一覧のテキスト整形ロジックを変更 | `list/formatter.py`（`ListFormatter`） | `ListOrchestrator` の変更は不要 |
 | 詳細のテキスト整形ロジックを変更 | `view/formatter.py`（`ViewFormatter`） | `ViewOrchestrator` の変更は不要 |
 | 出力形式（JSON 等）を追加 | 新 formatter ファイル、`provider.py` | `orchestrate()` のシグネチャ変更が必要になる場合あり |

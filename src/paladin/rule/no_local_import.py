@@ -5,7 +5,7 @@
 
 import ast
 
-from paladin.lint.types import RuleMeta, SourceFile, Violation
+from paladin.rule.types import RuleMeta, SourceFile, Violation
 
 
 class NoLocalImportRule:

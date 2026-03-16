@@ -15,7 +15,7 @@
 
 `__init__.py` の `__all__` はそのパッケージの公開インタフェースを定義するものです。別パッケージのシンボルを `__all__` に含めると、以下の問題が生じます。
 
-- パッケージの利用者が、実際の定義元を知らずに誤ったパッケージに依存する。本来 `paladin.lint` を参照すべきところを `paladin.check` 経由でインポートしてしまう
+- パッケージの利用者が、実際の定義元を知らずに誤ったパッケージに依存する。本来 `paladin.rule` を参照すべきところを `paladin.check` 経由でインポートしてしまう
 - 定義元パッケージと再エクスポート元パッケージの2か所で同一シンボルが公開APIとして存在し、利用者がどちらを使えばよいか判断できなくなる
 - 別パッケージの内部変更（シンボルの移動・削除・リネーム）が、再エクスポートを通じて意図せず波及する
 - パッケージの責務が不明確になり、依存関係グラフが不必要に複雑になる
@@ -38,14 +38,14 @@
 # paladin/check/__init__.py
 from paladin.check.context import CheckContext
 from paladin.check.result import CheckReport
-from paladin.lint import RuleMeta, Violation, Violations  # 別パッケージからのインポート
+from paladin.rule import RuleMeta, Violation, Violations  # 別パッケージからのインポート
 
 __all__ = [
     "CheckContext",
     "CheckReport",
-    "RuleMeta",    # 違反: paladin.lint で定義されたシンボル
-    "Violation",   # 違反: paladin.lint で定義されたシンボル
-    "Violations",  # 違反: paladin.lint で定義されたシンボル
+    "RuleMeta",    # 違反: paladin.rule で定義されたシンボル
+    "Violation",   # 違反: paladin.rule で定義されたシンボル
+    "Violations",  # 違反: paladin.rule で定義されたシンボル
 ]
 ```
 
@@ -63,8 +63,8 @@ __all__ = [
 ```
 
 ```python
-# paladin/lint/__init__.py
-from paladin.lint.types import RuleMeta, Violation, Violations
+# paladin/rule/__init__.py
+from paladin.rule.types import RuleMeta, Violation, Violations
 
 __all__ = [
     "RuleMeta",    # 自パッケージ内で定義されたシンボル
@@ -81,7 +81,7 @@ __all__ = [
 
 - `__init__.py` に含まれる `from X import Y` 文を収集し、各シンボルの定義元パッケージを特定する
 - `__all__` に列挙されているシンボルのうち、現在のパッケージ外で定義されたものを違反として報告する
-- 定義元パッケージの判定は、インポート元のモジュールパス（`from paladin.lint import ...` であれば `paladin.lint`）から行う
+- 定義元パッケージの判定は、インポート元のモジュールパス（`from paladin.rule import ...` であれば `paladin.rule`）から行う
 
 自パッケージ内のサブモジュールや子パッケージからのインポートは準拠です（`from paladin.check.context import CheckContext` のように、現在のパッケージのプレフィックスを持つインポートは違反になりません）。
 

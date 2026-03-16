@@ -1,6 +1,6 @@
 """Rule / MultiFileRule Protocol に適合するテスト用 Fake 実装"""
 
-from paladin.lint import RuleMeta, SourceFile, SourceFiles, Violation
+from paladin.rule import RuleMeta, SourceFile, SourceFiles, Violation
 
 
 class FakeRule:

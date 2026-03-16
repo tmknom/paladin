@@ -1,8 +1,8 @@
 import ast
 from pathlib import Path
 
-from paladin.lint.require_qualified_third_party import RequireQualifiedThirdPartyRule
-from paladin.lint.types import RuleMeta, SourceFile
+from paladin.rule.require_qualified_third_party import RequireQualifiedThirdPartyRule
+from paladin.rule.types import RuleMeta, SourceFile
 
 
 def _make_source_file(source: str, filename: str = "example.py") -> SourceFile:

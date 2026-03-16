@@ -115,19 +115,19 @@ class Rule(Protocol):
 
 ### ルール定義の独立パッケージ化
 
-**設計の意図**: ルール定義を `check/rule/` サブパッケージから独立した `lint` パッケージへ切り出し、`check` / `list` / `view` が対等に `lint` へ依存する構造にする。
+**設計の意図**: ルール定義を `check/rule/` サブパッケージから独立した `rule` パッケージへ切り出し、`check` / `list` / `view` が対等に `rule` へ依存する構造にする。
 
-**なぜそう設計したか**: `check/rule/` を `check` パッケージのサブパッケージとして置くと、`list` / `view` パッケージが `paladin.check.rule.*` へ直接依存することになり、各コマンドを独立した概念として分離した設計意図に反する。ルールドメインを独立パッケージ `lint` として切り出すことで、`check` / `list` / `view` が対等に `lint` に依存する構造が実現できる。
+**なぜそう設計したか**: `check/rule/` を `check` パッケージのサブパッケージとして置くと、`list` / `view` パッケージが `paladin.check.rule.*` へ直接依存することになり、各コマンドを独立した概念として分離した設計意図に反する。ルールドメインを独立パッケージ `rule` として切り出すことで、`check` / `list` / `view` が対等に `rule` に依存する構造が実現できる。
 
 **依存グラフ**:
 
 ```
-check/ → lint/ (Rule, RuleSet, SourceFile, SourceFiles, Violation, Violations, RuleMeta)
-list/  → lint/ (RuleSet, RuleMeta)
-view/  → lint/ (RuleSet, RuleMeta)
+check/ → rule/ (Rule, RuleSet, SourceFile, SourceFiles, Violation, Violations, RuleMeta)
+list/  → rule/ (RuleSet, RuleMeta)
+view/  → rule/ (RuleSet, RuleMeta)
 ```
 
-**トレードオフ**: `SourceFile` / `SourceFiles` は lint ドメインの型だが、check 層の ignore 機能（`source` フィールド）でも利用している。lint の関心事でないフィールドを含む点はトレードオフだが、型を分離するより凝集度を優先した。
+**トレードオフ**: `SourceFile` / `SourceFiles` は rule ドメインの型だが、check 層の ignore 機能（`source` フィールド）でも利用している。rule の関心事でないフィールドを含む点はトレードオフだが、型を分離するより凝集度を優先した。
 
 ### フォーマッター群の責務分離
 
@@ -159,7 +159,7 @@ view/  → lint/ (RuleSet, RuleMeta)
 
 **設計の意図**: `RuleRunner`（実行）と `RuleRegistry`（メタ情報管理）を `RuleSet` 一つに統合し、ルール群に関するすべての操作（実行・一覧・検索）を一つのクラスに集約する。
 
-**なぜそう設計したか**: 実行と管理は同じルール集合に対する操作であり、分離する理由が乏しかった。単一クラスに集約することで `check` / `list` / `view` の各モジュールが共通の `RuleSet` インスタンスを使用でき、ルール登録の一元化が実現できる。`RuleSet.default()` クラスメソッドがプロダクション用のルール一式を生成するファクトリーを担い、登録ロジックを `lint` パッケージに集約している。
+**なぜそう設計したか**: 実行と管理は同じルール集合に対する操作であり、分離する理由が乏しかった。単一クラスに集約することで `check` / `list` / `view` の各モジュールが共通の `RuleSet` インスタンスを使用でき、ルール登録の一元化が実現できる。`RuleSet.default()` クラスメソッドがプロダクション用のルール一式を生成するファクトリーを担い、登録ロジックを `rule` パッケージに集約している。
 
 **トレードオフ**: `RuleSet` が実行・一覧・検索の複数の責務を持つが、これらはすべて同一ルール集合に対する操作であり凝集度は高い。新しいルールを追加する際は `RuleSet.default()` の変更が必要になる。
 
@@ -205,7 +205,7 @@ view/  → lint/ (RuleSet, RuleMeta)
 
 現在の公開 API: `CheckContext`, `CheckOrchestratorProvider`, `CheckReport`, `CheckStatus`, `CheckSummary`, `OutputFormat`, `RuleMeta`, `Violation`, `Violations`
 
-`RuleMeta`・`Violation`・`Violations` は `paladin.lint` からの再エクスポートであり、利用者は `paladin.check` からのみインポートすること。
+`RuleMeta`・`Violation`・`Violations` は `paladin.rule` からの再エクスポートであり、利用者は `paladin.check` からのみインポートすること。
 
 ### ファイル順序の安定性
 
@@ -215,9 +215,9 @@ view/  → lint/ (RuleSet, RuleMeta)
 
 新しいルールを追加する際は、次の手順を踏むこと。
 
-1. `lint/` パッケージに `Rule` Protocol を満たすクラスを実装する
-2. `lint/__init__.py` の `__all__` にクラス名を追加する
-3. `lint/rule_set.py` の `RuleSet.default()` の `rules` タプルに追加する
+1. `rule/` パッケージに `Rule` Protocol を満たすクラスを実装する
+2. `rule/__init__.py` の `__all__` にクラス名を追加する
+3. `rule/rule_set.py` の `RuleSet.default()` の `rules` タプルに追加する
 
 `RuleSet` や `CheckOrchestrator` の変更は不要である。`RuleSet.default()` を共有しているため、`list` / `view` コマンドにも自動的に反映される。
 
@@ -228,20 +228,20 @@ view/  → lint/ (RuleSet, RuleMeta)
 | 依存先 | 用途 |
 |---|---|
 | Python 標準ライブラリ `ast` | Python ソースコードの AST 生成・走査 |
-| `paladin.lint` | ルールドメイン（`Rule`, `RuleSet`, `SourceFile`, `SourceFiles`, `Violation`, `Violations`, `RuleMeta`） |
+| `paladin.rule` | ルールドメイン（`Rule`, `RuleSet`, `SourceFile`, `SourceFiles`, `Violation`, `Violations`, `RuleMeta`） |
 | `paladin.config` | プロジェクト設定（`PerFileIgnoreEntry`） |
 | `paladin.foundation.fs` | ファイル読み込みの抽象化（`TextFileSystemReaderProtocol`） |
 | `paladin.foundation.log` | ログ出力（`@log` デコレーター） |
 
 ### 想定される拡張ポイント
 
-- **新しいルールの追加**: `Rule` Protocol を実装したクラスを `lint/` に追加し、`RuleSet.default()` に登録する
+- **新しいルールの追加**: `Rule` Protocol を実装したクラスを `rule/` に追加し、`RuleSet.default()` に登録する
 - **複数ファイルにまたがるルール**: `Rule.check()` のシグネチャを `SourceFiles` を受け取る形に拡張するか、新しい Protocol を定義する
 - **エラーファイルのスキップ**: `AstParser` でエラーを捕捉してスキップし、`CheckResult` に解析失敗情報を追加する
 
 ### 拡張時の注意点
 
-- 新しいルールを追加する際は `lint/rule_set.py` の `RuleSet.default()` の変更が必要になる。将来的にルール数が大幅に増えた場合は、設定ファイルや自動検出によるルール登録の仕組みを検討する
+- 新しいルールを追加する際は `rule/rule_set.py` の `RuleSet.default()` の変更が必要になる。将来的にルール数が大幅に増えた場合は、設定ファイルや自動検出によるルール登録の仕組みを検討する
 
 ## 変更パターン別ガイド
 
@@ -249,7 +249,7 @@ view/  → lint/ (RuleSet, RuleMeta)
 
 | 変更内容 | 主な変更対象 | 備考 |
 |---|---|---|
-| 新しいルールを追加 | `lint/` に新ファイル、`lint/__init__.py`（`__all__`）、`lint/rule_set.py`（`RuleSet.default()`） | `RuleSet` / `CheckOrchestrator` の変更は不要 |
+| 新しいルールを追加 | `rule/` に新ファイル、`rule/__init__.py`（`__all__`）、`rule/rule_set.py`（`RuleSet.default()`） | `RuleSet` / `CheckOrchestrator` の変更は不要 |
 | ルールのチェックロジックを変更 | 対象ルールの `.py` | 他コンポーネントへの影響なし |
 | ルール有効/無効ロジックを変更 | `rule_filter.py`（`RuleFilter`） | `CheckOrchestrator` の変更は不要 |
 | ファイル ignore の解析ロジックを変更 | `ignore.py`（`FileIgnoreParser`） | `ViolationFilter` / `CheckOrchestrator` の変更は不要 |
@@ -260,7 +260,7 @@ view/  → lint/ (RuleSet, RuleMeta)
 | 実行時パラメータを追加 | `context.py`（`CheckContext`） | 追加フィールドは呼び出し元（CLI 層）が組み立てて渡す |
 | レポート出力形式を変更 | `formatter.py`（`CheckReportFormatter` / `CheckJsonFormatter`） | `CheckOrchestrator` の変更は不要 |
 | 新しい出力形式を追加 | `types.py`（`OutputFormat`）、`formatter.py`（新フォーマッタークラス・`CheckFormatterFactory`） | `CheckOrchestrator` の変更は不要 |
-| 値オブジェクトにフィールドを追加 | `check/types.py` / `check/result.py` / `lint/types.py` | 参照元のコンポーネントも合わせて更新する |
+| 値オブジェクトにフィールドを追加 | `check/types.py` / `check/result.py` / `rule/types.py` | 参照元のコンポーネントも合わせて更新する |
 | 公開 API を追加 | `__init__.py` の `__all__` | 内部コンポーネントの公開は原則行わない |
 
 ## 影響範囲

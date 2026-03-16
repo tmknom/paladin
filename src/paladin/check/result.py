@@ -7,7 +7,7 @@ import enum
 from dataclasses import dataclass
 
 from paladin.check.types import TargetFiles
-from paladin.lint import SourceFiles, Violations
+from paladin.rule import SourceFiles, Violations
 
 
 @dataclass(frozen=True)

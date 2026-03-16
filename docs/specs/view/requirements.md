@@ -54,7 +54,7 @@
 ### 4.1 技術基盤
 
 - Python 3.11 以上
-- paladin パッケージの lint モジュールにルールが登録されていること
+- paladin パッケージの rule モジュールにルールが登録されていること
 - 各ルールが Rule ID・Name・Summary・Intent・Guidance・Suggestion のメタ情報を持つこと
 
 ## 5. 関連ドキュメント
