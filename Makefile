@@ -59,3 +59,6 @@ clean: ## 中間ファイルを削除
 		find . -type d -name ".ruff_cache" -exec rm -rf {} +
 		find . -type d -name "htmlcov" -exec rm -rf {} +
 		find . -type f -name ".coverage" -delete
+
+.PHONY: release
+release: release/run ## Start release process
