@@ -1,7 +1,10 @@
 """ViewFormatterクラスのテスト"""
 
+import json
+
+from paladin.check import OutputFormat
 from paladin.rule import RuleMeta
-from paladin.view.formatter import ViewFormatter
+from paladin.view.formatter import ViewFormatterFactory, ViewJsonFormatter, ViewTextFormatter
 
 
 def _make_rule_meta(
@@ -22,8 +25,8 @@ def _make_rule_meta(
     )
 
 
-class TestViewFormatter:
-    """ViewFormatterクラスのテスト"""
+class TestViewTextFormatter:
+    """ViewTextFormatterクラスのテスト"""
 
     def test_format_正常系_RuleMetaの全フィールドがラベル付きで出力されること(self):
         # Arrange
@@ -35,7 +38,7 @@ class TestViewFormatter:
             guidance="__init__.py に __all__ が定義されているか確認する",
             suggestion="__all__ リストを定義する",
         )
-        formatter = ViewFormatter()
+        formatter = ViewTextFormatter()
 
         # Act
         result = formatter.format(rule)
@@ -57,7 +60,7 @@ class TestViewFormatter:
     def test_format_正常系_ラベルの値が整列されること(self):
         # Arrange
         rule = _make_rule_meta()
-        formatter = ViewFormatter()
+        formatter = ViewTextFormatter()
 
         # Act
         result = formatter.format(rule)
@@ -81,3 +84,121 @@ class TestViewFormatter:
         assert (
             value_col_0 == value_col_1 == value_col_2 == value_col_3 == value_col_4 == value_col_5
         )
+
+
+class TestViewJsonFormatter:
+    """ViewJsonFormatterクラスのテスト"""
+
+    def test_format_正常系_RuleMetaの全6フィールドがJSONオブジェクトに含まれること(self):
+        # Arrange
+        rule = _make_rule_meta(
+            rule_id="require-all-export",
+            rule_name="Require All Export",
+            summary="概要テキスト",
+            intent="意図テキスト",
+            guidance="見方テキスト",
+            suggestion="修正方向テキスト",
+        )
+        formatter = ViewJsonFormatter()
+
+        # Act
+        result = formatter.format(rule)
+        data = json.loads(result)
+
+        # Assert
+        assert data["rule_id"] == "require-all-export"
+        assert data["rule_name"] == "Require All Export"
+        assert data["summary"] == "概要テキスト"
+        assert data["intent"] == "意図テキスト"
+        assert data["guidance"] == "見方テキスト"
+        assert data["suggestion"] == "修正方向テキスト"
+
+    def test_format_正常系_出力がvalid_JSONであること(self):
+        # Arrange
+        rule = _make_rule_meta()
+        formatter = ViewJsonFormatter()
+
+        # Act
+        result = formatter.format(rule)
+
+        # Assert: json.loads が例外なく成功する
+        json.loads(result)
+
+    def test_format_正常系_日本語を含むフィールドがエスケープされずに出力されること(self):
+        # Arrange
+        rule = _make_rule_meta(summary="日本語テキスト")
+        formatter = ViewJsonFormatter()
+
+        # Act
+        result = formatter.format(rule)
+
+        # Assert: 日本語がそのまま含まれる（\uXXXX 形式にエスケープされない）
+        assert "日本語テキスト" in result
+
+    def test_format_正常系_インデント付きで整形されること(self):
+        # Arrange
+        rule = _make_rule_meta()
+        formatter = ViewJsonFormatter()
+
+        # Act
+        result = formatter.format(rule)
+
+        # Assert: 2スペースインデントが含まれる
+        assert "  " in result
+        assert "\n" in result
+
+
+class TestViewFormatterFactory:
+    """ViewFormatterFactoryクラスのテスト"""
+
+    def test_format_正常系_TEXT指定でラベル付きテキスト形式を返すこと(self):
+        # Arrange
+        rule = _make_rule_meta(rule_id="my-rule")
+        factory = ViewFormatterFactory()
+
+        # Act
+        result = factory.format(rule, OutputFormat.TEXT)
+
+        # Assert
+        assert "Rule ID:" in result
+        assert "my-rule" in result
+
+    def test_format_正常系_JSON指定でJSON形式を返すこと(self):
+        # Arrange
+        rule = _make_rule_meta(rule_id="my-rule")
+        factory = ViewFormatterFactory()
+
+        # Act
+        result = factory.format(rule, OutputFormat.JSON)
+        data = json.loads(result)
+
+        # Assert
+        assert data["rule_id"] == "my-rule"
+        assert "rule_name" in data
+        assert "summary" in data
+        assert "intent" in data
+        assert "guidance" in data
+        assert "suggestion" in data
+
+    def test_format_error_正常系_TEXT指定でメッセージ文字列をそのまま返すこと(self):
+        # Arrange
+        factory = ViewFormatterFactory()
+        message = "Error: Rule 'nonexistent' not found."
+
+        # Act
+        result = factory.format_error(message, OutputFormat.TEXT)
+
+        # Assert
+        assert result == message
+
+    def test_format_error_正常系_JSON指定でerrorキーを含むJSONを返すこと(self):
+        # Arrange
+        factory = ViewFormatterFactory()
+        message = "Error: Rule 'nonexistent' not found."
+
+        # Act
+        result = factory.format_error(message, OutputFormat.JSON)
+        data = json.loads(result)
+
+        # Assert
+        assert data["error"] == message

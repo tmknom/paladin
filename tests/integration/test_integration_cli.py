@@ -127,6 +127,60 @@ class TestIntegrationViewCLI:
         assert "nonexistent" in result.stdout
         assert "Error" in result.stdout
 
+    def test_view_正常系_format_json指定でJSON形式の詳細を出力しexit_code_0で終了すること(self):
+        # Act
+        cmd = [
+            sys.executable,
+            "-m",
+            "paladin.cli",
+            "view",
+            "require-all-export",
+            "--format",
+            "json",
+        ]
+        result = subprocess.run(cmd, capture_output=True, text=True, timeout=10)
+
+        # Assert
+        assert result.returncode == 0
+        data = json.loads(result.stdout)
+        assert data["rule_id"] == "require-all-export"
+        assert "rule_name" in data
+        assert "summary" in data
+        assert "intent" in data
+        assert "guidance" in data
+        assert "suggestion" in data
+
+    def test_view_正常系_format_text指定で既存のテキスト出力が維持されること(self):
+        # Act
+        cmd = [
+            sys.executable,
+            "-m",
+            "paladin.cli",
+            "view",
+            "require-all-export",
+            "--format",
+            "text",
+        ]
+        result = subprocess.run(cmd, capture_output=True, text=True, timeout=10)
+
+        # Assert
+        assert result.returncode == 0
+        assert "Rule ID:" in result.stdout
+        assert "require-all-export" in result.stdout
+
+    def test_view_エッジケース_存在しないrule_idでformat_json指定時にerrorキーを含むJSONを返すこと(
+        self,
+    ):
+        # Act
+        cmd = [sys.executable, "-m", "paladin.cli", "view", "nonexistent", "--format", "json"]
+        result = subprocess.run(cmd, capture_output=True, text=True, timeout=10)
+
+        # Assert
+        assert result.returncode == 0
+        data = json.loads(result.stdout)
+        assert "error" in data
+        assert "nonexistent" in data["error"]
+
 
 class TestIntegrationVersionCLI:
     """version サブコマンドの統合テスト"""

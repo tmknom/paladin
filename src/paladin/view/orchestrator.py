@@ -6,7 +6,7 @@
 from paladin.foundation.log import log
 from paladin.rule import RuleSet
 from paladin.view.context import ViewContext
-from paladin.view.formatter import ViewFormatter
+from paladin.view.formatter import ViewFormatterFactory
 
 
 class ViewOrchestrator:
@@ -15,7 +15,7 @@ class ViewOrchestrator:
     def __init__(
         self,
         rule_set: RuleSet,
-        formatter: ViewFormatter,
+        formatter: ViewFormatterFactory,
     ) -> None:
         """ViewOrchestratorを初期化する"""
         self.rule_set = rule_set
@@ -26,5 +26,6 @@ class ViewOrchestrator:
         """指定された rule_id のルール詳細をフォーマットした文字列を返す"""
         rule = self.rule_set.find_rule(context.rule_id)
         if rule is None:
-            return f"Error: Rule '{context.rule_id}' not found."
-        return self.formatter.format(rule)
+            message = f"Error: Rule '{context.rule_id}' not found."
+            return self.formatter.format_error(message, context.format)
+        return self.formatter.format(rule, context.format)
