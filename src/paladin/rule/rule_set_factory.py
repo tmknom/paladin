@@ -3,6 +3,7 @@
 RuleSet のインスタンス生成と具象ルールの組み立てを担う。
 """
 
+from paladin.rule.no_cross_package_reexport import NoCrossPackageReexportRule
 from paladin.rule.no_direct_internal_import import NoDirectInternalImportRule
 from paladin.rule.no_local_import import NoLocalImportRule
 from paladin.rule.no_non_init_all import NoNonInitAllRule
@@ -24,6 +25,7 @@ class RuleSetFactory:
                 NoLocalImportRule(),
                 RequireQualifiedThirdPartyRule(),
                 NoNonInitAllRule(),
+                NoCrossPackageReexportRule(),
             ),
             multi_file_rules=(NoDirectInternalImportRule(),),
         )

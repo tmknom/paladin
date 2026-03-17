@@ -558,3 +558,20 @@ class TestNoDirectInternalImportRulePrepare:
 
         # Assert: paladin が自動導出されるため違反を検出
         assert len(result) == 1
+
+    def test_check_エッジケース_パス深さが不足するinit_pyはpackage_exportsに登録されないこと(self):
+        # Arrange: src/__init__.py のようにパスのセグメント数が2未満の場合
+        # PackageResolver.resolve_exact_package_path が None を返すため登録をスキップする
+        init_source = '__all__ = ["Foo"]\n'
+        import_source = "from paladin.check.orchestrator import CheckOrchestrator\n"
+        source_files = _make_source_files(
+            (init_source, "src/__init__.py"),  # セグメント不足で None を返す
+            (import_source, "src/other/module.py"),
+        )
+        rule = _rule(("paladin",))
+
+        # Act
+        result = rule.check(source_files)
+
+        # Assert: __init__.py が package_exports に登録されないためヒューリスティック検出
+        assert len(result) == 1

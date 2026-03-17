@@ -13,5 +13,6 @@
 | [no-relative-import](no-relative-import.md) | 相対インポートを禁止する |
 | [require-qualified-third-party](require-qualified-third-party.md) | サードパーティライブラリの完全修飾名使用を要求する |
 | [no-local-import](no-local-import.md) | ファイル冒頭以外の場所での import を禁止する |
+| [no-cross-package-reexport](no-cross-package-reexport.md) | 別パッケージのシンボルを自パッケージの `__all__` で再エクスポートすることを禁止する |
 | [no-direct-internal-import](no-direct-internal-import.md) | 他パッケージの内部モジュールへの直接参照を禁止する |
 | [no-non-init-all](no-non-init-all.md) | `__init__.py` 以外のモジュールに `__all__` を定義することを禁止する |
