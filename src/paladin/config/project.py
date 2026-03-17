@@ -42,7 +42,6 @@ class ProjectConfig:
     rules: dict[str, bool] = field(default_factory=lambda: {})
     include: tuple[str, ...] = field(default=())
     exclude: tuple[str, ...] = field(default=())
-    rule_options: dict[str, dict[str, object]] = field(default_factory=lambda: {})
     overrides: tuple[OverrideEntry, ...] = field(default=())
 
 
@@ -73,7 +72,6 @@ class ProjectConfigLoader:
         per_file_ignores = self._parse_per_file_ignores(data)
         rules = self._parse_rules(data)
         include, exclude = self._parse_include_exclude(data)
-        rule_options = self._parse_rule_options(data)
         overrides = self._parse_overrides(data)
         return ProjectConfig(
             project_name=project_name,
@@ -81,7 +79,6 @@ class ProjectConfigLoader:
             rules=rules,
             include=include,
             exclude=exclude,
-            rule_options=rule_options,
             overrides=overrides,
         )
 
@@ -136,23 +133,6 @@ class ProjectConfigLoader:
             paladin_section: dict[str, object] = tool_section["paladin"]  # type: ignore[assignment,index]
             rules_section: dict[str, bool] = paladin_section["rules"]  # type: ignore[assignment,index]
             return {k: bool(v) for k, v in rules_section.items()}
-        except KeyError:
-            return {}
-
-    def _parse_rule_options(self, data: dict[str, object]) -> dict[str, dict[str, object]]:
-        """TOML データから rule セクションをパースする
-
-        Args:
-            data: tomllib.loads() で解析した TOML データ
-
-        Returns:
-            ルール ID をキー、パラメータ dict を値とする dict。セクションが存在しない場合は空 dict
-        """
-        try:
-            tool_section: dict[str, object] = data["tool"]  # type: ignore[assignment]
-            paladin_section: dict[str, object] = tool_section["paladin"]  # type: ignore[assignment,index]
-            rule_section: dict[str, dict[str, object]] = paladin_section["rule"]  # type: ignore[assignment,index]
-            return dict(rule_section)
         except KeyError:
             return {}
 

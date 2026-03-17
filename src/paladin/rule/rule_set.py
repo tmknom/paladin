@@ -6,7 +6,7 @@
 from collections.abc import Mapping
 from pathlib import Path
 
-from paladin.rule.protocol import MultiFileRule, Rule
+from paladin.rule.protocol import MultiFileRule, PreparableRule, Rule
 from paladin.rule.types import RuleMeta, SourceFiles, Violation, Violations
 
 
@@ -42,6 +42,11 @@ class RuleSet:
             disabled_rule_ids: スキップするルール ID の frozenset
             per_file_disabled: ファイルパスごとの disabled_rule_ids。指定されたファイルはこちらを優先使用する
         """
+        # 事前準備: PreparableRule を実装するルールに source_files を渡す
+        for rule in self._rules:
+            if isinstance(rule, PreparableRule):
+                rule.prepare(source_files)
+
         violations: list[Violation] = []
         for source_file in source_files:
             effective_disabled = (

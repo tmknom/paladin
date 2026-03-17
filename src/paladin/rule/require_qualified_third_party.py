@@ -6,15 +6,17 @@
 import ast
 import sys
 
-from paladin.rule.types import RuleMeta, SourceFile, Violation
+from paladin.rule.package_resolver import PackageResolver
+from paladin.rule.types import RuleMeta, SourceFile, SourceFiles, Violation
 
 
 class RequireQualifiedThirdPartyRule:
     """サードパーティライブラリの from X import Y およびエイリアスインポートを AST で検出するルール"""
 
-    def __init__(self, root_packages: tuple[str, ...]) -> None:
+    def __init__(self) -> None:
         """ルールを初期化する"""
-        self._root_packages = root_packages
+        self._resolver = PackageResolver()
+        self._root_packages: tuple[str, ...] = ()
         self._stdlib_modules: frozenset[str] = sys.stdlib_module_names
         self._meta = RuleMeta(
             rule_id="require-qualified-third-party",
@@ -29,6 +31,10 @@ class RequireQualifiedThirdPartyRule:
     def meta(self) -> RuleMeta:
         """ルールのメタ情報を返す"""
         return self._meta
+
+    def prepare(self, source_files: SourceFiles) -> None:
+        """実行前の事前準備：source_files からルートパッケージを自動導出する"""
+        self._root_packages = self._resolver.resolve_root_packages(source_files)
 
     def check(self, source_file: SourceFile) -> tuple[Violation, ...]:
         """単一ファイルに対する違反判定を行う"""

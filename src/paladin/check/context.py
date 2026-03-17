@@ -34,5 +34,4 @@ class CheckContext:
     exclude: tuple[str, ...] = ()
     rules: dict[str, bool] = field(default_factory=lambda: {})
     per_file_ignores: tuple[PerFileIgnoreEntry, ...] = ()
-    rule_options: dict[str, dict[str, object]] = field(default_factory=lambda: {})
     overrides: tuple[OverrideEntry, ...] = ()

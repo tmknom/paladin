@@ -6,22 +6,17 @@
 import ast
 from pathlib import Path
 
+from paladin.rule.package_resolver import PackageResolver
 from paladin.rule.types import RuleMeta, SourceFile, SourceFiles, Violation
-
-# src レイアウト固有のディレクトリ名（パッケージセグメントから除外する）
-_NON_PACKAGE_DIRS: frozenset[str] = frozenset({"src", "tests"})
 
 
 class NoDirectInternalImportRule:
     """他パッケージの内部モジュールへの直接インポートを検出するルール"""
 
-    def __init__(self, root_packages: tuple[str, ...]) -> None:
-        """ルールを初期化する
-
-        Args:
-            root_packages: 自プロジェクトのルートパッケージ名群
-        """
-        self._root_packages = root_packages
+    def __init__(self) -> None:
+        """ルールを初期化する"""
+        self._resolver = PackageResolver()
+        self._root_packages: tuple[str, ...] = ()
         self._meta = RuleMeta(
             rule_id="no-direct-internal-import",
             rule_name="No Direct Internal Import",
@@ -35,6 +30,10 @@ class NoDirectInternalImportRule:
     def meta(self) -> RuleMeta:
         """ルールのメタ情報を返す"""
         return self._meta
+
+    def prepare(self, source_files: SourceFiles) -> None:
+        """実行前の事前準備：source_files からルートパッケージを自動導出する"""
+        self._root_packages = self._resolver.resolve_root_packages(source_files)
 
     def check(self, source_files: SourceFiles) -> tuple[Violation, ...]:
         """複数ファイルに対する違反判定を行う"""
@@ -53,13 +52,14 @@ class NoDirectInternalImportRule:
     def _infer_src_root(self, source_files: SourceFiles) -> Path | None:
         """source_files のパスから src/ ディレクトリを推定する
 
-        _NON_PACKAGE_DIRS に含まれるアンカー（src or tests）の親ディレクトリを
-        プロジェクトルートとして算出し、<project_root>/src を返す。
+        アンカー（src or tests）の親ディレクトリをプロジェクトルートとして算出し、
+        <project_root>/src を返す。
         """
+        _non_package_dirs: frozenset[str] = frozenset({"src", "tests"})
         for source_file in source_files:
             parts = source_file.file_path.parts
             for i, part in enumerate(parts):
-                if part in _NON_PACKAGE_DIRS:
+                if part in _non_package_dirs:
                     project_root = Path(*parts[:i]) if i > 0 else Path()
                     src_root = project_root / "src"
                     if src_root.is_dir():
@@ -96,70 +96,12 @@ class NoDirectInternalImportRule:
         return package_exports
 
     def _resolve_exact_package_path(self, file_path: Path) -> str | None:
-        """__init__.py のファイルパスから正確なパッケージパスを取得する
-
-        例: src/paladin/foundation/model/__init__.py -> "paladin.foundation.model"
-             src/paladin/check/__init__.py           -> "paladin.check"
-             tests/unit/fakes/__init__.py            -> "tests.unit.fakes"
-        """
-        dir_parts = file_path.parts[:-1]  # ファイル名を除く
-
-        anchor_index = -1
-        anchor_name = ""
-        for i, p in enumerate(dir_parts):
-            if p in _NON_PACKAGE_DIRS:
-                anchor_index = i
-                anchor_name = p
-
-        if anchor_index >= 0:
-            package_parts = list(dir_parts[anchor_index + 1 :])
-            # tests は Python インポートパスの一部なので先頭に復元する
-            if anchor_name == "tests":
-                package_parts = ["tests", *package_parts]
-        else:
-            package_parts = [
-                p for p in dir_parts if not p.startswith(".") and p not in _NON_PACKAGE_DIRS
-            ]
-
-        if len(package_parts) < 2:
-            return None
-
-        return ".".join(package_parts)
+        """__init__.py のファイルパスから正確なパッケージパスを取得する（PackageResolver に委譲）"""
+        return self._resolver.resolve_exact_package_path(file_path)
 
     def _resolve_package_key(self, file_path: Path) -> str | None:
-        """ファイルパスからパッケージキー（先頭2セグメント）を取得する
-
-        例: src/paladin/check/__init__.py -> "paladin.check"
-             src/paladin/check/foo.py    -> "paladin.check"
-             /abs/path/src/paladin/check/foo.py -> "paladin.check"
-             tests/unit/test_check/foo.py -> "tests.unit"
-        """
-        dir_parts = file_path.parts[:-1]  # ファイル名を除く
-
-        # _NON_PACKAGE_DIRS の最後の出現位置をアンカーとして使用する
-        # （絶対パスでも相対パスでも正しく動作させるため）
-        anchor_index = -1
-        anchor_name = ""
-        for i, p in enumerate(dir_parts):
-            if p in _NON_PACKAGE_DIRS:
-                anchor_index = i
-                anchor_name = p
-
-        if anchor_index >= 0:
-            package_parts = list(dir_parts[anchor_index + 1 :])
-            # tests は Python インポートパスの一部なので先頭に復元する
-            if anchor_name == "tests":
-                package_parts = ["tests", *package_parts]
-        else:
-            # フォールバック: アンカーが見つからない場合は旧ロジック
-            package_parts = [
-                p for p in dir_parts if not p.startswith(".") and p not in _NON_PACKAGE_DIRS
-            ]
-
-        if len(package_parts) < 2:
-            return None
-
-        return ".".join(package_parts[:2])
+        """ファイルパスからパッケージキー（先頭2セグメント）を取得する（PackageResolver に委譲）"""
+        return self._resolver.resolve_package_key(file_path)
 
     def _resolve_own_packages(self, file_path: Path) -> frozenset[str]:
         """ファイルが属する「自パッケージ」のセットを返す
