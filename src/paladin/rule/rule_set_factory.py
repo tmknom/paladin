@@ -5,6 +5,7 @@ RuleSet のインスタンス生成と具象ルールの組み立てを担う。
 
 from paladin.rule.no_direct_internal_import import NoDirectInternalImportRule
 from paladin.rule.no_local_import import NoLocalImportRule
+from paladin.rule.no_non_init_all import NoNonInitAllRule
 from paladin.rule.no_relative_import import NoRelativeImportRule
 from paladin.rule.require_all_export import RequireAllExportRule
 from paladin.rule.require_qualified_third_party import RequireQualifiedThirdPartyRule
@@ -22,6 +23,7 @@ class RuleSetFactory:
                 NoRelativeImportRule(),
                 NoLocalImportRule(),
                 RequireQualifiedThirdPartyRule(),
+                NoNonInitAllRule(),
             ),
             multi_file_rules=(NoDirectInternalImportRule(),),
         )
