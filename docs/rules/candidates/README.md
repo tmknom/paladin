@@ -10,3 +10,4 @@
 | ルール名 | 概要 |
 |----------|------|
 | [no-cross-package-reexport](no-cross-package-reexport.md) | 別パッケージのシンボルを自パッケージの `__all__` で再エクスポートすることを禁止する |
+| [no-unused-export](no-unused-export.md) | `__init__.py` の `__all__` に定義したシンボルが別パッケージから利用されていないことを禁止する |
