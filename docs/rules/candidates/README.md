@@ -10,4 +10,3 @@
 | ルール名 | 概要 |
 |----------|------|
 | [no-unused-export](no-unused-export.md) | `__init__.py` の `__all__` に定義したシンボルが別パッケージから利用されていないことを禁止する |
-| [no-mock-usage](no-mock-usage.md) | `unittest.mock.Mock` / `MagicMock` の使用を禁止する |

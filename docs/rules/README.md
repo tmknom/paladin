@@ -16,3 +16,4 @@
 | [no-cross-package-reexport](no-cross-package-reexport.md) | 別パッケージのシンボルを自パッケージの `__all__` で再エクスポートすることを禁止する |
 | [no-direct-internal-import](no-direct-internal-import.md) | 他パッケージの内部モジュールへの直接参照を禁止する |
 | [no-non-init-all](no-non-init-all.md) | `__init__.py` 以外のモジュールに `__all__` を定義することを禁止する |
+| [no-mock-usage](no-mock-usage.md) | Mock/MagicMock のインポートを禁止する |
