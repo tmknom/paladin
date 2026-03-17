@@ -5,6 +5,7 @@
 
 from paladin.rule.protocol import MultiFileRule, Rule
 from paladin.rule.rule_set import RuleSet
+from paladin.rule.rule_set_factory import RuleSetFactory
 from paladin.rule.types import RuleMeta, SourceFile, SourceFiles, Violation, Violations
 
 __all__ = [
@@ -12,6 +13,7 @@ __all__ = [
     "Rule",
     "RuleMeta",
     "RuleSet",
+    "RuleSetFactory",
     "SourceFile",
     "SourceFiles",
     "Violation",

@@ -14,7 +14,7 @@ from paladin.check.parser import AstParser
 from paladin.check.rule_filter import RuleFilter
 from paladin.foundation.fs import TextFileSystemReader
 from paladin.foundation.log import log
-from paladin.rule import RuleSet
+from paladin.rule import RuleSetFactory
 
 
 class CheckOrchestratorProvider:
@@ -40,7 +40,7 @@ class CheckOrchestratorProvider:
         """
         reader = TextFileSystemReader()
         parser = AstParser(reader=reader)
-        rule_set = RuleSet.default(rule_options=rule_options, project_name=project_name)
+        rule_set = RuleSetFactory().create(rule_options=rule_options, project_name=project_name)
         return CheckOrchestrator(
             collector=FileCollector(),
             parser=parser,

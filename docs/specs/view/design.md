@@ -80,7 +80,7 @@
 
 **設計の意図**: ルール定義（`Rule` Protocol・`RuleSet`・`RuleMeta` 等）は独立した `rule` パッケージに置き、`view` モジュールはそれらを参照するだけにとどめる。
 
-**なぜそう設計したか**: `check` コマンドが適用するルール群と `view` コマンドが詳細表示するルール群は同一である。重複管理を避けるために `rule` パッケージを単一の情報源として利用する。`RuleSet.default()` を呼ぶだけでプロダクション用のルール一式が得られるため、`ViewOrchestratorProvider` での組み立てが簡潔になる。
+**なぜそう設計したか**: `check` コマンドが適用するルール群と `view` コマンドが詳細表示するルール群は同一である。重複管理を避けるために `rule` パッケージを単一の情報源として利用する。`RuleSetFactory().create()` を呼ぶだけでプロダクション用のルール一式が得られるため、`ViewOrchestratorProvider` での組み立てが簡潔になる。
 
 **トレードオフ**: `check`・`list`・`view` がすべて `rule` に依存する構造になるため、依存グラフの把握が必要になる。
 
@@ -116,7 +116,7 @@ CLI 層
     └─ ViewContext(rule_id=rule_id, format=format)
          ↓
 ViewOrchestratorProvider.provide()
-    ├─ RuleSet.default()          ← 登録済みルール一式を生成
+    ├─ RuleSetFactory().create()  ← 登録済みルール一式を生成
     └─ ViewFormatterFactory()
          ├─ ViewTextFormatter()
          └─ ViewJsonFormatter()
@@ -140,13 +140,13 @@ CLI 層
 
 ### 5.2 ルール登録の変更手順
 
-`view` モジュールが表示するルール一覧は `RuleSet.default()` が一元管理している。新しいルールを追加する場合は以下の手順を踏むこと。
+`view` モジュールが表示するルール一覧は `RuleSetFactory.create()` が一元管理している。新しいルールを追加する場合は以下の手順を踏むこと。
 
 1. `rule/` パッケージに `Rule` Protocol を満たすクラスを実装する
 2. `rule/__init__.py` の `__all__` にクラス名を追加する
-3. `rule/rule_set.py` の `RuleSet.default()` のタプルに追加する
+3. `rule/rule_set_factory.py` の `RuleSetFactory.create()` のタプルに追加する
 
-`check`・`list`・`view` はすべて `RuleSet.default()` を共有するため、1 箇所の変更で全コマンドに反映される。
+`check`・`list`・`view` はすべて `RuleSetFactory().create()` を共有するため、1 箇所の変更で全コマンドに反映される。
 
 ## 6. 将来の拡張性
 

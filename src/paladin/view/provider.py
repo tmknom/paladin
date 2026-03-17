@@ -4,7 +4,7 @@
 """
 
 from paladin.foundation.log import log
-from paladin.rule import RuleSet
+from paladin.rule import RuleSetFactory
 from paladin.view.formatter import ViewFormatterFactory
 from paladin.view.orchestrator import ViewOrchestrator
 
@@ -22,6 +22,6 @@ class ViewOrchestratorProvider:
         Returns:
             設定済みの ViewOrchestrator
         """
-        rule_set = RuleSet.default()
+        rule_set = RuleSetFactory().create()
         formatter = ViewFormatterFactory()
         return ViewOrchestrator(rule_set=rule_set, formatter=formatter)
