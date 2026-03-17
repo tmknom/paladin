@@ -3,7 +3,7 @@ from pathlib import Path
 
 from paladin.rule.rule_set import RuleSet
 from paladin.rule.types import RuleMeta, SourceFile, SourceFiles, Violation, Violations
-from tests.unit.fakes import FakeMultiFileRule, FakeRule
+from tests.unit.fakes import FakeMultiFileRule, FakePreparableRule, FakeRule
 
 
 def _make_source_file(source: str, filename: str = "__init__.py") -> SourceFile:
@@ -422,3 +422,56 @@ class TestRuleSetMultiFileRules:
         assert result is not None
         assert isinstance(result, RuleMeta)
         assert result.rule_id == "multi-rule"
+
+
+class TestRuleSetPreparableRule:
+    """RuleSet の PreparableRule.prepare() 呼び出しテスト"""
+
+    def test_run_正常系_PreparableRuleのprepareがrun前に呼ばれること(self):
+        # Arrange
+        preparable_rule = FakePreparableRule()
+        rule_set = RuleSet(rules=(preparable_rule,))
+        source_files = _make_source_files(("x = 1\n", "__init__.py"))
+
+        # Act
+        rule_set.run(source_files)
+
+        # Assert: prepare() が source_files を引数に呼ばれていること
+        assert preparable_rule.prepare_called_with is source_files
+
+    def test_run_正常系_PreparableRuleでないルールはprepareが呼ばれないこと(self):
+        # Arrange: 通常の FakeRule は prepare() を持たない
+        regular_rule = FakeRule()
+        rule_set = RuleSet(rules=(regular_rule,))
+        source_files = _make_source_files(("x = 1\n", "__init__.py"))
+
+        # Act / Assert: 例外が発生しないこと（prepare() 属性がなくても問題ない）
+        rule_set.run(source_files)
+
+    def test_run_正常系_prepare後にcheckが実行されること(self):
+        # Arrange: prepare() 後に check() が実行されることを violations で確認
+        violation = _make_violation()
+        preparable_rule = FakePreparableRule(violations=(violation,))
+        rule_set = RuleSet(rules=(preparable_rule,))
+        source_files = _make_source_files(("x = 1\n", "__init__.py"))
+
+        # Act
+        result = rule_set.run(source_files)
+
+        # Assert: prepare() が呼ばれ、check() も実行されて違反が返ること
+        assert preparable_rule.prepare_called_with is source_files
+        assert len(result) == 1
+
+    def test_run_正常系_複数のPreparableRuleが全てprepareされること(self):
+        # Arrange
+        rule_a = FakePreparableRule(rule_id="preparable-a")
+        rule_b = FakePreparableRule(rule_id="preparable-b")
+        rule_set = RuleSet(rules=(rule_a, rule_b))
+        source_files = _make_source_files(("x = 1\n", "__init__.py"))
+
+        # Act
+        rule_set.run(source_files)
+
+        # Assert: 両ルールの prepare() が呼ばれていること
+        assert rule_a.prepare_called_with is source_files
+        assert rule_b.prepare_called_with is source_files

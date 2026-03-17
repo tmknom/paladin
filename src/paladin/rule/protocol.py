@@ -50,3 +50,20 @@ class MultiFileRule(Protocol):
             違反がなければ空タプル、違反があれば Violation のタプル
         """
         ...
+
+
+@runtime_checkable
+class PreparableRule(Protocol):
+    """実行前の事前準備が必要なルールの抽象インターフェイス
+
+    RuleSet.run() が単一ファイルループに入る前に prepare() を呼ぶ。
+    source_files 全体を使って内部状態を初期化するルールはこの Protocol を実装する。
+    """
+
+    def prepare(self, source_files: SourceFiles) -> None:
+        """実行前の事前準備を行う
+
+        Args:
+            source_files: 解析対象のソースファイル群
+        """
+        ...
