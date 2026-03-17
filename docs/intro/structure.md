@@ -30,6 +30,7 @@ src/
     │   ├── types.py              # SourceFile / SourceFiles / Violation / Violations / RuleMeta
     │   ├── protocol.py           # Rule / MultiFileRule Protocol
     │   ├── rule_set.py           # RuleSet
+    │   ├── rule_set_factory.py   # RuleSetFactory
     │   ├── require_all_export.py # RequireAllExportRule
     │   ├── no_relative_import.py # NoRelativeImportRule
     │   ├── no_local_import.py    # NoLocalImportRule

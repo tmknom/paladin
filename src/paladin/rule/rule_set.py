@@ -3,37 +3,15 @@
 複数 Rule を束ねて管理し、実行・一覧・検索を提供する。
 """
 
-import logging
 from collections.abc import Mapping
 from pathlib import Path
-from typing import ClassVar
 
-from paladin.rule.no_direct_internal_import import NoDirectInternalImportRule
-from paladin.rule.no_local_import import NoLocalImportRule
-from paladin.rule.no_relative_import import NoRelativeImportRule
 from paladin.rule.protocol import MultiFileRule, Rule
-from paladin.rule.require_all_export import RequireAllExportRule
-from paladin.rule.require_qualified_third_party import RequireQualifiedThirdPartyRule
 from paladin.rule.types import RuleMeta, SourceFiles, Violation, Violations
-
-logger = logging.getLogger(__name__)
 
 
 class RuleSet:
     """複数 Rule を束ねて管理し、実行・一覧・検索を提供する"""
-
-    _KNOWN_RULE_IDS: ClassVar[frozenset[str]] = frozenset(
-        {
-            "require-qualified-third-party",
-            "require-all-export",
-            "no-relative-import",
-            "no-local-import",
-            "no-direct-internal-import",
-        }
-    )
-    _KNOWN_PARAMS: ClassVar[dict[str, frozenset[str]]] = {
-        "require-qualified-third-party": frozenset({"root-packages"}),
-    }
 
     def __init__(
         self,
@@ -43,65 +21,6 @@ class RuleSet:
         """RuleSetを初期化"""
         self._rules = rules
         self._multi_file_rules = multi_file_rules
-
-    @classmethod
-    def default(
-        cls,
-        rule_options: Mapping[str, Mapping[str, object]] | None = None,
-        project_name: str | None = None,
-    ) -> "RuleSet":
-        """プロダクションで使うデフォルトのルール一式を返す
-
-        Args:
-            rule_options: ルール個別設定。キーはルール ID (kebab-case)、値はそのルールのパラメータ dict
-            project_name: pyproject.toml の [project] name から取得した正規化済みプロジェクト名
-        """
-        options = rule_options or {}
-
-        # 未知ルール ID の警告
-        for rule_id in options:
-            if rule_id not in cls._KNOWN_RULE_IDS:
-                logger.warning("Unknown rule ID in [tool.paladin.rule]: %s", rule_id)
-
-        # require-qualified-third-party の root_packages を解決
-        root_packages = cls._resolve_root_packages(options, project_name=project_name)
-
-        return cls(
-            rules=(
-                RequireAllExportRule(),
-                NoRelativeImportRule(),
-                NoLocalImportRule(),
-                RequireQualifiedThirdPartyRule(root_packages=root_packages),
-            ),
-            multi_file_rules=(NoDirectInternalImportRule(root_packages=root_packages),),
-        )
-
-    @classmethod
-    def _resolve_root_packages(
-        cls,
-        options: Mapping[str, Mapping[str, object]],
-        project_name: str | None = None,
-    ) -> tuple[str, ...]:
-        """require-qualified-third-party の root_packages を解決する"""
-        rule_id = "require-qualified-third-party"
-        known_params = cls._KNOWN_PARAMS.get(rule_id, frozenset())
-        entry = options.get(rule_id)
-        default = (project_name, "tests") if project_name is not None else ("tests",)
-
-        if entry is None:
-            return default
-
-        # 未知パラメータの警告
-        for param in entry:
-            if param not in known_params:
-                logger.warning('Unknown parameter in [tool.paladin.rule."%s"]: %s', rule_id, param)
-
-        # kebab-case -> snake_case 変換して root_packages を取得
-        snake_entry = {k.replace("-", "_"): v for k, v in entry.items()}
-        raw = snake_entry.get("root_packages")
-        if raw is None:
-            return default
-        return tuple(str(p) for p in raw)  # type: ignore[arg-type]
 
     @property
     def rule_ids(self) -> frozenset[str]:

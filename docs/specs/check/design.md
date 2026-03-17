@@ -159,9 +159,9 @@ view/  → rule/ (RuleSet, RuleMeta)
 
 **設計の意図**: `RuleRunner`（実行）と `RuleRegistry`（メタ情報管理）を `RuleSet` 一つに統合し、ルール群に関するすべての操作（実行・一覧・検索）を一つのクラスに集約する。
 
-**なぜそう設計したか**: 実行と管理は同じルール集合に対する操作であり、分離する理由が乏しかった。単一クラスに集約することで `check` / `list` / `view` の各モジュールが共通の `RuleSet` インスタンスを使用でき、ルール登録の一元化が実現できる。`RuleSet.default()` クラスメソッドがプロダクション用のルール一式を生成するファクトリーを担い、登録ロジックを `rule` パッケージに集約している。
+**なぜそう設計したか**: 実行と管理は同じルール集合に対する操作であり、分離する理由が乏しかった。単一クラスに集約することで `check` / `list` / `view` の各モジュールが共通の `RuleSet` インスタンスを使用でき、ルール登録の一元化が実現できる。`RuleSetFactory.create()` メソッドがプロダクション用のルール一式を生成するファクトリーを担い、登録ロジックを `rule` パッケージに集約している。
 
-**トレードオフ**: `RuleSet` が実行・一覧・検索の複数の責務を持つが、これらはすべて同一ルール集合に対する操作であり凝集度は高い。新しいルールを追加する際は `RuleSet.default()` の変更が必要になる。
+**トレードオフ**: `RuleSet` が実行・一覧・検索の複数の責務を持つが、これらはすべて同一ルール集合に対する操作であり凝集度は高い。新しいルールを追加する際は `RuleSetFactory.create()` の変更が必要になる。
 
 ### RuleFilter によるルール有効/無効の解決
 
@@ -217,9 +217,9 @@ view/  → rule/ (RuleSet, RuleMeta)
 
 1. `rule/` パッケージに `Rule` Protocol を満たすクラスを実装する
 2. `rule/__init__.py` の `__all__` にクラス名を追加する
-3. `rule/rule_set.py` の `RuleSet.default()` の `rules` タプルに追加する
+3. `rule/rule_set_factory.py` の `RuleSetFactory.create()` の `rules` タプルに追加する
 
-`RuleSet` や `CheckOrchestrator` の変更は不要である。`RuleSet.default()` を共有しているため、`list` / `view` コマンドにも自動的に反映される。
+`RuleSet` や `CheckOrchestrator` の変更は不要である。`RuleSetFactory.create()` を共有しているため、`list` / `view` コマンドにも自動的に反映される。
 
 ## 外部依存と拡張性
 
@@ -235,13 +235,13 @@ view/  → rule/ (RuleSet, RuleMeta)
 
 ### 想定される拡張ポイント
 
-- **新しいルールの追加**: `Rule` Protocol を実装したクラスを `rule/` に追加し、`RuleSet.default()` に登録する
+- **新しいルールの追加**: `Rule` Protocol を実装したクラスを `rule/` に追加し、`RuleSetFactory.create()` に登録する
 - **複数ファイルにまたがるルール**: `Rule.check()` のシグネチャを `SourceFiles` を受け取る形に拡張するか、新しい Protocol を定義する
 - **エラーファイルのスキップ**: `AstParser` でエラーを捕捉してスキップし、`CheckResult` に解析失敗情報を追加する
 
 ### 拡張時の注意点
 
-- 新しいルールを追加する際は `rule/rule_set.py` の `RuleSet.default()` の変更が必要になる。将来的にルール数が大幅に増えた場合は、設定ファイルや自動検出によるルール登録の仕組みを検討する
+- 新しいルールを追加する際は `rule/rule_set_factory.py` の `RuleSetFactory.create()` の変更が必要になる。将来的にルール数が大幅に増えた場合は、設定ファイルや自動検出によるルール登録の仕組みを検討する
 
 ## 変更パターン別ガイド
 
@@ -249,7 +249,7 @@ view/  → rule/ (RuleSet, RuleMeta)
 
 | 変更内容 | 主な変更対象 | 備考 |
 |---|---|---|
-| 新しいルールを追加 | `rule/` に新ファイル、`rule/__init__.py`（`__all__`）、`rule/rule_set.py`（`RuleSet.default()`） | `RuleSet` / `CheckOrchestrator` の変更は不要 |
+| 新しいルールを追加 | `rule/` に新ファイル、`rule/__init__.py`（`__all__`）、`rule/rule_set_factory.py`（`RuleSetFactory.create()`） | `RuleSet` / `CheckOrchestrator` の変更は不要 |
 | ルールのチェックロジックを変更 | 対象ルールの `.py` | 他コンポーネントへの影響なし |
 | ルール有効/無効ロジックを変更 | `rule_filter.py`（`RuleFilter`） | `CheckOrchestrator` の変更は不要 |
 | ファイル ignore の解析ロジックを変更 | `ignore.py`（`FileIgnoreParser`） | `ViolationFilter` / `CheckOrchestrator` の変更は不要 |
