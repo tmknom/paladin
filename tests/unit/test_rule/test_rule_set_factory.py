@@ -35,7 +35,7 @@ class TestRuleSetFactory:
         result = RuleSetFactory().create()
         assert "no-direct-internal-import" in result.rule_ids
 
-    def test_create_正常系_全ルールが登録されていること_5ルール(self):
+    def test_create_正常系_全ルールが登録されていること_6ルール(self):
         result = RuleSetFactory().create()
         rule_ids = result.rule_ids
         assert "require-all-export" in rule_ids
@@ -43,6 +43,11 @@ class TestRuleSetFactory:
         assert "no-local-import" in rule_ids
         assert "require-qualified-third-party" in rule_ids
         assert "no-direct-internal-import" in rule_ids
+        assert "no-non-init-all" in rule_ids
+
+    def test_create_正常系_no_non_init_allルールが登録されていること(self):
+        result = RuleSetFactory().create()
+        assert "no-non-init-all" in result.rule_ids
 
     def test_create_正常系_testsパッケージはデフォルトでroot_packagesに含まれること(self):
         # Arrange: RuleSet.run() が prepare() を呼び tests が自動でルートパッケージになる
