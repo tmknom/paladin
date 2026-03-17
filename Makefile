@@ -60,5 +60,13 @@ clean: ## 中間ファイルを削除
 		find . -type d -name "htmlcov" -exec rm -rf {} +
 		find . -type f -name ".coverage" -delete
 
+.PHONY: install
+install: ## paladin をグローバルにインストール（editable モード）
+		uv tool install -e .
+
+.PHONY: uninstall
+uninstall: ## paladin のグローバルインストールを解除
+		uv tool uninstall paladin
+
 .PHONY: release
 release: release/run ## Start release process
