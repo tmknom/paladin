@@ -17,22 +17,47 @@ Identify and read task-related sections below:
 
 ## Specifications
 
-### Business Logic
+### Feature
 
 #### Transform feature
 
 - [Transform requirement](docs/specs/transform/requirements.md): Requirements for the transform package - Use when modifying `src/paladin/transform/` or understanding text file reading, line numbering, datetime header, and result statistics
 - [Transform design](docs/specs/transform/design.md): Design for the transform package - Use when modifying `src/paladin/transform/` or understanding component structure, processing flow, design decisions (thin wrappers, SrcText/DstText, Fake-based testing), and design rationale
 
-### CLI
+#### Check feature
+
+- [Check requirement](docs/specs/check/requirements.md): Requirements for the check package - Use when modifying `src/paladin/check/` or understanding the static analysis pipeline (file enumeration, AST parsing, rule application, violation filtering, report output)
+- [Check design](docs/specs/check/design.md): Design for the check package - Use when modifying `src/paladin/check/` or understanding the pipeline pattern (collect → parse → run → filter → format), component structure, ignore/override/rule-filter mechanisms, and design rationale
+
+#### List feature
+
+- [List requirement](docs/specs/list/requirements.md): Requirements for the list module - Use when modifying `src/paladin/list/` or understanding rule listing in text/JSON format
+- [List design](docs/specs/list/design.md): Design for the list module - Use when modifying `src/paladin/list/` or understanding ListOrchestrator, ListFormatterFactory, RuleSet integration, and the Orchestrator-Provider-Context pattern
+
+#### View feature
+
+- [View requirement](docs/specs/view/requirements.md): Requirements for the view module - Use when modifying `src/paladin/view/` or understanding rule detail display by RULE_ID in text/JSON format
+- [View design](docs/specs/view/design.md): Design for the view module - Use when modifying `src/paladin/view/` or understanding ViewOrchestrator, ViewFormatterFactory, RuleSet lookup, and the Composition Root pattern
+
+### Application
 
 - [CLI requirement](docs/specs/cli/requirements.md): Requirements for the cli module - Use when modifying `src/paladin/cli.py` or understanding subcommand execution, global/subcommand-specific options, config priority, error handling, and exit codes
 - [CLI design](docs/specs/cli/design.md): Design for the cli module - Use when modifying `src/paladin/cli.py`, adding new subcommands, adding CLI options, or understanding component structure (app/main_callback/main), two-phase flow (callback→command), design decisions (no business logic, AppConfig in ctx.obj, top-level exception handling), guardrails, and design rationale
-
-### Config
-
 - [Config requirement](docs/specs/config/requirements.md): Requirements for the config package - Use when modifying `src/paladin/config/` or understanding environment variable loading, path construction, and runtime config composition
 - [Config design](docs/specs/config/design.md): Design for the config package - Use when modifying `src/paladin/config/`, adding new config fields, or understanding component structure (EnvVarConfig / PathConfig / AppConfig), processing flow, design decisions (3-layer separation, pydantic-settings validation, PathConfig as internal component), and design rationale
+- [Protocol requirement](docs/specs/protocol/requirements.md): Requirements for the protocol package - Use when modifying `src/paladin/protocol/` or understanding shared Port definitions in Onion Architecture
+- [Protocol design](docs/specs/protocol/design.md): Design for the protocol package - Use when modifying `src/paladin/protocol/` or understanding TextFileSystemReaderProtocol/TextFileSystemWriterProtocol, read-write separation pattern, and structural subtyping
+
+### Foundation
+
+- [Error requirement](docs/specs/foundation/error/requirements.md): Requirements for the error package - Use when modifying `src/paladin/foundation/error/` or understanding application-wide error handling standardization
+- [Error design](docs/specs/foundation/error/design.md): Design for the error package - Use when modifying `src/paladin/foundation/error/` or understanding ApplicationError, ErrorHandler, and centralized exception/logging strategy
+- [Filesystem requirement](docs/specs/foundation/fs/requirements.md): Requirements for the fs package - Use when modifying `src/paladin/foundation/fs/` or understanding Protocol-based file I/O abstraction and side-effect isolation
+- [Filesystem design](docs/specs/foundation/fs/design.md): Design for the fs package - Use when modifying `src/paladin/foundation/fs/` or understanding TextFileSystemReader, Port/Adapter pattern, and Fake-based test isolation
+- [Logging requirement](docs/specs/foundation/log/requirements.md): Requirements for the log package - Use when modifying `src/paladin/foundation/log/` or understanding centralized logging configuration and function tracing
+- [Logging design](docs/specs/foundation/log/design.md): Design for the log package - Use when modifying `src/paladin/foundation/log/` or understanding `@log` decorator, LogConfigurator, and cross-cutting concern implementation
+- [Base model requirement](docs/specs/foundation/model/requirements.md): Requirements for the model package - Use when modifying `src/paladin/foundation/model/` or understanding shared domain model constraints
+- [Base model design](docs/specs/foundation/model/design.md): Design for the model package - Use when modifying `src/paladin/foundation/model/` or understanding CoreModel, boundary validation pattern, and immutability/strict-validation defaults
 
 ## Source Code
 
@@ -40,10 +65,22 @@ Identify and read task-related sections below:
 
 - [Transform feature](src/paladin/transform/): Reference feature package with Context, Orchestrator, OrchestratorProvider (Composition Root), Reader, Transformer, Writer, and Result types - Use when modifying `docs/specs/transform/`, adding new feature packages, understanding the Orchestrator-Provider-Context pattern, or reviewing the canonical package structure
 - [rule package](src/paladin/rule/): Rule domain package containing Rule Protocol, RuleSet, SourceFile/SourceFiles types (representing Python source files as inspection targets), Violation/Violations/RuleMeta types, and all concrete rule implementations - Use when adding new rules, modifying rule logic, understanding the rule domain architecture, or working with source file representations
+- [check package](src/paladin/check/): Static analysis core with CheckOrchestrator, CheckOrchestratorProvider, CheckContext, FileCollector, AstParser, ViolationFilter, RuleFilter, PathExcluder, OverrideResolver, and CheckFormatterFactory - Use when modifying `docs/specs/check/`, understanding the analysis pipeline, or working with ignore/override/formatting logic
+- [list package](src/paladin/list/): Rule listing with ListOrchestrator, ListOrchestratorProvider, ListContext, and ListFormatterFactory - Use when modifying `docs/specs/list/` or understanding the `paladin list` command's business logic
+- [view package](src/paladin/view/): Rule detail display with ViewOrchestrator, ViewOrchestratorProvider, ViewContext, and ViewFormatterFactory - Use when modifying `docs/specs/view/` or understanding the `paladin view` command's business logic
+- [version package](src/paladin/version/): Version string resolution with VersionOrchestrator, VersionOrchestratorProvider, and VersionResolver - Use when modifying the `paladin version` command's business logic
 
 ### CLI
 
 - [CLI entry point](src/paladin/cli.py): Typer-based CLI that assembles Config, Context, and OrchestratorProvider then delegates to Orchestrator - Use when modifying `docs/specs/cli/`, adding new commands, understanding the application startup flow, or reviewing how Config/Context/Provider are wired together
+
+### Config
+
+- [config package](src/paladin/config/): Configuration management with AppConfig, EnvVarConfig, PathConfig (runtime config composition), ProjectConfig, ProjectConfigLoader (pyproject.toml parsing), TargetResolver, and OverrideEntry - Use when modifying `docs/specs/config/`, adding new config fields, understanding environment variable loading, path construction, or project-level settings (rules, include/exclude, per-file-ignores, overrides)
+
+### Protocol
+
+- [protocol package](src/paladin/protocol/): Shared Port definitions with TextFileSystemReaderProtocol and TextFileSystemWriterProtocol - Use when modifying `docs/specs/protocol/`, adding new shared Protocols, or understanding Onion Architecture Port/Adapter boundaries
 
 ### Foundation
 
