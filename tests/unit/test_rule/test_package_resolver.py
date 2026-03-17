@@ -78,6 +78,11 @@ class TestPackageResolverResolveExactPackagePath:
         # "paladin" の1セグメントのみ → None
         assert result is None
 
+    def test_エッジケース_アンカーなしのパスでフォールバック動作すること(self):
+        resolver = PackageResolver()
+        result = resolver.resolve_exact_package_path(Path("myapp/module/sub/__init__.py"))
+        assert result == "myapp.module.sub"
+
 
 class TestPackageResolverResolveRootPackages:
     """PackageResolver.resolve_root_packages() のテスト"""
