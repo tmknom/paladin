@@ -1,5 +1,7 @@
 """ListOrchestratorクラスのテスト"""
 
+import json
+
 from paladin.check import OutputFormat
 from paladin.list.context import ListContext
 from paladin.list.formatter import ListFormatterFactory
@@ -57,8 +59,6 @@ class TestListOrchestrator:
 
     def test_orchestrate_正常系_format_JSON指定でrulesキーを含むJSON形式を返すこと(self):
         # Arrange
-        import json
-
         fake_rule = FakeRule(rule_id="PAL001", rule_name="fake-rule", summary="フェイク概要")
         orchestrator = self._make_orchestrator(rules=(fake_rule,))
         context = ListContext(format=OutputFormat.JSON)
@@ -76,8 +76,6 @@ class TestListOrchestrator:
 
     def test_orchestrate_エッジケース_ルール未登録でformat_JSON指定時に空配列のJSONを返すこと(self):
         # Arrange
-        import json
-
         orchestrator = self._make_orchestrator(rules=())
         context = ListContext(format=OutputFormat.JSON)
 
