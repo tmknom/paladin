@@ -219,10 +219,10 @@ class TestNoCrossPackageReexportRuleCheck:
         assert "from paladin.rule import Violation" in result[0].suggestion
 
     def test_check_エッジケース_セグメント数が2未満のインポートはそのまま使用すること(self):
-        # Arrange: from os import path で __all__ = ["path"]
+        # Arrange: from os import path で __all__ = ["path"]（サブパッケージ内）
         rule = NoCrossPackageReexportRule()
         source = 'from os import path\n__all__ = ["path"]\n'
-        source_file = _make_source_file(source, "src/myapp/__init__.py")
+        source_file = _make_source_file(source, "src/myapp/sub/__init__.py")
 
         # Act
         result = rule.check(source_file)
@@ -245,6 +245,76 @@ class TestNoCrossPackageReexportRuleCheck:
         assert len(result) == 1
         # current_package は paladin.check として導出される
         assert "paladin.check" in result[0].reason
+
+    def test_check_正常系_絶対パスでもsrcアンカー以降のパッケージを正しく導出すること(self):
+        # Arrange: FileCollector が path.resolve() で生成する絶対パスを模擬
+        rule = NoCrossPackageReexportRule()
+        source = 'from paladin.rule import RuleMeta\n__all__ = ["RuleMeta"]\n'
+        source_file = _make_source_file(
+            source, "/Users/owner/code/paladin/src/paladin/check/__init__.py"
+        )
+
+        # Act
+        result = rule.check(source_file)
+
+        # Assert
+        assert len(result) == 1
+        assert "paladin.check" in result[0].reason
+
+    def test_check_正常系_tests配下の相対パスでもパッケージを正しく導出すること(self):
+        # Arrange: tests/unit/fakes/__init__.py で別パッケージのシンボルを再エクスポート
+        rule = NoCrossPackageReexportRule()
+        source = 'from paladin.rule import RuleMeta\n__all__ = ["RuleMeta"]\n'
+        source_file = _make_source_file(source, "tests/unit/fakes/__init__.py")
+
+        # Act
+        result = rule.check(source_file)
+
+        # Assert
+        assert len(result) == 1
+        assert "tests.unit.fakes" in result[0].reason
+
+    def test_check_正常系_tests配下の絶対パスでもパッケージを正しく導出すること(self):
+        # Arrange: 実際の誤検出ケース再現（FileCollector が絶対パスを生成する）
+        rule = NoCrossPackageReexportRule()
+        source = 'from paladin.rule import RuleMeta\n__all__ = ["RuleMeta"]\n'
+        source_file = _make_source_file(
+            source, "/Users/owner/code/paladin/tests/unit/fakes/__init__.py"
+        )
+
+        # Act
+        result = rule.check(source_file)
+
+        # Assert
+        assert len(result) == 1
+        assert "tests.unit.fakes" in result[0].reason
+
+    def test_check_正常系_tests配下の同一パッケージシンボルは違反を返さないこと(self):
+        # Arrange: tests/unit/fakes/__init__.py で同一パッケージ（tests.unit.fakes.rule）のシンボルを再エクスポート
+        # これが今回のバグの直接的な再現ケース
+        rule = NoCrossPackageReexportRule()
+        source = 'from tests.unit.fakes.rule import FakeRule\n__all__ = ["FakeRule"]\n'
+        source_file = _make_source_file(
+            source, "/Users/owner/code/paladin/tests/unit/fakes/__init__.py"
+        )
+
+        # Act
+        result = rule.check(source_file)
+
+        # Assert: tests.unit.fakes.rule は tests.unit.fakes のサブモジュールなので違反なし
+        assert result == ()
+
+    def test_check_エッジケース_トップレベルパッケージのinit_pyは検査対象外であること(self):
+        # Arrange: src/paladin/__init__.py はセグメントが1つのみ → resolve_exact_package_path が None を返す
+        rule = NoCrossPackageReexportRule()
+        source = 'from os import path\n__all__ = ["path"]\n'
+        source_file = _make_source_file(source, "src/paladin/__init__.py")
+
+        # Act
+        result = rule.check(source_file)
+
+        # Assert: パッケージ名を導出できないため空タプルを返す
+        assert result == ()
 
     def test_check_エッジケース_extract_all_symbolsでallの値がリスト以外の場合は空タプルを返すこと(
         self,

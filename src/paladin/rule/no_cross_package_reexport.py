@@ -6,6 +6,7 @@
 import ast
 from pathlib import Path
 
+from paladin.rule.package_resolver import PackageResolver
 from paladin.rule.types import RuleMeta, SourceFile, Violation
 
 
@@ -14,6 +15,7 @@ class NoCrossPackageReexportRule:
 
     def __init__(self) -> None:
         """ルールを初期化する"""
+        self._resolver = PackageResolver()
         self._meta = RuleMeta(
             rule_id="no-cross-package-reexport",
             rule_name="No Cross Package Reexport",
@@ -75,24 +77,9 @@ class NoCrossPackageReexportRule:
     def _resolve_current_package(self, file_path: Path) -> str | None:
         """file_path から現在のパッケージ名を導出する。
 
-        src/paladin/check/__init__.py → "paladin.check"
-        src が存在しない場合は __init__.py を除いたディレクトリを結合する。
+        PackageResolver.resolve_exact_package_path() に委譲する。
         """
-        parts = file_path.parts
-        # __init__.py を除いたディレクトリ部分のみ対象
-        dir_parts = parts[:-1]  # __init__.py を除く
-        if not dir_parts:
-            return None
-
-        if "src" in dir_parts:
-            src_index = len(dir_parts) - 1 - dir_parts[::-1].index("src")
-            package_parts = dir_parts[src_index + 1 :]
-        else:
-            package_parts = dir_parts
-
-        if not package_parts:
-            return None
-        return ".".join(package_parts)
+        return self._resolver.resolve_exact_package_path(file_path)
 
     def _extract_all_symbols(self, tree: ast.Module) -> tuple[str, ...]:
         """AST からトップレベルの __all__ 代入文を探し、文字列リテラルを抽出する"""
