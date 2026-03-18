@@ -39,7 +39,7 @@ class TestRuleSetFactory:
         result = RuleSetFactory().create()
         assert "no-mock-usage" in result.rule_ids
 
-    def test_create_正常系_全ルールが登録されていること_8ルール(self):
+    def test_create_正常系_全ルールが登録されていること_9ルール(self):
         result = RuleSetFactory().create()
         rule_ids = result.rule_ids
         assert "require-all-export" in rule_ids
@@ -50,6 +50,11 @@ class TestRuleSetFactory:
         assert "no-non-init-all" in rule_ids
         assert "no-cross-package-reexport" in rule_ids
         assert "no-mock-usage" in rule_ids
+        assert "no-unused-export" in rule_ids
+
+    def test_create_正常系_no_unused_exportルールが登録されていること(self):
+        result = RuleSetFactory().create()
+        assert "no-unused-export" in result.rule_ids
 
     def test_create_正常系_no_cross_package_reexportルールが登録されていること(self):
         result = RuleSetFactory().create()

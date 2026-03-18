@@ -14,7 +14,7 @@ class TestViewOrchestratorProvider:
 
         # Assert
         assert isinstance(result, ViewOrchestrator)
-        assert len(rules) == 8
+        assert len(rules) == 9
         rule_ids = {r.rule_id for r in rules}
         assert "require-all-export" in rule_ids
         assert "no-relative-import" in rule_ids
@@ -24,3 +24,4 @@ class TestViewOrchestratorProvider:
         assert "no-non-init-all" in rule_ids
         assert "no-cross-package-reexport" in rule_ids
         assert "no-mock-usage" in rule_ids
+        assert "no-unused-export" in rule_ids

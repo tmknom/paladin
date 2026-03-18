@@ -17,3 +17,4 @@
 | [no-direct-internal-import](no-direct-internal-import.md) | 他パッケージの内部モジュールへの直接参照を禁止する |
 | [no-non-init-all](no-non-init-all.md) | `__init__.py` 以外のモジュールに `__all__` を定義することを禁止する |
 | [no-mock-usage](no-mock-usage.md) | Mock/MagicMock のインポートを禁止する |
+| [no-unused-export](no-unused-export.md) | `__init__.py` の `__all__` に定義したシンボルが別パッケージから利用されていないことを禁止する |
