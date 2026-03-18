@@ -9,6 +9,7 @@ from paladin.rule.no_local_import import NoLocalImportRule
 from paladin.rule.no_mock_usage import NoMockUsageRule
 from paladin.rule.no_non_init_all import NoNonInitAllRule
 from paladin.rule.no_relative_import import NoRelativeImportRule
+from paladin.rule.no_unused_export import NoUnusedExportRule
 from paladin.rule.require_all_export import RequireAllExportRule
 from paladin.rule.require_qualified_third_party import RequireQualifiedThirdPartyRule
 from paladin.rule.rule_set import RuleSet
@@ -29,5 +30,5 @@ class RuleSetFactory:
                 NoCrossPackageReexportRule(),
                 NoMockUsageRule(),
             ),
-            multi_file_rules=(NoDirectInternalImportRule(),),
+            multi_file_rules=(NoDirectInternalImportRule(), NoUnusedExportRule()),
         )
