@@ -72,21 +72,56 @@ class PackageResolver:
         各ファイルの _NON_PACKAGE_DIRS アンカー後の最初のセグメントを収集し、
         "tests" を常に含める。
 
+        src/ 由来のルートパッケージが見つからない場合（tests/ のみを解析対象にした場合など）、
+        tests アンカーの親ディレクトリ（プロジェクトルート候補）の src/ を走査してフォールバックする。
+
         例: src/paladin/check/foo.py -> "paladin"
              src/mylib/core.py       -> "mylib"
         """
         root_packages: set[str] = {"tests"}
+        project_root_candidates: set[Path] = set()
 
         for source_file in source_files:
-            dir_parts = source_file.file_path.parts[:-1]
-            anchor_index, anchor_name = self._find_anchor(dir_parts)
+            self._collect_from_file(source_file.file_path, root_packages, project_root_candidates)
 
-            if anchor_index >= 0 and anchor_name == "src":
-                after_src = dir_parts[anchor_index + 1 :]
-                if after_src:
-                    root_packages.add(after_src[0])
+        # src/ 由来のパッケージが見つからない場合、FS フォールバックで補完する
+        if len(root_packages) == 1:  # "tests" のみ
+            self._fallback_from_filesystem(project_root_candidates, root_packages)
 
         return tuple(sorted(root_packages))
+
+    def _collect_from_file(
+        self,
+        file_path: Path,
+        root_packages: set[str],
+        project_root_candidates: set[Path],
+    ) -> None:
+        """1ファイルからルートパッケージとプロジェクトルート候補を収集する"""
+        dir_parts = file_path.parts[:-1]
+        anchor_index, anchor_name = self._find_anchor(dir_parts)
+
+        if anchor_index < 0:
+            return
+
+        if anchor_name == "src":
+            after_src = dir_parts[anchor_index + 1 :]
+            if after_src:
+                root_packages.add(after_src[0])
+        elif anchor_name == "tests":
+            tests_anchor_path = Path(*dir_parts[: anchor_index + 1])
+            project_root_candidates.add(tests_anchor_path.parent)
+
+    def _fallback_from_filesystem(
+        self, project_root_candidates: set[Path], root_packages: set[str]
+    ) -> None:
+        """プロジェクトルート候補の src/ ディレクトリを走査してルートパッケージを補完する"""
+        for candidate in project_root_candidates:
+            src_dir = candidate / "src"
+            if not src_dir.is_dir():
+                continue
+            for child in src_dir.iterdir():
+                if child.is_dir() and not child.name.startswith("."):
+                    root_packages.add(child.name)
 
     def _find_anchor(self, dir_parts: tuple[str, ...]) -> tuple[int, str]:
         """_NON_PACKAGE_DIRS の最後の出現位置をアンカーとして返す
