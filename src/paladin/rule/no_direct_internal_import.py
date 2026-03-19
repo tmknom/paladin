@@ -6,6 +6,7 @@
 import ast
 from pathlib import Path
 
+from paladin.rule.all_exports_extractor import AllExportsExtractor
 from paladin.rule.package_resolver import PackageResolver
 from paladin.rule.types import RuleMeta, SourceFile, SourceFiles, Violation
 
@@ -16,6 +17,7 @@ class NoDirectInternalImportRule:
     def __init__(self) -> None:
         """ルールを初期化する"""
         self._resolver = PackageResolver()
+        self._extractor = AllExportsExtractor()
         self._root_packages: tuple[str, ...] = ()
         self._meta = RuleMeta(
             rule_id="no-direct-internal-import",
@@ -82,26 +84,15 @@ class NoDirectInternalImportRule:
         """
         package_exports: dict[str, set[str]] = {}
 
-        for source_file in source_files:
-            if source_file.file_path.name != "__init__.py":
-                continue
-
-            exact_key = self._resolve_exact_package_path(source_file.file_path)
+        for source_file in source_files.init_files():
+            exact_key = self._resolver.resolve_exact_package_path(source_file.file_path)
             if exact_key is None:
                 continue
 
-            exports = self._collect_exports(source_file)
+            exports = self._extractor.extract_with_reexports(source_file)
             package_exports[exact_key] = exports
 
         return package_exports
-
-    def _resolve_exact_package_path(self, file_path: Path) -> str | None:
-        """__init__.py のファイルパスから正確なパッケージパスを取得する（PackageResolver に委譲）"""
-        return self._resolver.resolve_exact_package_path(file_path)
-
-    def _resolve_package_key(self, file_path: Path) -> str | None:
-        """ファイルパスからパッケージキー（先頭2セグメント）を取得する（PackageResolver に委譲）"""
-        return self._resolver.resolve_package_key(file_path)
 
     def _resolve_own_packages(self, file_path: Path) -> frozenset[str]:
         """ファイルが属する「自パッケージ」のセットを返す
@@ -113,7 +104,7 @@ class NoDirectInternalImportRule:
         例: tests/unit/test_view/test_provider.py
               -> {"tests.unit", "paladin.view"}  # _resolve_package_key + "test_" 除去で対応パッケージを算出
         """
-        package_key = self._resolve_package_key(file_path)
+        package_key = self._resolver.resolve_package_key(file_path)
         own: set[str] = set()
         if package_key is not None:
             own.add(package_key)
@@ -149,38 +140,6 @@ class NoDirectInternalImportRule:
             own.add(f"{root_pkg}.{production_subpkg}")
 
         return frozenset(own)
-
-    def _collect_exports(self, source_file: SourceFile) -> set[str]:
-        """__init__.py の AST から公開シンボルセットを収集する
-
-        __all__ の定義と from .xxx import yyy の再エクスポートを収集する。
-        """
-        exports: set[str] = set()
-
-        for node in ast.walk(source_file.tree):
-            # __all__ = ["Foo", "Bar"] の形式
-            if (
-                isinstance(node, ast.Assign)
-                and len(node.targets) == 1
-                and isinstance(node.targets[0], ast.Name)
-                and node.targets[0].id == "__all__"
-                and isinstance(node.value, (ast.List, ast.Tuple))
-            ):
-                for elt in node.value.elts:
-                    if isinstance(elt, ast.Constant) and isinstance(elt.value, str):
-                        exports.add(elt.value)
-
-            # from .xxx import Foo の形式（相対インポートのみ対象）
-            if (
-                isinstance(node, ast.ImportFrom)
-                and node.level >= 1  # 相対インポート
-                and node.names
-            ):
-                for alias in node.names:
-                    name = alias.asname if alias.asname else alias.name
-                    exports.add(name)
-
-        return exports
 
     def _check_file(
         self,
@@ -270,12 +229,10 @@ class NoDirectInternalImportRule:
     ) -> Violation:
         """違反オブジェクトを生成する"""
         module_path = node.module or ""
-        return Violation(
+        return self._meta.create_violation(
             file=source_file.file_path,
             line=node.lineno,
             column=node.col_offset,
-            rule_id=self._meta.rule_id,
-            rule_name=self._meta.rule_name,
             message=f"`from {module_path} import {name}` は内部モジュールへの直接参照である",
             reason=f"`{package}` の内部実装に直接依存しており、パッケージの公開 API を経由していない",
             suggestion=f"`from {module_path} import {name}` を `from {package} import {name}` に書き換えてください",

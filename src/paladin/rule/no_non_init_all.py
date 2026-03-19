@@ -4,7 +4,6 @@
 """
 
 import ast
-from pathlib import Path
 
 from paladin.rule.types import RuleMeta, SourceFile, Violation
 
@@ -30,28 +29,26 @@ class NoNonInitAllRule:
 
     def check(self, source_file: SourceFile) -> tuple[Violation, ...]:
         """単一ファイルに対する違反判定を行う"""
-        if source_file.file_path.name == "__init__.py":
+        if source_file.is_init_py:
             return ()
         for node in source_file.tree.body:
             if isinstance(node, ast.Assign):
                 for target in node.targets:
                     if isinstance(target, ast.Name) and target.id == "__all__":
-                        return (self._violation(source_file.file_path, node.lineno),)
+                        return (self._violation(source_file, node.lineno),)
             elif (
                 isinstance(node, ast.AugAssign)
                 and isinstance(node.target, ast.Name)
                 and node.target.id == "__all__"
             ):
-                return (self._violation(source_file.file_path, node.lineno),)
+                return (self._violation(source_file, node.lineno),)
         return ()
 
-    def _violation(self, file: Path, line: int) -> Violation:
-        return Violation(
-            file=file,
+    def _violation(self, source_file: SourceFile, line: int) -> Violation:
+        return self._meta.create_violation(
+            file=source_file.file_path,
             line=line,
             column=0,
-            rule_id=self._meta.rule_id,
-            rule_name=self._meta.rule_name,
             message="__init__.py 以外のファイルに __all__ が定義されている",
             reason=self._meta.intent,
             suggestion=self._meta.suggestion,

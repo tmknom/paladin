@@ -5,6 +5,7 @@
 
 import ast
 
+from paladin.rule.all_exports_extractor import AllExportsExtractor
 from paladin.rule.types import RuleMeta, SourceFile, Violation
 
 
@@ -13,6 +14,7 @@ class RequireAllExportRule:
 
     def __init__(self) -> None:
         """ルールを初期化する"""
+        self._extractor = AllExportsExtractor()
         self._meta = RuleMeta(
             rule_id="require-all-export",
             rule_name="Require __all__ Export",
@@ -29,11 +31,11 @@ class RequireAllExportRule:
 
     def check(self, source_file: SourceFile) -> tuple[Violation, ...]:
         """単一ファイルに対する違反判定を行う"""
-        if source_file.file_path.name != "__init__.py":
+        if not source_file.is_init_py:
             return ()
         if not self._has_substantial_code(source_file.tree):
             return ()
-        if self._has_all_definition(source_file.tree):
+        if self._extractor.has_all_definition(source_file):
             return ()
         symbols = self._collect_public_symbols(source_file.tree)
         if symbols:
@@ -42,12 +44,10 @@ class RequireAllExportRule:
         else:
             suggestion = "`__all__` リストを定義し、公開するシンボルを明示的に列挙してください"
         return (
-            Violation(
+            self._meta.create_violation(
                 file=source_file.file_path,
                 line=1,
                 column=0,
-                rule_id=self._meta.rule_id,
-                rule_name=self._meta.rule_name,
                 message="__init__.py に __all__ が定義されていない",
                 reason="__all__ が未定義の場合、パッケージの公開インタフェースが不明確になり、意図しないシンボルが外部に露出するリスクがある",
                 suggestion=suggestion,
@@ -65,21 +65,6 @@ class RequireAllExportRule:
                 # docstring はスキップ
                 continue
             return True
-        return False
-
-    def _has_all_definition(self, tree: ast.Module) -> bool:
-        """トップレベルに __all__ の代入が存在するか判定する"""
-        for node in tree.body:
-            if isinstance(node, ast.Assign):
-                for target in node.targets:
-                    if isinstance(target, ast.Name) and target.id == "__all__":
-                        return True
-            elif (
-                isinstance(node, ast.AugAssign)
-                and isinstance(node.target, ast.Name)
-                and node.target.id == "__all__"
-            ):
-                return True
         return False
 
     def _collect_public_symbols(self, tree: ast.Module) -> list[str]:

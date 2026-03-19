@@ -4,8 +4,9 @@
 """
 
 import ast
-from pathlib import Path
+from typing import cast
 
+from paladin.rule.all_exports_extractor import AllExportsExtractor
 from paladin.rule.package_resolver import PackageResolver
 from paladin.rule.types import RuleMeta, SourceFile, Violation
 
@@ -16,6 +17,7 @@ class NoCrossPackageReexportRule:
     def __init__(self) -> None:
         """ルールを初期化する"""
         self._resolver = PackageResolver()
+        self._extractor = AllExportsExtractor()
         self._meta = RuleMeta(
             rule_id="no-cross-package-reexport",
             rule_name="No Cross Package Reexport",
@@ -32,71 +34,37 @@ class NoCrossPackageReexportRule:
 
     def check(self, source_file: SourceFile) -> tuple[Violation, ...]:
         """単一ファイルに対する違反判定を行う"""
-        if source_file.file_path.name != "__init__.py":
+        if not source_file.is_init_py:
             return ()
 
-        current_package = self._resolve_current_package(source_file.file_path)
+        current_package = self._resolver.resolve_exact_package_path(source_file.file_path)
         if current_package is None:
             return ()
 
-        all_symbols = self._extract_all_symbols(source_file.tree)
-        if not all_symbols:
+        all_exports = self._extractor.extract(source_file)
+        if not all_exports.is_defined or all_exports.is_empty:
             return ()
 
         import_mapping = self._collect_import_mapping(source_file.tree)
+        assign_node = cast(ast.Assign, all_exports.node)
 
         violations: list[Violation] = []
-        for node in source_file.tree.body:
-            if not isinstance(node, ast.Assign):
+        for name in all_exports:
+            if name not in import_mapping:
                 continue
-            for target in node.targets:
-                if not (isinstance(target, ast.Name) and target.id == "__all__"):
-                    continue
-                if not isinstance(node.value, (ast.List, ast.Tuple)):
-                    continue
-                for elt in node.value.elts:
-                    if not isinstance(elt, ast.Constant) or not isinstance(elt.value, str):
-                        continue
-                    name = elt.value
-                    if name not in import_mapping:
-                        continue
-                    import_source = import_mapping[name]
-                    if not self._is_same_package(current_package, import_source):
-                        source_package = self._to_source_package(import_source)
-                        violations.append(
-                            self._violation(
-                                file=source_file.file_path,
-                                line=node.lineno,
-                                name=name,
-                                source_package=source_package,
-                                current_package=current_package,
-                            )
-                        )
+            import_source = import_mapping[name]
+            if not self._is_same_package(current_package, import_source):
+                source_package = PackageResolver.extract_package_key(import_source)
+                violations.append(
+                    self._violation(
+                        source_file=source_file,
+                        line=assign_node.lineno,
+                        name=name,
+                        source_package=source_package,
+                        current_package=current_package,
+                    )
+                )
         return tuple(violations)
-
-    def _resolve_current_package(self, file_path: Path) -> str | None:
-        """file_path から現在のパッケージ名を導出する。
-
-        PackageResolver.resolve_exact_package_path() に委譲する。
-        """
-        return self._resolver.resolve_exact_package_path(file_path)
-
-    def _extract_all_symbols(self, tree: ast.Module) -> tuple[str, ...]:
-        """AST からトップレベルの __all__ 代入文を探し、文字列リテラルを抽出する"""
-        for node in tree.body:
-            if not isinstance(node, ast.Assign):
-                continue
-            for target in node.targets:
-                if not (isinstance(target, ast.Name) and target.id == "__all__"):
-                    continue
-                if not isinstance(node.value, (ast.List, ast.Tuple)):
-                    return ()
-                result: list[str] = []
-                for elt in node.value.elts:
-                    if isinstance(elt, ast.Constant) and isinstance(elt.value, str):
-                        result.append(elt.value)
-                return tuple(result)
-        return ()
 
     def _collect_import_mapping(self, tree: ast.Module) -> dict[str, str]:
         """AST からトップレベルの from X import Y 文を収集し {シンボル名: インポート元} を返す。
@@ -121,31 +89,19 @@ class NoCrossPackageReexportRule:
         """インポート元モジュールパスが現在のパッケージ配下かどうかを判定する"""
         return import_source == current_package or import_source.startswith(current_package + ".")
 
-    def _to_source_package(self, import_source: str) -> str:
-        """インポート元モジュールパスから先頭2セグメントを返す。
-
-        セグメント数が2未満の場合はそのまま返す。
-        """
-        segments = import_source.split(".")
-        if len(segments) < 2:
-            return import_source
-        return ".".join(segments[:2])
-
     def _violation(
         self,
-        file: Path,
+        source_file: SourceFile,
         line: int,
         name: str,
         source_package: str,
         current_package: str,
     ) -> Violation:
         """診断メッセージ仕様に従い Violation を生成する"""
-        return Violation(
-            file=file,
+        return self._meta.create_violation(
+            file=source_file.file_path,
             line=line,
             column=0,
-            rule_id=self._meta.rule_id,
-            rule_name=self._meta.rule_name,
             message=f"__all__ に別パッケージのシンボル `{name}` が含まれている（定義元: `{source_package}`）",
             reason=f"`{source_package}` で定義されたシンボルを `{current_package}` の公開 API として再エクスポートすると、パッケージ境界が曖昧になる",
             suggestion=f"`{name}` を __all__ から削除し、利用者が `from {source_package} import {name}` を直接使用するよう誘導してください",

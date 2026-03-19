@@ -17,6 +17,16 @@ class SourceFile:
     tree: ast.Module
     source: str
 
+    @property
+    def is_init_py(self) -> bool:
+        """__init__.py かどうかを返す"""
+        return self.file_path.name == "__init__.py"
+
+    @property
+    def is_test_file(self) -> bool:
+        """tests/ 配下のファイルかどうかを返す"""
+        return "tests" in self.file_path.parts
+
 
 @dataclass(frozen=True)
 class SourceFiles:
@@ -31,6 +41,14 @@ class SourceFiles:
     def __iter__(self) -> Iterator[SourceFile]:
         """ソースファイルをイテレーションする"""
         return iter(self.files)
+
+    def init_files(self) -> Iterator[SourceFile]:
+        """__init__.py のみをイテレーションする"""
+        return (f for f in self.files if f.is_init_py)
+
+    def production_files(self) -> Iterator[SourceFile]:
+        """tests/ 以外のファイルをイテレーションする"""
+        return (f for f in self.files if not f.is_test_file)
 
 
 @dataclass(frozen=True)
@@ -72,3 +90,24 @@ class RuleMeta:
     intent: str
     guidance: str
     suggestion: str
+
+    def create_violation(
+        self,
+        file: Path,
+        line: int,
+        column: int,
+        message: str,
+        reason: str,
+        suggestion: str,
+    ) -> Violation:
+        """rule_id, rule_name を自動補完して Violation を生成する"""
+        return Violation(
+            file=file,
+            line=line,
+            column=column,
+            rule_id=self.rule_id,
+            rule_name=self.rule_name,
+            message=message,
+            reason=reason,
+            suggestion=suggestion,
+        )
