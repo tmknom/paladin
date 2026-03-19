@@ -10,3 +10,4 @@
 | ルール名 | 概要 |
 |------------|------|
 | [no-testing-test-code](no-testing-test-code.md) | `tests/` 配下のコードに対するテストの作成を禁止する |
+| [no-third-party-import](no-third-party-import.md) | 許可ディレクトリ以外でのサードパーティライブラリのインポートを禁止する |
