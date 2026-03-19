@@ -61,7 +61,7 @@ tests/unit/test_config/
 ### 解析コマンド実行時の設定構築
 
 1. `ProjectConfigLoader` が `pyproject.toml` を読み込み、`ProjectConfig` を生成する
-2. `TargetResolver` が CLI ターゲット引数と `ProjectConfig.include` を統合し、解析対象パスを決定する
+2. `TargetResolver` が CLI ターゲット引数と `ProjectConfig.include` を統合し、解析対象パスを決定する（どちらも未指定の場合はカレントディレクトリの `src` / `tests` をデフォルトとして使用する）
 3. 解析対象パス・`ProjectConfig.exclude`・`ProjectConfig.per_file_ignores`・`ProjectConfig.rules` などを解析コアへ渡す
 
 ### 設定値の参照
