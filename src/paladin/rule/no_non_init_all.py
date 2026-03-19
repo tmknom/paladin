@@ -3,8 +3,7 @@
 仕様は docs/rules/no-non-init-all.md を参照。
 """
 
-import ast
-
+from paladin.rule.all_exports_extractor import AllExportsExtractor
 from paladin.rule.types import RuleMeta, SourceFile, Violation
 
 
@@ -13,6 +12,7 @@ class NoNonInitAllRule:
 
     def __init__(self) -> None:
         """ルールを初期化する"""
+        self._extractor = AllExportsExtractor()
         self._meta = RuleMeta(
             rule_id="no-non-init-all",
             rule_name="No Non-Init All",
@@ -31,20 +31,12 @@ class NoNonInitAllRule:
         """単一ファイルに対する違反判定を行う"""
         if source_file.is_init_py:
             return ()
-        for node in source_file.tree.body:
-            if isinstance(node, ast.Assign):
-                for target in node.targets:
-                    if isinstance(target, ast.Name) and target.id == "__all__":
-                        return (self._violation(source_file, node.lineno),)
-            elif (
-                isinstance(node, ast.AugAssign)
-                and isinstance(node.target, ast.Name)
-                and node.target.id == "__all__"
-            ):
-                return (self._violation(source_file, node.lineno),)
-        return ()
+        node = self._extractor.find_all_node(source_file.tree)
+        if node is None:
+            return ()
+        return (self._make_violation(source_file, node.lineno),)
 
-    def _violation(self, source_file: SourceFile, line: int) -> Violation:
+    def _make_violation(self, source_file: SourceFile, line: int) -> Violation:
         return self._meta.create_violation(
             file=source_file.file_path,
             line=line,

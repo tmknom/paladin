@@ -117,7 +117,7 @@ class NoUnusedExportRule:
 
                     # 同一パッケージからの利用は除外
                     export_pkg_key = PackageResolver.extract_package_key(node.module)
-                    if self._is_same_package(user_pkg_key, export_pkg_key):
+                    if PackageResolver.is_same_package_exact(user_pkg_key, export_pkg_key):
                         continue
 
                     for alias in node.names:
@@ -135,7 +135,7 @@ class NoUnusedExportRule:
 
                     # 同一パッケージからの利用は除外
                     export_pkg_key = PackageResolver.extract_package_key(module_name)
-                    if self._is_same_package(user_pkg_key, export_pkg_key):
+                    if PackageResolver.is_same_package_exact(user_pkg_key, export_pkg_key):
                         continue
 
                     usages.setdefault(module_name, set()).add(node.attr)
@@ -154,12 +154,6 @@ class NoUnusedExportRule:
         else:
             return None
         return ".".join(reversed(parts))
-
-    def _is_same_package(self, pkg_a: str | None, pkg_b: str | None) -> bool:
-        """2つのパッケージキーが同一かどうかを判定する"""
-        if pkg_a is None or pkg_b is None:
-            return False
-        return pkg_a == pkg_b
 
     def _make_violation(self, file_path: Path, node: ast.AST, name: str) -> Violation:
         """診断メッセージ仕様に従い Violation を生成する"""

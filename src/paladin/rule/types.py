@@ -27,6 +27,13 @@ class SourceFile:
         """tests/ 配下のファイルかどうかを返す"""
         return "tests" in self.file_path.parts
 
+    def get_line(self, lineno: int) -> str:
+        """指定した行番号（1-based）のソース行テキストを返す（前後空白は strip 済み）"""
+        lines = self.source.splitlines()
+        if 1 <= lineno <= len(lines):
+            return lines[lineno - 1].strip()
+        return ""
+
 
 @dataclass(frozen=True)
 class SourceFiles:

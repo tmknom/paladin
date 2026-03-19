@@ -97,7 +97,7 @@ class NoLocalImportRule:
         scope: str,
         source_file: SourceFile,
     ) -> Violation:
-        import_text = source_file.source.splitlines()[node.lineno - 1].strip()
+        import_text = source_file.get_line(node.lineno)
         return self._meta.create_violation(
             file=source_file.file_path,
             line=node.lineno,

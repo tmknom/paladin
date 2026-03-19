@@ -53,10 +53,10 @@ class NoCrossPackageReexportRule:
             if name not in import_mapping:
                 continue
             import_source = import_mapping[name]
-            if not self._is_same_package(current_package, import_source):
+            if not PackageResolver.is_subpackage(import_source, current_package):
                 source_package = PackageResolver.extract_package_key(import_source)
                 violations.append(
-                    self._violation(
+                    self._make_violation(
                         source_file=source_file,
                         line=assign_node.lineno,
                         name=name,
@@ -85,11 +85,7 @@ class NoCrossPackageReexportRule:
                 mapping[key] = node.module
         return mapping
 
-    def _is_same_package(self, current_package: str, import_source: str) -> bool:
-        """インポート元モジュールパスが現在のパッケージ配下かどうかを判定する"""
-        return import_source == current_package or import_source.startswith(current_package + ".")
-
-    def _violation(
+    def _make_violation(
         self,
         source_file: SourceFile,
         line: int,

@@ -48,6 +48,31 @@ class TestAllExports:
         assert list(ae) == ["Foo", "Bar"]
 
 
+class TestAllExportsExtractorFindAllNode:
+    """AllExportsExtractor.find_all_node() のテスト"""
+
+    def test_正常系_Assign定義があるときノードを返すこと(self):
+        tree = ast.parse('__all__ = ["Foo"]\n')
+        result = AllExportsExtractor().find_all_node(tree)
+        assert isinstance(result, ast.Assign)
+
+    def test_正常系_AugAssign定義があるときノードを返すこと(self):
+        tree = ast.parse('__all__ = []\n__all__ += ["Foo"]\n')
+        result = AllExportsExtractor().find_all_node(tree)
+        # 最初に見つかった Assign を返す
+        assert result is not None
+
+    def test_正常系_定義なしのときNoneを返すこと(self):
+        tree = ast.parse("x = 1\n")
+        result = AllExportsExtractor().find_all_node(tree)
+        assert result is None
+
+    def test_正常系_AugAssignのみのとき返すこと(self):
+        tree = ast.parse('__all__ += ["Foo"]\n')
+        result = AllExportsExtractor().find_all_node(tree)
+        assert isinstance(result, ast.AugAssign)
+
+
 class TestAllExportsExtractorExtract:
     """AllExportsExtractor.extract() のテスト"""
 
