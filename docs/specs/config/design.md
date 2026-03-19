@@ -94,13 +94,13 @@ tests/unit/test_config/
 
 **トレードオフ**: `PathConfig` の構造変更は `AppConfig` の合成ロジックに波及するが、呼び出し元への影響は `AppConfig` のインターフェースが変わらない限り生じない。
 
-### `pydantic-settings` によるバリデーション
+### `CoreSettings` による環境変数設定の抽象化
 
-**設計の意図**: `EnvVarConfig` は `pydantic-settings` を使い、環境変数の読み込みを宣言的に定義した。
+**設計の意図**: `EnvVarConfig` は `paladin.foundation.model.CoreSettings` を継承することで、`pydantic-settings` への直接依存を持たない構造にした。
 
-**なぜそう設計したか**: 環境変数は文字列として取得されるが、アプリケーション内では型安全な値として扱いたい。`pydantic-settings` を使うことで型変換・バリデーション・デフォルト値の管理を1クラスに集約でき、未知の環境変数キーを拒否することで設定ミスを起動時に検出できる。
+**なぜそう設計したか**: 環境変数は文字列として取得されるが、アプリケーション内では型安全な値として扱いたい。`pydantic-settings` を使うことで型変換・バリデーション・デフォルト値の管理を1クラスに集約できる。さらに `pydantic-settings` への依存を `foundation/model/` に集約することで、`config` パッケージがサードパーティライブラリに直接依存しない構造になる。未知の環境変数キーを拒否する設定は `CoreSettings` で一元管理し、設定ミスを起動時に検出できる。
 
-**トレードオフ**: `pydantic-settings` への依存が生まれる。未知のキーを拒否する設定により、将来的な設定追加時にはコードの変更が必須になる。
+**トレードオフ**: `CoreSettings` を経由することで間接的な依存関係が生じる。未知のキーを拒否する設定により、将来的な設定追加時にはコードの変更が必須になる。
 
 ### `ProjectConfig` を値オブジェクトとして設計
 
@@ -162,7 +162,7 @@ tests/unit/test_config/
 
 | 依存先 | 用途 |
 |---|---|
-| `pydantic-settings` ライブラリ | 環境変数の読み込み・型変換・バリデーション |
+| `paladin.foundation.model.CoreSettings` | 環境変数設定基底クラス。`pydantic-settings` への直接依存を隠蔽し、大小文字の正規化・定義外キー拒否の共通設定を継承する |
 | Python `pathlib` 標準ライブラリ | パス情報の表現と操作 |
 | Python `tomllib` 標準ライブラリ（3.11+） | `pyproject.toml` のパース |
 | `paladin.foundation.fs` / `paladin.protocol.fs` | ファイル読み込みの抽象インターフェース |

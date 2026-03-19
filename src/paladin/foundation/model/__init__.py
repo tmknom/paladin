@@ -8,5 +8,6 @@ Docs:
 """
 
 from paladin.foundation.model.base import CoreModel
+from paladin.foundation.model.settings import CoreSettings, SettingsConfigDict
 
-__all__ = ["CoreModel"]
+__all__ = ["CoreModel", "CoreSettings", "SettingsConfigDict"]
