@@ -36,12 +36,10 @@ class NoRelativeImportRule:
                 module = node.module or ""
                 names_str = ", ".join(alias.name for alias in node.names)
                 violations.append(
-                    Violation(
+                    self._meta.create_violation(
                         file=source_file.file_path,
                         line=node.lineno,
                         column=node.col_offset,
-                        rule_id=self._meta.rule_id,
-                        rule_name=self._meta.rule_name,
                         message=f"相対インポートが使用されている（from {level_dots}{module} import ...）",
                         reason="相対インポートは依存関係を不透明にし、モジュール移動時にインポートパスの修正が必要になる",
                         suggestion=f"`from {level_dots}{module} import {names_str}` をプロジェクトルートからの絶対インポートに書き換えてください",

@@ -84,6 +84,22 @@ class TestPackageResolverResolveExactPackagePath:
         assert result == "myapp.module.sub"
 
 
+class TestPackageResolverExtractPackageKey:
+    """PackageResolver.extract_package_key() のテスト"""
+
+    def test_正常系_3セグメント以上から先頭2セグメントを返すこと(self):
+        result = PackageResolver.extract_package_key("paladin.check.formatter")
+        assert result == "paladin.check"
+
+    def test_正常系_2セグメントのときそのまま返すこと(self):
+        result = PackageResolver.extract_package_key("paladin.check")
+        assert result == "paladin.check"
+
+    def test_正常系_1セグメントのときそのまま返すこと(self):
+        result = PackageResolver.extract_package_key("paladin")
+        assert result == "paladin"
+
+
 class TestPackageResolverResolveRootPackages:
     """PackageResolver.resolve_root_packages() のテスト"""
 

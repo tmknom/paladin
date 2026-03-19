@@ -41,12 +41,10 @@ class NoMockUsageRule:
                     for alias in node.names:
                         if alias.name in _FORBIDDEN_NAMES:
                             violations.append(
-                                Violation(
+                                self._meta.create_violation(
                                     file=source_file.file_path,
                                     line=node.lineno,
                                     column=node.col_offset,
-                                    rule_id=self._meta.rule_id,
-                                    rule_name=self._meta.rule_name,
                                     message=f"{alias.name} のインポートは禁止されています",
                                     reason=_REASON,
                                     suggestion=self._meta.suggestion,
@@ -56,12 +54,10 @@ class NoMockUsageRule:
                 for alias in node.names:
                     if alias.name == "unittest.mock":
                         violations.append(
-                            Violation(
+                            self._meta.create_violation(
                                 file=source_file.file_path,
                                 line=node.lineno,
                                 column=node.col_offset,
-                                rule_id=self._meta.rule_id,
-                                rule_name=self._meta.rule_name,
                                 message="unittest.mock のインポートは禁止されています",
                                 reason=_REASON,
                                 suggestion=self._meta.suggestion,

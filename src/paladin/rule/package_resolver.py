@@ -123,6 +123,18 @@ class PackageResolver:
                 if child.is_dir() and not child.name.startswith("."):
                     root_packages.add(child.name)
 
+    @staticmethod
+    def extract_package_key(dotted_path: str) -> str:
+        """ドット区切りのパス文字列から先頭2セグメントを返す
+
+        セグメント数が2未満の場合はそのまま返す。
+        例: "paladin.check.formatter" -> "paladin.check"
+             "paladin.check"          -> "paladin.check"
+             "paladin"                -> "paladin"
+        """
+        segments = dotted_path.split(".")
+        return ".".join(segments[:2])
+
     def _find_anchor(self, dir_parts: tuple[str, ...]) -> tuple[int, str]:
         """_NON_PACKAGE_DIRS の最後の出現位置をアンカーとして返す
 

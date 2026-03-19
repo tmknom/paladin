@@ -143,12 +143,67 @@ class TestViolations:
         assert result == 0
 
 
+class TestSourceFileProperties:
+    """SourceFile プロパティのテスト"""
+
+    def test_is_init_py_正常系_init_pyのとき真を返すこと(self):
+        tree = ast.parse("")
+        sf = SourceFile(file_path=Path("src/paladin/__init__.py"), tree=tree, source="")
+        assert sf.is_init_py is True
+
+    def test_is_init_py_正常系_通常ファイルのとき偽を返すこと(self):
+        tree = ast.parse("")
+        sf = SourceFile(file_path=Path("src/paladin/foo.py"), tree=tree, source="")
+        assert sf.is_init_py is False
+
+    def test_is_test_file_正常系_tests配下のとき真を返すこと(self):
+        tree = ast.parse("")
+        sf = SourceFile(file_path=Path("tests/unit/test_foo.py"), tree=tree, source="")
+        assert sf.is_test_file is True
+
+    def test_is_test_file_正常系_src配下のとき偽を返すこと(self):
+        tree = ast.parse("")
+        sf = SourceFile(file_path=Path("src/paladin/foo.py"), tree=tree, source="")
+        assert sf.is_test_file is False
+
+
+class TestSourceFilesFilters:
+    """SourceFiles フィルタメソッドのテスト"""
+
+    def _sf(self, path: str) -> SourceFile:
+        tree = ast.parse("")
+        return SourceFile(file_path=Path(path), tree=tree, source="")
+
+    def test_init_files_正常系_init_pyのみを返すこと(self):
+        sf_init = self._sf("src/paladin/__init__.py")
+        sf_other = self._sf("src/paladin/foo.py")
+        source_files = SourceFiles(files=(sf_init, sf_other))
+        result = list(source_files.init_files())
+        assert result == [sf_init]
+
+    def test_production_files_正常系_tests配下を除外すること(self):
+        sf_prod = self._sf("src/paladin/foo.py")
+        sf_test = self._sf("tests/unit/test_foo.py")
+        source_files = SourceFiles(files=(sf_prod, sf_test))
+        result = list(source_files.production_files())
+        assert result == [sf_prod]
+
+    def test_init_files_エッジケース_空の場合空を返すこと(self):
+        source_files = SourceFiles(files=())
+        result = list(source_files.init_files())
+        assert result == []
+
+    def test_production_files_エッジケース_空の場合空を返すこと(self):
+        source_files = SourceFiles(files=())
+        result = list(source_files.production_files())
+        assert result == []
+
+
 class TestRuleMeta:
     """RuleMetaクラスのテスト"""
 
-    def test_rule_meta_init_正常系_全フィールドを保持すること(self):
-        # Arrange & Act
-        result = RuleMeta(
+    def _meta(self) -> RuleMeta:
+        return RuleMeta(
             rule_id="require-all-export",
             rule_name="Require __all__ Export",
             summary="__init__.py に __all__ の定義を要求する",
@@ -156,6 +211,10 @@ class TestRuleMeta:
             guidance="__init__.py に __all__ が定義されているかを確認する",
             suggestion="__all__ リストを定義し、公開するシンボルを明示的に列挙する",
         )
+
+    def test_rule_meta_init_正常系_全フィールドを保持すること(self):
+        # Arrange & Act
+        result = self._meta()
 
         # Assert
         assert result.rule_id == "require-all-export"
@@ -167,3 +226,22 @@ class TestRuleMeta:
         )
         assert result.guidance == "__init__.py に __all__ が定義されているかを確認する"
         assert result.suggestion == "__all__ リストを定義し、公開するシンボルを明示的に列挙する"
+
+    def test_create_violation_正常系_rule_idとrule_nameが自動補完されること(self):
+        meta = self._meta()
+        result = meta.create_violation(
+            file=Path("src/paladin/__init__.py"),
+            line=1,
+            column=0,
+            message="テストメッセージ",
+            reason="テスト理由",
+            suggestion="テスト提案",
+        )
+        assert result.rule_id == "require-all-export"
+        assert result.rule_name == "Require __all__ Export"
+        assert result.file == Path("src/paladin/__init__.py")
+        assert result.line == 1
+        assert result.column == 0
+        assert result.message == "テストメッセージ"
+        assert result.reason == "テスト理由"
+        assert result.suggestion == "テスト提案"

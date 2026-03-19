@@ -61,12 +61,10 @@ class RequireQualifiedThirdPartyRule:
             return
         for alias in node.names:
             violations.append(
-                Violation(
+                self._meta.create_violation(
                     file=source_file.file_path,
                     line=node.lineno,
                     column=node.col_offset,
-                    rule_id=self._meta.rule_id,
-                    rule_name=self._meta.rule_name,
                     message=f"`from {node.module} import {alias.name}` はサードパーティライブラリの直接インポートである",
                     reason="外部依存の境界を明示するために、サードパーティライブラリは完全修飾名で使用する必要がある",
                     suggestion=f"`from {node.module} import {alias.name}` を `import {node.module}` に書き換え、使用箇所の `{alias.name}` を `{node.module}.{alias.name}` に置換してください",
@@ -86,12 +84,10 @@ class RequireQualifiedThirdPartyRule:
             if self._is_excluded(top):
                 continue
             violations.append(
-                Violation(
+                self._meta.create_violation(
                     file=source_file.file_path,
                     line=node.lineno,
                     column=node.col_offset,
-                    rule_id=self._meta.rule_id,
-                    rule_name=self._meta.rule_name,
                     message=f"`import {alias.name} as {alias.asname}` はサードパーティライブラリのエイリアスインポートである",
                     reason="外部依存の境界を明示するために、サードパーティライブラリは完全修飾名で使用する必要がある",
                     suggestion=f"`import {alias.name} as {alias.asname}` を `import {alias.name}` に書き換え、使用箇所の `{alias.asname}` を `{alias.name}` に置換してください",
