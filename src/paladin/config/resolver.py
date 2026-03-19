@@ -22,7 +22,8 @@ class TargetResolver:
         解決ロジック:
         1. targets が空でない場合 → targets を返す
         2. include が空でない場合 → include の各パスを Path に変換して返す
-        3. いずれも該当しない場合 → ApplicationError を送出する
+        3. カレントディレクトリの src / tests の存在を確認し、存在するものを返す
+        4. いずれも該当しない場合 → ApplicationError を送出する
 
         Args:
             targets: CLI から受け取ったターゲットパス群
@@ -32,13 +33,17 @@ class TargetResolver:
             解決済みの解析対象パスのタプル
 
         Raises:
-            ApplicationError: CLI ターゲットも include も未指定の場合
+            ApplicationError: CLI ターゲットも include も未指定で src / tests も存在しない場合
         """
         if targets:
             return targets
 
         if include:
             return tuple(Path(p) for p in include)
+
+        defaults = tuple(p for p in (Path("src"), Path("tests")) if p.is_dir())
+        if defaults:
+            return defaults
 
         raise ApplicationError(
             message="解析対象が指定されていません。TARGET 引数か pyproject.toml の [tool.paladin] include を指定してください。",
