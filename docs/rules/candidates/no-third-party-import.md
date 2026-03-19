@@ -71,9 +71,10 @@ class CoreModel(pydantic.BaseModel):
 
 ```python
 # src/paladin/config/env_var.py — 内部モジュール経由でアクセスする修正例
-import paladin.foundation.model  # 準拠: 内部モジュール経由
+from paladin.foundation.model import CoreSettings, SettingsConfigDict  # 準拠: 内部モジュール経由
 
-class EnvVarConfig(paladin.foundation.model.BaseSettings):
+class EnvVarConfig(CoreSettings):
+    model_config = SettingsConfigDict(env_prefix="EXAMPLE_")
     log_level: str = "WARNING"
 ```
 

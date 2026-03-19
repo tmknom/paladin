@@ -4,8 +4,8 @@
 
 ## アーキテクチャパターン
 
-- **基底クラスパターン**: `CoreModel` を全ドメインモデルの共通基底として定義し、継承によって共通設定を伝播させる
-- **設定オブジェクトパターン**: `ConfigDict` に設定を集約し、設定の変更箇所を単一ファイルに局所化する
+- **基底クラスパターン**: `CoreModel` / `CoreSettings` を共通基底として定義し、継承によって共通設定を伝播させる
+- **設定オブジェクトパターン**: `ConfigDict` / `SettingsConfigDict` に設定を集約し、設定の変更箇所を単一ファイルに局所化する
 
 ## コンポーネント構成
 
@@ -14,6 +14,7 @@
 | コンポーネント | クラス名 | 役割 |
 |---|---|---|
 | 共通モデル基底クラス | `CoreModel` | 不変性・厳格バリデーション・文字列正規化・エイリアスサポートを共通設定として保持する基底クラス |
+| 共通設定基底クラス | `CoreSettings` | 環境変数設定クラスの共通基底。大小文字の正規化・定義外キーの拒否を一元化する |
 
 ### ファイルレイアウト
 
@@ -21,15 +22,17 @@
 
 ```bash
 src/paladin/foundation/model/
-├── __init__.py    # 公開 API の定義（CoreModel）
-└── base.py        # CoreModel（共通モデル基底クラス）
+├── __init__.py    # 公開 API の定義（CoreModel, CoreSettings, SettingsConfigDict）
+├── base.py        # CoreModel（共通モデル基底クラス）
+└── settings.py    # CoreSettings（共通設定基底クラス）、SettingsConfigDict の再エクスポート
 ```
 
 #### テストコード
 
 ```bash
 tests/unit/test_foundation/test_model/
-└── test_core_model.py    # CoreModel のテスト
+├── test_core_model.py      # CoreModel のテスト
+└── test_core_settings.py   # CoreSettings のテスト
 ```
 
 ## 処理フロー
@@ -76,7 +79,7 @@ tests/unit/test_foundation/test_model/
 
 ### 公開 API の制限
 
-公開 API は `CoreModel` のみ（`__init__.py` の `__all__` で明示）。内部モジュールからの直接 import は行わず、`paladin.foundation.model` パッケージから import すること。
+公開 API は `CoreModel`・`CoreSettings`・`SettingsConfigDict`（`__init__.py` の `__all__` で明示）。内部モジュールからの直接 import は行わず、`paladin.foundation.model` パッケージから import すること。
 
 ### frozen インスタンスの変更
 
@@ -90,6 +93,8 @@ tests/unit/test_foundation/test_model/
 |---|---|
 | Pydantic `BaseModel` | `CoreModel` の基底クラス。バリデーション・シリアライゼーション・不変性の実装を利用する |
 | Pydantic `ConfigDict` | `CoreModel` の共通設定を定義するための設定オブジェクト |
+| pydantic-settings `BaseSettings` | `CoreSettings` の基底クラス。環境変数の読み込み・型変換・バリデーションを利用する |
+| pydantic-settings `SettingsConfigDict` | `CoreSettings` の共通設定を定義するための設定オブジェクト。`foundation.model` から再エクスポートし、利用側に `pydantic_settings` への直接依存を持たせない |
 
 ### 想定される拡張ポイント
 
@@ -110,6 +115,7 @@ tests/unit/test_foundation/test_model/
 | 全ドメインモデルに共通バリデーションを追加 | `base.py`（`CoreModel` にカスタムバリデータを追加） | 全継承クラスに影響するため、全テストが通ることを確認する |
 | シリアライゼーション設定を追加 | `base.py`（`ConfigDict` に設定を追加） | Pydantic の `ConfigDict` で利用可能なオプションを確認する |
 | ドメインモデルを新規追加 | 各パッケージ（`CoreModel` を継承したクラスを定義） | フィールド定義のみに専念し、共通設定は `CoreModel` から自動適用される |
+| 環境変数設定クラスを新規追加 | 各パッケージ（`CoreSettings` を継承したクラスを定義） | `SettingsConfigDict(env_prefix="...")` でプレフィックスを指定する |
 | 公開 API を追加 | `__init__.py` の `__all__` | 内部コンポーネントの公開は原則行わない |
 
 ## 影響範囲
@@ -118,6 +124,7 @@ foundation/model パッケージはアプリケーション全体のドメイン
 
 - **公開 API の変更**: コードベース全体に影響が及ぶ
 - **`CoreModel` の変更**: すべての継承クラスのバリデーション動作・不変性に直接影響する
+- **`CoreSettings` の変更**: すべての環境変数設定クラスの動作に直接影響する
 
 ## 関連ドキュメント
 
