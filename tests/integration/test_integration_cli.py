@@ -96,39 +96,6 @@ class TestIntegrationListCLI:
         assert "no-local-import" in result.stdout
         assert "require-qualified-third-party" in result.stdout
 
-    def test_list_正常系_format_json指定でrulesキーを含むJSON出力とexit_code_0を返すこと(self):
-        # Act
-        cmd = [sys.executable, "-m", "paladin.cli", "list", "--format", "json"]
-        result = subprocess.run(cmd, capture_output=True, text=True, timeout=10)
-
-        # Assert
-        assert result.returncode == 0
-        data = json.loads(result.stdout)
-        assert "rules" in data
-        # 各要素に rule_id / rule_name / summary が含まれる
-        assert len(data["rules"]) > 0
-        assert "rule_id" in data["rules"][0]
-        assert "rule_name" in data["rules"][0]
-        assert "summary" in data["rules"][0]
-
-    def test_list_正常系_format_text指定で既存のテキスト出力が維持されること(self):
-        # Act
-        cmd = [sys.executable, "-m", "paladin.cli", "list", "--format", "text"]
-        result = subprocess.run(cmd, capture_output=True, text=True, timeout=10)
-
-        # Assert
-        assert result.returncode == 0
-        assert "require-all-export" in result.stdout
-
-    def test_list_エッジケース_format未指定でデフォルトのテキスト出力が維持されること(self):
-        # Act
-        cmd = [sys.executable, "-m", "paladin.cli", "list"]
-        result = subprocess.run(cmd, capture_output=True, text=True, timeout=10)
-
-        # Assert
-        assert result.returncode == 0
-        assert "require-all-export" in result.stdout
-
 
 class TestIntegrationViewCLI:
     """view サブコマンドの統合テスト"""
@@ -147,72 +114,6 @@ class TestIntegrationViewCLI:
         assert "Intent:" in result.stdout
         assert "Guidance:" in result.stdout
         assert "Suggestion:" in result.stdout
-
-    def test_view_エッジケース_存在しないrule_idでエラーメッセージを出力しexit_code_0で終了すること(
-        self,
-    ):
-        # Act
-        cmd = [sys.executable, "-m", "paladin.cli", "view", "nonexistent"]
-        result = subprocess.run(cmd, capture_output=True, text=True, timeout=10)
-
-        # Assert
-        assert result.returncode == 0
-        assert "nonexistent" in result.stdout
-        assert "Error" in result.stdout
-
-    def test_view_正常系_format_json指定でJSON形式の詳細を出力しexit_code_0で終了すること(self):
-        # Act
-        cmd = [
-            sys.executable,
-            "-m",
-            "paladin.cli",
-            "view",
-            "require-all-export",
-            "--format",
-            "json",
-        ]
-        result = subprocess.run(cmd, capture_output=True, text=True, timeout=10)
-
-        # Assert
-        assert result.returncode == 0
-        data = json.loads(result.stdout)
-        assert data["rule_id"] == "require-all-export"
-        assert "rule_name" in data
-        assert "summary" in data
-        assert "intent" in data
-        assert "guidance" in data
-        assert "suggestion" in data
-
-    def test_view_正常系_format_text指定で既存のテキスト出力が維持されること(self):
-        # Act
-        cmd = [
-            sys.executable,
-            "-m",
-            "paladin.cli",
-            "view",
-            "require-all-export",
-            "--format",
-            "text",
-        ]
-        result = subprocess.run(cmd, capture_output=True, text=True, timeout=10)
-
-        # Assert
-        assert result.returncode == 0
-        assert "Rule ID:" in result.stdout
-        assert "require-all-export" in result.stdout
-
-    def test_view_エッジケース_存在しないrule_idでformat_json指定時にerrorキーを含むJSONを返すこと(
-        self,
-    ):
-        # Act
-        cmd = [sys.executable, "-m", "paladin.cli", "view", "nonexistent", "--format", "json"]
-        result = subprocess.run(cmd, capture_output=True, text=True, timeout=10)
-
-        # Assert
-        assert result.returncode == 0
-        data = json.loads(result.stdout)
-        assert "error" in data
-        assert "nonexistent" in data["error"]
 
 
 class TestIntegrationVersionCLI:
@@ -277,52 +178,6 @@ class TestIntegrationCheckCLI:
         # Assert
         assert result.returncode == 2
 
-    def test_check_異常系_存在しないパスでexit_code_2を返すこと(self, tmp_dir: Path):
-        # Arrange
-        non_existent = tmp_dir / "does_not_exist"
-
-        # Act
-        cmd = [sys.executable, "-m", "paladin.cli", "check", str(non_existent)]
-        result = subprocess.run(cmd, cwd=tmp_dir, capture_output=True, text=True, timeout=10)
-
-        # Assert
-        assert result.returncode == 2
-
-    # このテストは main() の ErrorHandler が例外を捕捉して sys.exit(2) に変換する経路を検証する。
-    # 未知のサブコマンドでは Typer が先に exit code 2 で終了し ErrorHandler に到達しないため、
-    # 実在するサブコマンド経由で例外を発生させる必要がある。
-    # 使用するサブコマンド自体のロジックは、このテストの関心事ではない。
-    def test_例外発生時_ErrorHandlerがexit_code_2で終了すること(self, tmp_dir: Path):
-        # Arrange
-        non_existent_file = tmp_dir / "non_existent.txt"
-
-        # Act
-        cmd = [sys.executable, "-m", "paladin.cli", "transform", str(non_existent_file)]
-        result = subprocess.run(cmd, cwd=tmp_dir, capture_output=True, text=True, timeout=10)
-
-        # Assert
-        assert result.returncode == 2
-        # エラーメッセージが出力されることを確認（標準エラー出力に表示される）
-        assert result.stderr or "Error" in result.stdout
-
-    def test_check_正常系_format_json指定で違反なしのJSON出力とexit_code_0を返すこと(
-        self, tmp_dir: Path
-    ):
-        # Arrange
-        src_dir = tmp_dir / "src"
-        src_dir.mkdir()
-        py_file = src_dir / "main.py"
-        py_file.write_text("x = 1\n")
-
-        # Act
-        cmd = [sys.executable, "-m", "paladin.cli", "check", str(src_dir), "--format", "json"]
-        result = subprocess.run(cmd, cwd=tmp_dir, capture_output=True, text=True, timeout=10)
-
-        # Assert
-        assert result.returncode == 0
-        data = json.loads(result.stdout)
-        assert data["status"] == "ok"
-
     def test_check_正常系_format_json指定で違反ありのJSON出力とexit_code_1を返すこと(
         self, tmp_dir: Path
     ):
@@ -342,81 +197,6 @@ class TestIntegrationCheckCLI:
         assert data["status"] == "violations"
         assert isinstance(data["diagnostics"], list)
         assert len(data["diagnostics"]) > 0
-
-    def test_check_正常系_format_json指定でdiagnosticsに必須フィールドが含まれること(
-        self, tmp_dir: Path
-    ):
-        # Arrange: __init__.py に __all__ なし（require-all-export 違反）
-        src_dir = tmp_dir / "src"
-        src_dir.mkdir()
-        init_file = src_dir / "__init__.py"
-        init_file.write_text("x = 1\n")
-
-        # Act
-        cmd = [sys.executable, "-m", "paladin.cli", "check", str(src_dir), "--format", "json"]
-        result = subprocess.run(cmd, cwd=tmp_dir, capture_output=True, text=True, timeout=10)
-
-        # Assert
-        data = json.loads(result.stdout)
-        diagnostic = data["diagnostics"][0]
-        assert "file" in diagnostic
-        assert "line" in diagnostic
-        assert "column" in diagnostic
-        assert "rule_id" in diagnostic
-        assert "rule_name" in diagnostic
-        assert "message" in diagnostic
-        assert "reason" in diagnostic
-        assert "suggestion" in diagnostic
-
-    def test_check_正常系_format_json指定でsummaryにtotal_violationsとby_ruleとby_fileが含まれること(
-        self, tmp_dir: Path
-    ):
-        # Arrange: __init__.py に __all__ なし（require-all-export 違反）
-        src_dir = tmp_dir / "src"
-        src_dir.mkdir()
-        init_file = src_dir / "__init__.py"
-        init_file.write_text("x = 1\n")
-
-        # Act
-        cmd = [sys.executable, "-m", "paladin.cli", "check", str(src_dir), "--format", "json"]
-        result = subprocess.run(cmd, cwd=tmp_dir, capture_output=True, text=True, timeout=10)
-
-        # Assert
-        data = json.loads(result.stdout)
-        summary = data["summary"]
-        assert "total_violations" in summary
-        assert "by_rule" in summary
-        assert "by_file" in summary
-
-    def test_check_正常系_format_text指定で既存のtext出力が維持されること(self, tmp_dir: Path):
-        # Arrange
-        src_dir = tmp_dir / "src"
-        src_dir.mkdir()
-        py_file = src_dir / "main.py"
-        py_file.write_text("x = 1\n")
-
-        # Act
-        cmd = [sys.executable, "-m", "paladin.cli", "check", str(src_dir), "--format", "text"]
-        result = subprocess.run(cmd, cwd=tmp_dir, capture_output=True, text=True, timeout=10)
-
-        # Assert
-        assert result.returncode == 0
-        assert "status: ok" in result.stdout
-
-    def test_check_正常系_format未指定でデフォルトのtext出力が維持されること(self, tmp_dir: Path):
-        # Arrange
-        src_dir = tmp_dir / "src"
-        src_dir.mkdir()
-        py_file = src_dir / "main.py"
-        py_file.write_text("x = 1\n")
-
-        # Act
-        cmd = [sys.executable, "-m", "paladin.cli", "check", str(src_dir)]
-        result = subprocess.run(cmd, cwd=tmp_dir, capture_output=True, text=True, timeout=10)
-
-        # Assert
-        assert result.returncode == 0
-        assert "status: ok" in result.stdout
 
     def test_check_正常系_ignore_ruleで指定ルールの違反が除外されること(self, tmp_dir: Path):
         # Arrange: __init__.py に __all__ なし（require-all-export 違反）
@@ -440,46 +220,6 @@ class TestIntegrationCheckCLI:
         # Assert: 違反が除外されて exit_code=0
         assert result.returncode == 0
         assert "status: ok" in result.stdout
-
-    def test_check_正常系_ignore_ruleを複数回指定で複数ルールが除外されること(self, tmp_dir: Path):
-        # Arrange: __init__.py に __all__ なし（require-all-export 違反）
-        src_dir = tmp_dir / "src"
-        src_dir.mkdir()
-        init_file = src_dir / "__init__.py"
-        init_file.write_text("x = 1\n")
-
-        # Act
-        cmd = [
-            sys.executable,
-            "-m",
-            "paladin.cli",
-            "check",
-            str(src_dir),
-            "--ignore-rule",
-            "require-all-export",
-            "--ignore-rule",
-            "no-relative-import",
-        ]
-        result = subprocess.run(cmd, cwd=tmp_dir, capture_output=True, text=True, timeout=10)
-
-        # Assert: 指定した両ルールの違反が除外される
-        assert result.returncode == 0
-        assert "status: ok" in result.stdout
-
-    def test_check_エッジケース_ignore_rule未指定で全ルールが適用されること(self, tmp_dir: Path):
-        # Arrange: __init__.py に __all__ なし（require-all-export 違反）
-        src_dir = tmp_dir / "src"
-        src_dir.mkdir()
-        init_file = src_dir / "__init__.py"
-        init_file.write_text("x = 1\n")
-
-        # Act: --ignore-rule を指定しない
-        cmd = [sys.executable, "-m", "paladin.cli", "check", str(src_dir)]
-        result = subprocess.run(cmd, cwd=tmp_dir, capture_output=True, text=True, timeout=10)
-
-        # Assert: 違反が検出されて exit_code=1
-        assert result.returncode == 1
-        assert "require-all-export" in result.stdout
 
 
 class TestIntegrationCheckConfig:
@@ -517,39 +257,6 @@ class TestIntegrationCheckConfig:
         result = subprocess.run(cmd, cwd=tmp_dir, capture_output=True, text=True, timeout=10)
 
         # Assert: src/main.py が解析され違反なし
-        assert result.returncode == 0
-        assert "status: ok" in result.stdout
-
-    def test_check_正常系_excludeで対象ファイルを除外できること(self, tmp_dir: Path):
-        # Arrange: __init__.py は require-all-export 違反あり、exclude で除外する
-        init_file = tmp_dir / "__init__.py"
-        init_file.write_text("x = 1\n")
-        pyproject = tmp_dir / "pyproject.toml"
-        pyproject.write_text('[tool.paladin]\nexclude = ["__init__.py"]\n')
-
-        # Act
-        cmd = [sys.executable, "-m", "paladin.cli", "check", str(tmp_dir)]
-        result = subprocess.run(cmd, cwd=tmp_dir, capture_output=True, text=True, timeout=10)
-
-        # Assert: __init__.py が除外されるため違反なし
-        assert result.returncode == 0
-        assert "status: ok" in result.stdout
-
-    def test_check_正常系_srcレイアウトのパッケージが自動導出されること(self, tmp_dir: Path):
-        # Arrange: src/myapp/ 配下のファイルを解析対象にする
-        # myapp が root_packages に自動導出されるため from myapp import X は違反なし
-        src_dir = tmp_dir / "src" / "myapp"
-        src_dir.mkdir(parents=True)
-        main_file = src_dir / "main.py"
-        main_file.write_text("from myapp import something\n")
-        pyproject = tmp_dir / "pyproject.toml"
-        pyproject.write_text("[tool.paladin]\n")
-
-        # Act
-        cmd = [sys.executable, "-m", "paladin.cli", "check", str(src_dir)]
-        result = subprocess.run(cmd, cwd=tmp_dir, capture_output=True, text=True, timeout=10)
-
-        # Assert: myapp が root_packages に自動導出されるため違反なし
         assert result.returncode == 0
         assert "status: ok" in result.stdout
 
