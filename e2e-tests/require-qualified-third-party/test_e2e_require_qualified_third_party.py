@@ -24,6 +24,20 @@ class TestE2ERequireQualifiedThirdParty:
         assert result.returncode == 1
         assert "require-qualified-third-party" in result.stdout
 
+    def test_check_違反検出_エイリアスインポートが違反として報告されること(
+        self,
+        run_paladin_check: Callable[[Path], subprocess.CompletedProcess[str]],
+    ):
+        # Arrange
+        target = FIXTURES_DIR / "violation" / "alias_import.py"
+
+        # Act
+        result = run_paladin_check(target)
+
+        # Assert
+        assert result.returncode == 1
+        assert "require-qualified-third-party" in result.stdout
+
     def test_check_準拠確認_完全修飾インポートで違反が報告されないこと(
         self,
         run_paladin_check: Callable[[Path], subprocess.CompletedProcess[str]],
