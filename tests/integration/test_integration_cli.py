@@ -480,3 +480,135 @@ class TestIntegrationCheckCLI:
         # Assert: 違反が検出されて exit_code=1
         assert result.returncode == 1
         assert "require-all-export" in result.stdout
+
+
+class TestIntegrationCheckConfig:
+    """check コマンドの設定ファイル連携の統合テスト"""
+
+    def test_check_正常系_rulesセクションでfalseに設定されたルールが無効化されること(
+        self, tmp_dir: Path
+    ):
+        # Arrange: __init__.py に __all__ なし（require-all-export 違反）
+        # pyproject.toml で require-all-export = false に設定
+        init_file = tmp_dir / "__init__.py"
+        init_file.write_text("x = 1\n")
+        pyproject = tmp_dir / "pyproject.toml"
+        pyproject.write_text("[tool.paladin.rules]\nrequire-all-export = false\n")
+
+        # Act: cwd=tmp_dir で pyproject.toml が読まれる
+        cmd = [sys.executable, "-m", "paladin.cli", "check", str(tmp_dir)]
+        result = subprocess.run(cmd, cwd=tmp_dir, capture_output=True, text=True, timeout=10)
+
+        # Assert: require-all-export が無効化されているため exit_code=0
+        assert result.returncode == 0
+        assert "status: ok" in result.stdout
+
+    def test_check_正常系_includeで対象ディレクトリを制御できること(self, tmp_dir: Path):
+        # Arrange: src/ 配下のみ include に指定（CLI ターゲット未指定）
+        src_dir = tmp_dir / "src"
+        src_dir.mkdir()
+        src_file = src_dir / "main.py"
+        src_file.write_text("x = 1\n")
+        pyproject = tmp_dir / "pyproject.toml"
+        pyproject.write_text(f'[tool.paladin]\ninclude = ["{src_dir}"]\n')
+
+        # Act: ターゲット未指定、include から解決
+        cmd = [sys.executable, "-m", "paladin.cli", "check"]
+        result = subprocess.run(cmd, cwd=tmp_dir, capture_output=True, text=True, timeout=10)
+
+        # Assert: src/main.py が解析され違反なし
+        assert result.returncode == 0
+        assert "status: ok" in result.stdout
+
+    def test_check_正常系_excludeで対象ファイルを除外できること(self, tmp_dir: Path):
+        # Arrange: __init__.py は require-all-export 違反あり、exclude で除外する
+        init_file = tmp_dir / "__init__.py"
+        init_file.write_text("x = 1\n")
+        pyproject = tmp_dir / "pyproject.toml"
+        pyproject.write_text('[tool.paladin]\nexclude = ["__init__.py"]\n')
+
+        # Act
+        cmd = [sys.executable, "-m", "paladin.cli", "check", str(tmp_dir)]
+        result = subprocess.run(cmd, cwd=tmp_dir, capture_output=True, text=True, timeout=10)
+
+        # Assert: __init__.py が除外されるため違反なし
+        assert result.returncode == 0
+        assert "status: ok" in result.stdout
+
+    def test_check_正常系_srcレイアウトのパッケージが自動導出されること(self, tmp_dir: Path):
+        # Arrange: src/myapp/ 配下のファイルを解析対象にする
+        # myapp が root_packages に自動導出されるため from myapp import X は違反なし
+        src_dir = tmp_dir / "src" / "myapp"
+        src_dir.mkdir(parents=True)
+        main_file = src_dir / "main.py"
+        main_file.write_text("from myapp import something\n")
+        pyproject = tmp_dir / "pyproject.toml"
+        pyproject.write_text("[tool.paladin]\n")
+
+        # Act
+        cmd = [sys.executable, "-m", "paladin.cli", "check", str(src_dir)]
+        result = subprocess.run(cmd, cwd=tmp_dir, capture_output=True, text=True, timeout=10)
+
+        # Assert: myapp が root_packages に自動導出されるため違反なし
+        assert result.returncode == 0
+        assert "status: ok" in result.stdout
+
+    def test_check_正常系_overridesでディレクトリ別にルールを無効化できること(self, tmp_dir: Path):
+        # Arrange: tests/ の __init__.py は require-all-export 違反あり
+        # overrides で tests/** に require-all-export = false を設定
+        tests_dir = tmp_dir / "tests"
+        tests_dir.mkdir()
+        init_file = tests_dir / "__init__.py"
+        init_file.write_text("x = 1\n")
+        pyproject = tmp_dir / "pyproject.toml"
+        pyproject.write_text(
+            "[[tool.paladin.overrides]]\n"
+            'files = ["tests/**"]\n'
+            "\n"
+            "[tool.paladin.overrides.rules]\n"
+            "require-all-export = false\n"
+        )
+
+        # Act: cwd=tmp_dir で pyproject.toml が読まれる
+        cmd = [sys.executable, "-m", "paladin.cli", "check", str(tmp_dir)]
+        result = subprocess.run(cmd, cwd=tmp_dir, capture_output=True, text=True, timeout=10)
+
+        # Assert: tests/ 配下の require-all-export が無効化されるため exit_code=0
+        assert result.returncode == 0
+        assert "status: ok" in result.stdout
+
+
+class TestIntegrationCheckIgnore:
+    """check コマンドの Ignore 機能の統合テスト"""
+
+    def test_check_正常系_ignore_fileコメントで違反が無視されること(self, tmp_dir: Path):
+        # Arrange: # paladin: ignore-file コメントで全ルール違反を無視
+        init_file = tmp_dir / "__init__.py"
+        init_file.write_text("# paladin: ignore-file\nx = 1\n")
+
+        # Act
+        cmd = [sys.executable, "-m", "paladin.cli", "check", str(tmp_dir)]
+        result = subprocess.run(cmd, cwd=tmp_dir, capture_output=True, text=True, timeout=10)
+
+        # Assert: ignore-file により違反が無視されて exit_code=0
+        assert result.returncode == 0
+        assert "status: ok" in result.stdout
+
+    def test_check_正常系_per_file_ignoresで設定パターンの違反が無視されること(self, tmp_dir: Path):
+        # Arrange: tests/ 配下の require-all-export を per-file-ignores で ignore
+        tests_dir = tmp_dir / "tests"
+        tests_dir.mkdir()
+        init_file = tests_dir / "__init__.py"
+        init_file.write_text("x = 1\n")
+        pyproject = tmp_dir / "pyproject.toml"
+        pyproject.write_text(
+            '[tool.paladin.per-file-ignores]\n"tests/**" = ["require-all-export"]\n'
+        )
+
+        # Act: cwd=tmp_dir で pyproject.toml が読まれる
+        cmd = [sys.executable, "-m", "paladin.cli", "check", str(tests_dir)]
+        result = subprocess.run(cmd, cwd=tmp_dir, capture_output=True, text=True, timeout=10)
+
+        # Assert: require-all-export が per-file-ignores で除外されるため exit_code=0
+        assert result.returncode == 0
+        assert "status: ok" in result.stdout
