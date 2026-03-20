@@ -167,6 +167,34 @@ class TestSourceFileProperties:
         assert sf.is_test_file is False
 
 
+class TestSourceFileGetLine:
+    """SourceFile.get_line() のテスト"""
+
+    def _sf(self, source: str) -> SourceFile:
+        return SourceFile(file_path=Path("test.py"), tree=ast.parse(source), source=source)
+
+    def test_正常系_1行目を返すこと(self):
+        sf = self._sf("x = 1\ny = 2\n")
+        assert sf.get_line(1) == "x = 1"
+
+    def test_正常系_2行目を返すこと(self):
+        sf = self._sf("x = 1\ny = 2\n")
+        assert sf.get_line(2) == "y = 2"
+
+    def test_正常系_前後空白をstripすること(self):
+        # SourceFile を直接構築して source に空白付きの行を持たせる
+        sf = SourceFile(file_path=Path("test.py"), tree=ast.parse(""), source="    x = 1\n")
+        assert sf.get_line(1) == "x = 1"
+
+    def test_エッジケース_行番号が範囲外のとき空文字を返すこと(self):
+        sf = self._sf("x = 1\n")
+        assert sf.get_line(99) == ""
+
+    def test_エッジケース_行番号0のとき空文字を返すこと(self):
+        sf = self._sf("x = 1\n")
+        assert sf.get_line(0) == ""
+
+
 class TestSourceFilesFilters:
     """SourceFiles フィルタメソッドのテスト"""
 

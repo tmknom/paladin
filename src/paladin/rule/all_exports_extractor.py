@@ -43,46 +43,52 @@ class AllExports:
 class AllExportsExtractor:
     """SourceFile の AST から __all__ シンボルを抽出するドメインサービス"""
 
-    def extract(self, source_file: SourceFile) -> AllExports:
-        """__all__ の代入文を探し、文字列リテラルを AllExports として返す
-
-        __all__ が定義されていない場合は node=None の空の AllExports を返す。
-        """
-        for node in source_file.tree.body:
-            if not isinstance(node, ast.Assign):
-                continue
-            for target in node.targets:
-                if not (isinstance(target, ast.Name) and target.id == "__all__"):
-                    continue
-                if not isinstance(node.value, (ast.List, ast.Tuple)):
-                    return AllExports(symbols=(), node=node)
-                symbols = tuple(
-                    elt.value
-                    for elt in node.value.elts
-                    if isinstance(elt, ast.Constant) and isinstance(elt.value, str)
-                )
-                return AllExports(symbols=symbols, node=node)
-        return AllExports(symbols=(), node=None)
-
-    def has_all_definition(self, source_file: SourceFile) -> bool:
-        """トップレベルに __all__ の代入（AugAssign 含む）が存在するか判定する"""
-        for node in source_file.tree.body:
+    def find_all_node(self, tree: ast.Module) -> ast.Assign | ast.AugAssign | None:
+        """トップレベルの __all__ 代入ノードを返す（存在しなければ None）"""
+        for node in tree.body:
             if isinstance(node, ast.Assign):
                 for target in node.targets:
                     if isinstance(target, ast.Name) and target.id == "__all__":
-                        return True
+                        return node
             elif (
                 isinstance(node, ast.AugAssign)
                 and isinstance(node.target, ast.Name)
                 and node.target.id == "__all__"
             ):
-                return True
-        return False
+                return node
+        return None
+
+    def _extract_symbols(self, node: ast.Assign | ast.AugAssign) -> tuple[str, ...]:
+        """__all__ 代入ノードから文字列リテラルのシンボル群を抽出する"""
+        value = node.value if isinstance(node, ast.Assign) else None
+        if not isinstance(value, (ast.List, ast.Tuple)):
+            return ()
+        return tuple(
+            elt.value
+            for elt in value.elts
+            if isinstance(elt, ast.Constant) and isinstance(elt.value, str)
+        )
+
+    def extract(self, source_file: SourceFile) -> AllExports:
+        """__all__ の代入文を探し、文字列リテラルを AllExports として返す
+
+        __all__ が定義されていない場合は node=None の空の AllExports を返す。
+        """
+        node = self.find_all_node(source_file.tree)
+        if node is None:
+            return AllExports(symbols=(), node=None)
+        symbols = self._extract_symbols(node)
+        return AllExports(symbols=symbols, node=node)
+
+    def has_all_definition(self, source_file: SourceFile) -> bool:
+        """トップレベルに __all__ の代入（AugAssign 含む）が存在するか判定する"""
+        return self.find_all_node(source_file.tree) is not None
 
     def extract_with_reexports(self, source_file: SourceFile) -> set[str]:
         """__all__ のシンボルと相対インポートで再エクスポートされたシンボルを返す
 
         __init__.py の公開シンボル全体を収集する際に使用する。
+        ast.walk で全ツリーを走査し、ネストされた __all__ 定義も拾う。
         """
         exports: set[str] = set()
 
@@ -92,11 +98,8 @@ class AllExportsExtractor:
                 and len(node.targets) == 1
                 and isinstance(node.targets[0], ast.Name)
                 and node.targets[0].id == "__all__"
-                and isinstance(node.value, (ast.List, ast.Tuple))
             ):
-                for elt in node.value.elts:
-                    if isinstance(elt, ast.Constant) and isinstance(elt.value, str):
-                        exports.add(elt.value)
+                exports.update(self._extract_symbols(node))
 
             if isinstance(node, ast.ImportFrom) and node.level >= 1 and node.names:
                 for alias in node.names:

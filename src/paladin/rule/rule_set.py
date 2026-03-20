@@ -23,11 +23,13 @@ class RuleSet:
         self._multi_file_rules = multi_file_rules
 
     @property
+    def _all_metas(self) -> tuple[RuleMeta, ...]:
+        return tuple(r.meta for r in self._rules) + tuple(r.meta for r in self._multi_file_rules)
+
+    @property
     def rule_ids(self) -> frozenset[str]:
         """登録されている全ルールの ID セットを返す"""
-        single_ids = frozenset(rule.meta.rule_id for rule in self._rules)
-        multi_ids = frozenset(rule.meta.rule_id for rule in self._multi_file_rules)
-        return single_ids | multi_ids
+        return frozenset(m.rule_id for m in self._all_metas)
 
     def run(
         self,
@@ -66,16 +68,8 @@ class RuleSet:
 
     def list_rules(self) -> tuple[RuleMeta, ...]:
         """登録済みルールのメタ情報一覧を返す"""
-        return tuple(rule.meta for rule in self._rules) + tuple(
-            rule.meta for rule in self._multi_file_rules
-        )
+        return self._all_metas
 
     def find_rule(self, rule_id: str) -> RuleMeta | None:
         """指定した rule_id に一致する RuleMeta を返す。存在しない場合は None を返す"""
-        for rule in self._rules:
-            if rule.meta.rule_id == rule_id:
-                return rule.meta
-        for rule in self._multi_file_rules:
-            if rule.meta.rule_id == rule_id:
-                return rule.meta
-        return None
+        return next((m for m in self._all_metas if m.rule_id == rule_id), None)

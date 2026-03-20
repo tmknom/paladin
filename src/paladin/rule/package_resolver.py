@@ -9,7 +9,7 @@ from pathlib import Path
 from paladin.rule.types import SourceFiles
 
 # src レイアウト固有のディレクトリ名（パッケージセグメントから除外する）
-_NON_PACKAGE_DIRS: frozenset[str] = frozenset({"src", "tests"})
+NON_PACKAGE_DIRS: frozenset[str] = frozenset({"src", "tests"})
 
 
 class PackageResolver:
@@ -23,23 +23,8 @@ class PackageResolver:
              /abs/path/src/paladin/check/foo.py -> "paladin.check"
              tests/unit/test_check/foo.py -> "tests.unit"
         """
-        dir_parts = file_path.parts[:-1]  # ファイル名を除く
-
-        anchor_index, anchor_name = self._find_anchor(dir_parts)
-
-        if anchor_index >= 0:
-            package_parts = list(dir_parts[anchor_index + 1 :])
-            if anchor_name == "tests":
-                package_parts = ["tests", *package_parts]
-        else:
-            package_parts = [
-                p for p in dir_parts if not p.startswith(".") and p not in _NON_PACKAGE_DIRS
-            ]
-
-        if len(package_parts) < 2:
-            return None
-
-        return ".".join(package_parts[:2])
+        parts = self._resolve_package_parts(file_path)
+        return ".".join(parts[:2]) if parts else None
 
     def resolve_exact_package_path(self, file_path: Path) -> str | None:
         """__init__.py のファイルパスから正確なパッケージパスを取得する
@@ -48,28 +33,49 @@ class PackageResolver:
              src/paladin/check/__init__.py           -> "paladin.check"
              tests/unit/fakes/__init__.py            -> "tests.unit.fakes"
         """
-        dir_parts = file_path.parts[:-1]  # ファイル名を除く
+        parts = self._resolve_package_parts(file_path)
+        return ".".join(parts) if parts else None
 
+    def _resolve_package_parts(self, file_path: Path) -> list[str] | None:
+        """ファイルパスからパッケージ構成要素のリストを返す（2セグメント未満なら None）"""
+        dir_parts = file_path.parts[:-1]
         anchor_index, anchor_name = self._find_anchor(dir_parts)
-
         if anchor_index >= 0:
             package_parts = list(dir_parts[anchor_index + 1 :])
             if anchor_name == "tests":
                 package_parts = ["tests", *package_parts]
         else:
             package_parts = [
-                p for p in dir_parts if not p.startswith(".") and p not in _NON_PACKAGE_DIRS
+                p for p in dir_parts if not p.startswith(".") and p not in NON_PACKAGE_DIRS
             ]
-
         if len(package_parts) < 2:
             return None
+        return package_parts
 
-        return ".".join(package_parts)
+    @staticmethod
+    def is_same_package_exact(pkg_a: str | None, pkg_b: str | None) -> bool:
+        """2つのパッケージキーが完全一致するか判定する"""
+        if pkg_a is None or pkg_b is None:
+            return False
+        return pkg_a == pkg_b
+
+    @staticmethod
+    def is_subpackage(module_path: str, parent_package: str) -> bool:
+        """module_path が parent_package 自身またはそのサブパッケージか判定する"""
+        return module_path == parent_package or module_path.startswith(parent_package + ".")
+
+    @staticmethod
+    def is_own_package(import_package: str, own_packages: frozenset[str]) -> bool:
+        """import_package が own_packages のいずれかに属するか判定する（双方向プレフィックス一致）"""
+        if import_package in own_packages:
+            return True
+        prefix = import_package + "."
+        return any(pkg.startswith(prefix) for pkg in own_packages)
 
     def resolve_root_packages(self, source_files: SourceFiles) -> tuple[str, ...]:
         """全ファイルからルートパッケージ名を導出する
 
-        各ファイルの _NON_PACKAGE_DIRS アンカー後の最初のセグメントを収集し、
+        各ファイルの NON_PACKAGE_DIRS アンカー後の最初のセグメントを収集し、
         "tests" を常に含める。
 
         src/ 由来のルートパッケージが見つからない場合（tests/ のみを解析対象にした場合など）、
@@ -136,7 +142,7 @@ class PackageResolver:
         return ".".join(segments[:2])
 
     def _find_anchor(self, dir_parts: tuple[str, ...]) -> tuple[int, str]:
-        """_NON_PACKAGE_DIRS の最後の出現位置をアンカーとして返す
+        """NON_PACKAGE_DIRS の最後の出現位置をアンカーとして返す
 
         Returns:
             (anchor_index, anchor_name)。見つからない場合は (-1, "")
@@ -144,7 +150,7 @@ class PackageResolver:
         anchor_index = -1
         anchor_name = ""
         for i, p in enumerate(dir_parts):
-            if p in _NON_PACKAGE_DIRS:
+            if p in NON_PACKAGE_DIRS:
                 anchor_index = i
                 anchor_name = p
         return anchor_index, anchor_name

@@ -100,6 +100,58 @@ class TestPackageResolverExtractPackageKey:
         assert result == "paladin"
 
 
+class TestPackageResolverIsSamePackageExact:
+    """PackageResolver.is_same_package_exact() のテスト"""
+
+    def test_正常系_同一パッケージキーのとき真を返すこと(self):
+        assert PackageResolver.is_same_package_exact("paladin.check", "paladin.check") is True
+
+    def test_正常系_異なるパッケージキーのとき偽を返すこと(self):
+        assert PackageResolver.is_same_package_exact("paladin.check", "paladin.view") is False
+
+    def test_エッジケース_片方がNoneのとき偽を返すこと(self):
+        assert PackageResolver.is_same_package_exact(None, "paladin.check") is False
+
+    def test_エッジケース_両方Noneのとき偽を返すこと(self):
+        assert PackageResolver.is_same_package_exact(None, None) is False
+
+
+class TestPackageResolverIsSubpackage:
+    """PackageResolver.is_subpackage() のテスト"""
+
+    def test_正常系_完全一致のとき真を返すこと(self):
+        assert PackageResolver.is_subpackage("paladin.check", "paladin.check") is True
+
+    def test_正常系_サブパッケージのとき真を返すこと(self):
+        assert PackageResolver.is_subpackage("paladin.check.formatter", "paladin.check") is True
+
+    def test_正常系_無関係なパッケージのとき偽を返すこと(self):
+        assert PackageResolver.is_subpackage("paladin.view", "paladin.check") is False
+
+    def test_エッジケース_プレフィックス一致でも別パッケージのとき偽を返すこと(self):
+        # "paladin.check2" は "paladin.check" のサブパッケージではない
+        assert PackageResolver.is_subpackage("paladin.check2", "paladin.check") is False
+
+
+class TestPackageResolverIsOwnPackage:
+    """PackageResolver.is_own_package() のテスト"""
+
+    def test_正常系_完全一致のとき真を返すこと(self):
+        own = frozenset({"paladin.check"})
+        assert PackageResolver.is_own_package("paladin.check", own) is True
+
+    def test_正常系_ownが深い階層を持ちプレフィックス一致のとき真を返すこと(self):
+        own = frozenset({"paladin.foundation.error"})
+        assert PackageResolver.is_own_package("paladin.foundation", own) is True
+
+    def test_正常系_無関係なパッケージのとき偽を返すこと(self):
+        own = frozenset({"paladin.check"})
+        assert PackageResolver.is_own_package("paladin.view", own) is False
+
+    def test_エッジケース_空のown_packagesのとき偽を返すこと(self):
+        assert PackageResolver.is_own_package("paladin.check", frozenset()) is False
+
+
 class TestPackageResolverResolveRootPackages:
     """PackageResolver.resolve_root_packages() のテスト"""
 

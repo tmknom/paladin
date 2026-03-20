@@ -7,7 +7,7 @@ import ast
 from pathlib import Path
 
 from paladin.rule.all_exports_extractor import AllExportsExtractor
-from paladin.rule.package_resolver import PackageResolver
+from paladin.rule.package_resolver import NON_PACKAGE_DIRS, PackageResolver
 from paladin.rule.types import RuleMeta, SourceFile, SourceFiles, Violation
 
 
@@ -57,11 +57,10 @@ class NoDirectInternalImportRule:
         アンカー（src or tests）の親ディレクトリをプロジェクトルートとして算出し、
         <project_root>/src を返す。
         """
-        _non_package_dirs: frozenset[str] = frozenset({"src", "tests"})
         for source_file in source_files:
             parts = source_file.file_path.parts
             for i, part in enumerate(parts):
-                if part in _non_package_dirs:
+                if part in NON_PACKAGE_DIRS:
                     project_root = Path(*parts[:i]) if i > 0 else Path()
                     src_root = project_root / "src"
                     if src_root.is_dir():
@@ -172,7 +171,7 @@ class NoDirectInternalImportRule:
             # 同一パッケージ（またはテストの対応プロダクションパッケージ）は対象外
             # own_packages が import_package より深い階層を持つ場合もプレフィックス一致で判定する
             # 例: own = {"paladin.foundation.error"}, import = "paladin.foundation" → 除外
-            if self._is_own_package(import_package, own_packages):
+            if PackageResolver.is_own_package(import_package, own_packages):
                 continue
 
             # インポートモジュール自体がサブパッケージ（__init__.py を持つ）なら対象外
@@ -189,17 +188,6 @@ class NoDirectInternalImportRule:
                     violations.append(self._make_violation(source_file, node, name, import_package))
 
         return violations
-
-    def _is_own_package(self, import_package: str, own_packages: frozenset[str]) -> bool:
-        """import_package が自パッケージセットに属するかを判定する
-
-        完全一致に加え、own_packages の要素が import_package のサブパッケージである場合もマッチする。
-        例: import_package = "paladin.foundation", own = {"paladin.foundation.error"} -> True
-        """
-        if import_package in own_packages:
-            return True
-        prefix = import_package + "."
-        return any(pkg.startswith(prefix) for pkg in own_packages)
 
     def _should_report(
         self,
