@@ -34,6 +34,10 @@ test-unit: ## ユニットテスト実行
 test-integration: ## インテグレーションテスト実行
 		uv run pytest tests/integration/
 
+.PHONY: test-e2e
+test-e2e: ## E2Eテスト実行
+		uv run pytest e2e-tests/
+
 .PHONY: coverage
 coverage: ## カバレッジの取得
 		uv run pytest --cov=src --cov-report=html --cov-report=term --cov-report=term-missing
