@@ -28,6 +28,11 @@ class AllExports:
         return len(self.symbols) == 0
 
     @property
+    def has_exports(self) -> bool:
+        """__all__ が定義済みかつシンボルが存在するかを返す"""
+        return self.is_defined and not self.is_empty
+
+    @property
     def lineno(self) -> int:
         """__all__ 代入文の行番号を返す（node がない場合は 1）"""
         return self.node.lineno if self.node is not None else 1
@@ -48,7 +53,7 @@ class AllExports:
 class AllExportsExtractor:
     """SourceFile の AST から __all__ シンボルを抽出するドメインサービス"""
 
-    def find_all_node(self, tree: ast.Module) -> ast.Assign | ast.AugAssign | None:
+    def _find_all_node(self, tree: ast.Module) -> ast.Assign | ast.AugAssign | None:
         """トップレベルの __all__ 代入ノードを返す（存在しなければ None）"""
         for node in tree.body:
             if isinstance(node, ast.Assign):
@@ -79,7 +84,7 @@ class AllExportsExtractor:
 
         __all__ が定義されていない場合は node=None の空の AllExports を返す。
         """
-        node = self.find_all_node(source_file.tree)
+        node = self._find_all_node(source_file.tree)
         if node is None:
             return AllExports(symbols=(), node=None)
         symbols = self._extract_symbols(node)
@@ -87,7 +92,7 @@ class AllExportsExtractor:
 
     def has_all_definition(self, source_file: SourceFile) -> bool:
         """トップレベルに __all__ の代入（AugAssign 含む）が存在するか判定する"""
-        return self.find_all_node(source_file.tree) is not None
+        return self._find_all_node(source_file.tree) is not None
 
     def extract_with_reexports(self, source_file: SourceFile) -> set[str]:
         """__all__ のシンボルと相対インポートで再エクスポートされたシンボルを返す

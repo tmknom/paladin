@@ -7,6 +7,7 @@ import ast
 from pathlib import Path
 
 from paladin.rule.all_exports_extractor import AllExportsExtractor
+from paladin.rule.import_statement import ModulePath, SourceLocation
 from paladin.rule.package_resolver import PackageResolver
 from paladin.rule.types import RuleMeta, SourceFiles, Violation
 
@@ -72,7 +73,7 @@ class NoUnusedExportRule:
                 continue
 
             all_exports = self._extractor.extract(source_file)
-            if not all_exports.is_defined or all_exports.is_empty:
+            if not all_exports.has_exports:
                 continue
 
             lineno = all_exports.lineno
@@ -115,7 +116,7 @@ class NoUnusedExportRule:
                         continue
 
                     # 同一パッケージからの利用は除外
-                    export_pkg_key = PackageResolver.extract_package_key(node.module)
+                    export_pkg_key = ModulePath(node.module).package_key
                     if PackageResolver.is_same_package_exact(user_pkg_key, export_pkg_key):
                         continue
 
@@ -133,7 +134,7 @@ class NoUnusedExportRule:
                         continue
 
                     # 同一パッケージからの利用は除外
-                    export_pkg_key = PackageResolver.extract_package_key(module_name)
+                    export_pkg_key = ModulePath(module_name).package_key
                     if PackageResolver.is_same_package_exact(user_pkg_key, export_pkg_key):
                         continue
 
@@ -156,10 +157,9 @@ class NoUnusedExportRule:
 
     def _make_violation(self, file_path: Path, lineno: int, name: str) -> Violation:
         """診断メッセージ仕様に従い Violation を生成する"""
-        return self._meta.create_violation(
-            file=file_path,
-            line=lineno,
-            column=0,
+        location = SourceLocation(file=file_path, line=lineno, column=0)
+        return self._meta.create_violation_at(
+            location=location,
             message=f"`__all__` のシンボル `{name}` はどの別パッケージからも利用されていない",
             reason="利用されていないシンボルを公開し続けると、不必要な後方互換義務が生じる",
             suggestion=f"`{name}` を `__all__` から削除してください",

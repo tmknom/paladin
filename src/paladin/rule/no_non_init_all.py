@@ -31,16 +31,14 @@ class NoNonInitAllRule:
         """単一ファイルに対する違反判定を行う"""
         if source_file.is_init_py:
             return ()
-        node = self._extractor.find_all_node(source_file.tree)
-        if node is None:
+        all_exports = self._extractor.extract(source_file)
+        if not all_exports.is_defined:
             return ()
-        return (self._make_violation(source_file, node.lineno),)
+        return (self._make_violation(source_file, all_exports.lineno),)
 
     def _make_violation(self, source_file: SourceFile, line: int) -> Violation:
-        return self._meta.create_violation(
-            file=source_file.file_path,
-            line=line,
-            column=0,
+        return self._meta.create_violation_at(
+            location=source_file.location(line),
             message="__init__.py 以外のファイルに __all__ が定義されている",
             reason=self._meta.intent,
             suggestion=self._meta.suggestion,

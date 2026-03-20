@@ -287,6 +287,59 @@ class TestSourceFileImports:
         assert loc.line == 1
         assert loc.column == 0
 
+    def test_location_from_正常系_AbsoluteFromImportから位置を返すこと(self):
+        source = "from paladin import Foo\n"
+        sf = SourceFile(file_path=Path("src/paladin/foo.py"), tree=ast.parse(source), source=source)
+        imps = sf.absolute_from_imports
+        assert len(imps) == 1
+        loc = sf.location_from(imps[0])
+        assert loc.file == Path("src/paladin/foo.py")
+        assert loc.line == 1
+        assert loc.column == 0
+
+
+class TestSourceFileAbsoluteFromImports:
+    """SourceFile.absolute_from_imports プロパティのテスト"""
+
+    def _sf(self, source: str) -> SourceFile:
+        return SourceFile(
+            file_path=Path("src/paladin/foo.py"), tree=ast.parse(source), source=source
+        )
+
+    def test_正常系_絶対fromインポートを抽出すること(self):
+        source = "from paladin.check import Foo\n"
+        sf = self._sf(source)
+        result = sf.absolute_from_imports
+        assert len(result) == 1
+        assert result[0].module_str == "paladin.check"
+        assert result[0].names[0].name == "Foo"
+
+    def test_正常系_相対インポートを除外すること(self):
+        source = "from .check import Foo\n"
+        sf = self._sf(source)
+        assert sf.absolute_from_imports == ()
+
+    def test_正常系_通常importを除外すること(self):
+        source = "import paladin\n"
+        sf = self._sf(source)
+        assert sf.absolute_from_imports == ()
+
+    def test_正常系_moduleなしのfromインポートを除外すること(self):
+        source = "from . import foo\n"
+        sf = self._sf(source)
+        assert sf.absolute_from_imports == ()
+
+    def test_正常系_複数インポートが混在するとき絶対fromのみを返すこと(self):
+        source = "from paladin.check import Foo\nfrom .rule import Bar\nimport os\n"
+        sf = self._sf(source)
+        result = sf.absolute_from_imports
+        assert len(result) == 1
+        assert result[0].module_str == "paladin.check"
+
+    def test_エッジケース_インポートなしのとき空タプルを返すこと(self):
+        sf = self._sf("x = 1\n")
+        assert sf.absolute_from_imports == ()
+
 
 class TestRuleMetaCreateViolationAt:
     """RuleMeta.create_violation_at() のテスト"""
@@ -347,22 +400,3 @@ class TestRuleMeta:
         )
         assert result.guidance == "__init__.py に __all__ が定義されているかを確認する"
         assert result.suggestion == "__all__ リストを定義し、公開するシンボルを明示的に列挙する"
-
-    def test_create_violation_正常系_rule_idとrule_nameが自動補完されること(self):
-        meta = self._meta()
-        result = meta.create_violation(
-            file=Path("src/paladin/__init__.py"),
-            line=1,
-            column=0,
-            message="テストメッセージ",
-            reason="テスト理由",
-            suggestion="テスト提案",
-        )
-        assert result.rule_id == "require-all-export"
-        assert result.rule_name == "Require __all__ Export"
-        assert result.file == Path("src/paladin/__init__.py")
-        assert result.line == 1
-        assert result.column == 0
-        assert result.message == "テストメッセージ"
-        assert result.reason == "テスト理由"
-        assert result.suggestion == "テスト提案"

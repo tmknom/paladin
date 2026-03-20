@@ -4,6 +4,7 @@
 """
 
 from paladin.rule.import_statement import (
+    AbsoluteFromImport,
     ImportedName,
     ImportStatement,
     ModulePath,
@@ -15,6 +16,7 @@ from paladin.rule.rule_set_factory import RuleSetFactory
 from paladin.rule.types import RuleMeta, SourceFile, SourceFiles, Violation, Violations
 
 __all__ = [
+    "AbsoluteFromImport",
     "ImportStatement",
     "ImportedName",
     "ModulePath",

@@ -39,10 +39,8 @@ class NoMockUsageRule:
                     for imported in stmt.names:
                         if imported.name in _FORBIDDEN_NAMES:
                             violations.append(
-                                self._meta.create_violation(
-                                    file=source_file.file_path,
-                                    line=stmt.line,
-                                    column=stmt.column,
+                                self._meta.create_violation_at(
+                                    location=source_file.location_from(stmt),
                                     message=f"{imported.name} のインポートは禁止されています",
                                     reason=_REASON,
                                     suggestion=self._meta.suggestion,
@@ -52,10 +50,8 @@ class NoMockUsageRule:
                 for imported in stmt.names:
                     if imported.name == "unittest.mock":
                         violations.append(
-                            self._meta.create_violation(
-                                file=source_file.file_path,
-                                line=stmt.line,
-                                column=stmt.column,
+                            self._meta.create_violation_at(
+                                location=source_file.location_from(stmt),
                                 message="unittest.mock のインポートは禁止されています",
                                 reason=_REASON,
                                 suggestion=self._meta.suggestion,

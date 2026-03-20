@@ -84,22 +84,6 @@ class TestPackageResolverResolveExactPackagePath:
         assert result == "myapp.module.sub"
 
 
-class TestPackageResolverExtractPackageKey:
-    """PackageResolver.extract_package_key() のテスト"""
-
-    def test_正常系_3セグメント以上から先頭2セグメントを返すこと(self):
-        result = PackageResolver.extract_package_key("paladin.check.formatter")
-        assert result == "paladin.check"
-
-    def test_正常系_2セグメントのときそのまま返すこと(self):
-        result = PackageResolver.extract_package_key("paladin.check")
-        assert result == "paladin.check"
-
-    def test_正常系_1セグメントのときそのまま返すこと(self):
-        result = PackageResolver.extract_package_key("paladin")
-        assert result == "paladin"
-
-
 class TestPackageResolverIsSamePackageExact:
     """PackageResolver.is_same_package_exact() のテスト"""
 
@@ -114,23 +98,6 @@ class TestPackageResolverIsSamePackageExact:
 
     def test_エッジケース_両方Noneのとき偽を返すこと(self):
         assert PackageResolver.is_same_package_exact(None, None) is False
-
-
-class TestPackageResolverIsSubpackage:
-    """PackageResolver.is_subpackage() のテスト"""
-
-    def test_正常系_完全一致のとき真を返すこと(self):
-        assert PackageResolver.is_subpackage("paladin.check", "paladin.check") is True
-
-    def test_正常系_サブパッケージのとき真を返すこと(self):
-        assert PackageResolver.is_subpackage("paladin.check.formatter", "paladin.check") is True
-
-    def test_正常系_無関係なパッケージのとき偽を返すこと(self):
-        assert PackageResolver.is_subpackage("paladin.view", "paladin.check") is False
-
-    def test_エッジケース_プレフィックス一致でも別パッケージのとき偽を返すこと(self):
-        # "paladin.check2" は "paladin.check" のサブパッケージではない
-        assert PackageResolver.is_subpackage("paladin.check2", "paladin.check") is False
 
 
 class TestPackageResolverIsOwnPackage:

@@ -16,9 +16,7 @@ class TestAllExportsLineno:
 
     def test_lineno_正常系_代入文の行番号を返すこと(self):
         source = "\nx = 1\n__all__ = ['Foo']\n"
-        node = AllExportsExtractor().find_all_node(ast.parse(source))
-        assert node is not None
-        ae = AllExports(symbols=("Foo",), node=node)
+        ae = AllExportsExtractor().extract(_sf(source))
         assert ae.lineno == 3
 
     def test_lineno_正常系_nodeがNoneのとき1を返すこと(self):
@@ -64,29 +62,24 @@ class TestAllExports:
         assert list(ae) == ["Foo", "Bar"]
 
 
-class TestAllExportsExtractorFindAllNode:
-    """AllExportsExtractor.find_all_node() のテスト"""
+class TestAllExportsHasExports:
+    """AllExports.has_exports プロパティのテスト"""
 
-    def test_正常系_Assign定義があるときノードを返すこと(self):
-        tree = ast.parse('__all__ = ["Foo"]\n')
-        result = AllExportsExtractor().find_all_node(tree)
-        assert isinstance(result, ast.Assign)
+    def test_has_exports_正常系_定義済みかつシンボルありのとき真を返すこと(self):
+        node = ast.parse('__all__ = ["Foo"]').body[0]
+        assert isinstance(node, ast.Assign)
+        ae = AllExports(symbols=("Foo",), node=node)
+        assert ae.has_exports is True
 
-    def test_正常系_AugAssign定義があるときノードを返すこと(self):
-        tree = ast.parse('__all__ = []\n__all__ += ["Foo"]\n')
-        result = AllExportsExtractor().find_all_node(tree)
-        # 最初に見つかった Assign を返す
-        assert result is not None
+    def test_has_exports_正常系_定義済みだがシンボルなしのとき偽を返すこと(self):
+        node = ast.parse("__all__ = []").body[0]
+        assert isinstance(node, ast.Assign)
+        ae = AllExports(symbols=(), node=node)
+        assert ae.has_exports is False
 
-    def test_正常系_定義なしのときNoneを返すこと(self):
-        tree = ast.parse("x = 1\n")
-        result = AllExportsExtractor().find_all_node(tree)
-        assert result is None
-
-    def test_正常系_AugAssignのみのとき返すこと(self):
-        tree = ast.parse('__all__ += ["Foo"]\n')
-        result = AllExportsExtractor().find_all_node(tree)
-        assert isinstance(result, ast.AugAssign)
+    def test_has_exports_正常系_未定義のとき偽を返すこと(self):
+        ae = AllExports(symbols=(), node=None)
+        assert ae.has_exports is False
 
 
 class TestAllExportsExtractorExtract:

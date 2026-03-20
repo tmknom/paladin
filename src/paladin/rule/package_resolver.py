@@ -6,7 +6,6 @@ NoDirectInternalImportRule と RequireQualifiedThirdPartyRule で共有する。
 
 from pathlib import Path
 
-from paladin.rule.import_statement import ModulePath
 from paladin.rule.types import SourceFiles
 
 # src レイアウト固有のディレクトリ名（パッケージセグメントから除外する）
@@ -59,11 +58,6 @@ class PackageResolver:
         if pkg_a is None or pkg_b is None:
             return False
         return pkg_a == pkg_b
-
-    @staticmethod
-    def is_subpackage(module_path: str, parent_package: str) -> bool:
-        """module_path が parent_package 自身またはそのサブパッケージか判定する"""
-        return ModulePath(module_path).is_subpackage_of(ModulePath(parent_package))
 
     @staticmethod
     def is_own_package(import_package: str, own_packages: frozenset[str]) -> bool:
@@ -129,17 +123,6 @@ class PackageResolver:
             for child in src_dir.iterdir():
                 if child.is_dir() and not child.name.startswith("."):
                     root_packages.add(child.name)
-
-    @staticmethod
-    def extract_package_key(dotted_path: str) -> str:
-        """ドット区切りのパス文字列から先頭2セグメントを返す
-
-        セグメント数が2未満の場合はそのまま返す。
-        例: "paladin.check.formatter" -> "paladin.check"
-             "paladin.check"          -> "paladin.check"
-             "paladin"                -> "paladin"
-        """
-        return ModulePath(dotted_path).package_key
 
     def _find_anchor(self, dir_parts: tuple[str, ...]) -> tuple[int, str]:
         """NON_PACKAGE_DIRS の最後の出現位置をアンカーとして返す

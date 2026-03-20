@@ -118,6 +118,11 @@ class ImportStatement:
         """モジュールが設定されているかを返す"""
         return self.module is not None
 
+    @property
+    def is_absolute_from_import(self) -> bool:
+        """絶対 from import 文かを返す（from X import Y で X が絶対パス）"""
+        return self.is_import_from and self.is_absolute and self.has_module
+
     @staticmethod
     def from_import_from(node: ast.ImportFrom) -> "ImportStatement":
         """ast.ImportFrom から ImportStatement を生成する"""
@@ -142,6 +147,31 @@ class ImportStatement:
             column=node.col_offset,
             is_import_from=False,
         )
+
+
+@dataclass(frozen=True)
+class AbsoluteFromImport:
+    """絶対 from import 文を表す値オブジェクト
+
+    is_import_from=True かつ is_relative=False かつ module is not None が
+    保証された ImportStatement のラッパー。module の型が ModulePath として
+    確定しているため、呼び出し側で型ナローイングが不要になる。
+    """
+
+    module: ModulePath
+    names: tuple[ImportedName, ...]
+    line: int
+    column: int
+
+    @property
+    def module_str(self) -> str:
+        """モジュールパス文字列を返す"""
+        return str(self.module)
+
+    @property
+    def top_level(self) -> str:
+        """モジュールのトップレベル名を返す"""
+        return self.module.top_level
 
 
 @dataclass(frozen=True)
