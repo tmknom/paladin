@@ -3,9 +3,9 @@
 仕様は docs/rules/require-qualified-third-party.md を参照。
 """
 
-import ast
 import sys
 
+from paladin.rule.import_statement import ImportStatement, ModulePath
 from paladin.rule.package_resolver import PackageResolver
 from paladin.rule.types import RuleMeta, SourceFile, SourceFiles, Violation
 
@@ -39,58 +39,59 @@ class RequireQualifiedThirdPartyRule:
     def check(self, source_file: SourceFile) -> tuple[Violation, ...]:
         """単一ファイルに対する違反判定を行う"""
         violations: list[Violation] = []
-        for node in ast.walk(source_file.tree):
-            if isinstance(node, ast.ImportFrom):
-                self._check_import_from(node, violations, source_file)
-            elif isinstance(node, ast.Import):
-                self._check_import_as(node, violations, source_file)
+        for stmt in source_file.imports:
+            if stmt.is_import_from:
+                self._check_import_from(stmt, violations, source_file)
+            else:
+                self._check_import_as(stmt, violations, source_file)
         return tuple(violations)
 
     def _check_import_from(
         self,
-        node: ast.ImportFrom,
+        stmt: ImportStatement,
         violations: list[Violation],
         source_file: SourceFile,
     ) -> None:
-        if node.level >= 1:
+        if stmt.is_relative:
             return
-        if node.module is None:
+        if not stmt.has_module:
             return  # pragma: no cover
-        top = _top_level_name(node.module)
-        if self._is_excluded(top):
+        top = stmt.top_level_module
+        if top is None or self._is_excluded(top):
             return
-        for alias in node.names:
+        module_str = stmt.module_str
+        for imported in stmt.names:
             violations.append(
                 self._meta.create_violation(
                     file=source_file.file_path,
-                    line=node.lineno,
-                    column=node.col_offset,
-                    message=f"`from {node.module} import {alias.name}` はサードパーティライブラリの直接インポートである",
+                    line=stmt.line,
+                    column=stmt.column,
+                    message=f"`from {module_str} import {imported.name}` はサードパーティライブラリの直接インポートである",
                     reason="外部依存の境界を明示するために、サードパーティライブラリは完全修飾名で使用する必要がある",
-                    suggestion=f"`from {node.module} import {alias.name}` を `import {node.module}` に書き換え、使用箇所の `{alias.name}` を `{node.module}.{alias.name}` に置換してください",
+                    suggestion=f"`from {module_str} import {imported.name}` を `import {module_str}` に書き換え、使用箇所の `{imported.name}` を `{module_str}.{imported.name}` に置換してください",
                 )
             )
 
     def _check_import_as(
         self,
-        node: ast.Import,
+        stmt: ImportStatement,
         violations: list[Violation],
         source_file: SourceFile,
     ) -> None:
-        for alias in node.names:
-            if alias.asname is None:
+        for imported in stmt.names:
+            if not imported.has_alias:
                 continue
-            top = _top_level_name(alias.name)
+            top = ModulePath(imported.name).top_level
             if self._is_excluded(top):
                 continue
             violations.append(
                 self._meta.create_violation(
                     file=source_file.file_path,
-                    line=node.lineno,
-                    column=node.col_offset,
-                    message=f"`import {alias.name} as {alias.asname}` はサードパーティライブラリのエイリアスインポートである",
+                    line=stmt.line,
+                    column=stmt.column,
+                    message=f"`import {imported.name} as {imported.asname}` はサードパーティライブラリのエイリアスインポートである",
                     reason="外部依存の境界を明示するために、サードパーティライブラリは完全修飾名で使用する必要がある",
-                    suggestion=f"`import {alias.name} as {alias.asname}` を `import {alias.name}` に書き換え、使用箇所の `{alias.asname}` を `{alias.name}` に置換してください",
+                    suggestion=f"`import {imported.name} as {imported.asname}` を `import {imported.name}` に書き換え、使用箇所の `{imported.asname}` を `{imported.name}` に置換してください",
                 )
             )
 
@@ -99,8 +100,3 @@ class RequireQualifiedThirdPartyRule:
         if module_name in self._stdlib_modules:
             return True
         return module_name in self._root_packages
-
-
-def _top_level_name(module_name: str) -> str:
-    """ドット区切りのモジュール名から先頭部分を返す"""
-    return module_name.split(".")[0]

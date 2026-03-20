@@ -6,6 +6,7 @@ NoDirectInternalImportRule と RequireQualifiedThirdPartyRule で共有する。
 
 from pathlib import Path
 
+from paladin.rule.import_statement import ModulePath
 from paladin.rule.types import SourceFiles
 
 # src レイアウト固有のディレクトリ名（パッケージセグメントから除外する）
@@ -62,7 +63,7 @@ class PackageResolver:
     @staticmethod
     def is_subpackage(module_path: str, parent_package: str) -> bool:
         """module_path が parent_package 自身またはそのサブパッケージか判定する"""
-        return module_path == parent_package or module_path.startswith(parent_package + ".")
+        return ModulePath(module_path).is_subpackage_of(ModulePath(parent_package))
 
     @staticmethod
     def is_own_package(import_package: str, own_packages: frozenset[str]) -> bool:
@@ -138,8 +139,7 @@ class PackageResolver:
              "paladin.check"          -> "paladin.check"
              "paladin"                -> "paladin"
         """
-        segments = dotted_path.split(".")
-        return ".".join(segments[:2])
+        return ModulePath(dotted_path).package_key
 
     def _find_anchor(self, dir_parts: tuple[str, ...]) -> tuple[int, str]:
         """NON_PACKAGE_DIRS の最後の出現位置をアンカーとして返す

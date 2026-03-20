@@ -428,6 +428,18 @@ class TestNoCrossPackageReexportRuleCheck:
         # Assert: パッケージ名を導出できないため空タプルを返す
         assert result == ()
 
+    def test_check_エッジケース_import文はインポートマッピングに含まれないこと(self):
+        # Arrange: `import paladin.rule` は from X import Y でないためマッピングに含まれない
+        rule = NoCrossPackageReexportRule()
+        source = 'import paladin.rule\n__all__ = ["paladin"]\n'
+        source_file = _make_source_file(source)
+
+        # Act
+        result = rule.check(source_file)
+
+        # Assert: import 文はマッピングに含まれないためシンボルが見つからず違反なし
+        assert result == ()
+
     def test_check_エッジケース_import_from_moduleがNoneの場合はスキップすること(self):
         # Arrange: AST を手動構築して node.module が None の ImportFrom を作成する
         # （from . import foo のような相対インポートで level=0 かつ module=None は

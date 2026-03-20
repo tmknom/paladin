@@ -37,7 +37,7 @@ class RequireAllExportRule:
             return ()
         if self._extractor.has_all_definition(source_file):
             return ()
-        symbols = self._collect_public_symbols(source_file.tree)
+        symbols = self._collect_public_symbols(source_file)
         if symbols:
             symbols_str = ", ".join(f'"{s}"' for s in sorted(symbols))
             suggestion = f"`__all__ = [{symbols_str}]` のように公開シンボルを定義してください"
@@ -67,19 +67,19 @@ class RequireAllExportRule:
             return True
         return False
 
-    def _collect_public_symbols(self, tree: ast.Module) -> list[str]:
+    def _collect_public_symbols(self, source_file: SourceFile) -> list[str]:
         """トップレベルの公開シンボルを収集する
 
         from .xxx import Yyy の Yyy と、アンダースコア始まりでないトップレベル定義を返す。
         """
         symbols: list[str] = []
-        for node in tree.body:
-            if isinstance(node, ast.ImportFrom) and node.level >= 1:
-                for alias in node.names:
-                    name = alias.asname if alias.asname else alias.name
-                    if not name.startswith("_"):
-                        symbols.append(name)
-            elif isinstance(
+        for stmt in source_file.top_level_imports:
+            if stmt.is_relative:
+                for imported in stmt.names:
+                    if not imported.bound_name.startswith("_"):
+                        symbols.append(imported.bound_name)
+        for node in source_file.tree.body:
+            if isinstance(
                 node, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)
             ) and not node.name.startswith("_"):
                 symbols.append(node.name)

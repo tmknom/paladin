@@ -15,7 +15,7 @@ class AllExports:
     """__all__ から抽出したシンボル群を保持する値オブジェクト"""
 
     symbols: tuple[str, ...]
-    node: ast.AST | None
+    node: ast.Assign | ast.AugAssign | None
 
     @property
     def is_defined(self) -> bool:
@@ -26,6 +26,11 @@ class AllExports:
     def is_empty(self) -> bool:
         """シンボルが空かどうかを返す"""
         return len(self.symbols) == 0
+
+    @property
+    def lineno(self) -> int:
+        """__all__ 代入文の行番号を返す（node がない場合は 1）"""
+        return self.node.lineno if self.node is not None else 1
 
     def __contains__(self, name: object) -> bool:
         """シンボルが含まれているかどうかを返す"""

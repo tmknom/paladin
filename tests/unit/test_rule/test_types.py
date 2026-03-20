@@ -1,6 +1,7 @@
 import ast
 from pathlib import Path
 
+from paladin.rule.import_statement import ImportStatement, SourceLocation
 from paladin.rule.types import RuleMeta, SourceFile, SourceFiles, Violation, Violations
 
 
@@ -225,6 +226,98 @@ class TestSourceFilesFilters:
         source_files = SourceFiles(files=())
         result = list(source_files.production_files())
         assert result == []
+
+
+class TestSourceFileImports:
+    """SourceFile.imports / top_level_imports / location / location_from のテスト"""
+
+    def _sf(self, source: str) -> SourceFile:
+        return SourceFile(
+            file_path=Path("src/paladin/foo.py"), tree=ast.parse(source), source=source
+        )
+
+    def test_imports_正常系_全インポートを返すこと(self):
+        source = "import os\nfrom paladin import Foo\n"
+        sf = self._sf(source)
+        result = sf.imports
+        assert len(result) == 2
+
+    def test_imports_正常系_ネストしたインポートも返すこと(self):
+        source = "def f():\n    import os\n"
+        sf = self._sf(source)
+        result = sf.imports
+        assert len(result) == 1
+
+    def test_top_level_imports_正常系_トップレベルのみ返すこと(self):
+        source = "import os\ndef f():\n    import sys\n"
+        sf = self._sf(source)
+        result = sf.top_level_imports
+        assert len(result) == 1
+        assert result[0].names[0].name == "os"
+
+    def test_imports_エッジケース_インポートなしのとき空タプルを返すこと(self):
+        sf = self._sf("x = 1\n")
+        assert sf.imports == ()
+
+    def test_top_level_imports_エッジケース_インポートなしのとき空タプルを返すこと(self):
+        sf = self._sf("x = 1\n")
+        assert sf.top_level_imports == ()
+
+    def test_location_正常系_SourceLocationを返すこと(self):
+        sf = self._sf("x = 1\n")
+        loc = sf.location(line=5, column=2)
+        assert loc.file == Path("src/paladin/foo.py")
+        assert loc.line == 5
+        assert loc.column == 2
+
+    def test_location_正常系_デフォルトcolumnは0であること(self):
+        sf = self._sf("x = 1\n")
+        loc = sf.location(line=3)
+        assert loc.column == 0
+
+    def test_location_from_正常系_ImportStatementから位置を返すこと(self):
+        source = "from paladin import Foo\n"
+        tree = ast.parse(source)
+        sf = SourceFile(file_path=Path("src/paladin/foo.py"), tree=tree, source=source)
+        node = tree.body[0]
+        assert isinstance(node, ast.ImportFrom)
+        stmt = ImportStatement.from_import_from(node)
+        loc = sf.location_from(stmt)
+        assert loc.file == Path("src/paladin/foo.py")
+        assert loc.line == 1
+        assert loc.column == 0
+
+
+class TestRuleMetaCreateViolationAt:
+    """RuleMeta.create_violation_at() のテスト"""
+
+    def _meta(self) -> RuleMeta:
+        return RuleMeta(
+            rule_id="test-rule",
+            rule_name="Test Rule",
+            summary="テスト",
+            intent="テスト",
+            guidance="テスト",
+            suggestion="テスト",
+        )
+
+    def test_正常系_SourceLocationからViolationを生成すること(self):
+        meta = self._meta()
+        loc = SourceLocation(file=Path("src/paladin/foo.py"), line=10, column=4)
+        result = meta.create_violation_at(
+            location=loc,
+            message="テストメッセージ",
+            reason="テスト理由",
+            suggestion="テスト提案",
+        )
+        assert result.file == Path("src/paladin/foo.py")
+        assert result.line == 10
+        assert result.column == 4
+        assert result.rule_id == "test-rule"
+        assert result.rule_name == "Test Rule"
+        assert result.message == "テストメッセージ"
+        assert result.reason == "テスト理由"
+        assert result.suggestion == "テスト提案"
 
 
 class TestRuleMeta:

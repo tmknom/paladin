@@ -3,8 +3,6 @@
 仕様は docs/rules/no-relative-import.md を参照。
 """
 
-import ast
-
 from paladin.rule.types import RuleMeta, SourceFile, Violation
 
 
@@ -30,19 +28,18 @@ class NoRelativeImportRule:
     def check(self, source_file: SourceFile) -> tuple[Violation, ...]:
         """単一ファイルに対する違反判定を行う"""
         violations: list[Violation] = []
-        for node in ast.walk(source_file.tree):
-            if isinstance(node, ast.ImportFrom) and node.level >= 1:
-                level_dots = "." * node.level
-                module = node.module or ""
-                names_str = ", ".join(alias.name for alias in node.names)
-                violations.append(
-                    self._meta.create_violation(
-                        file=source_file.file_path,
-                        line=node.lineno,
-                        column=node.col_offset,
-                        message=f"相対インポートが使用されている（from {level_dots}{module} import ...）",
-                        reason="相対インポートは依存関係を不透明にし、モジュール移動時にインポートパスの修正が必要になる",
-                        suggestion=f"`from {level_dots}{module} import {names_str}` をプロジェクトルートからの絶対インポートに書き換えてください",
-                    )
+        for stmt in source_file.imports:
+            if not stmt.is_relative:
+                continue
+            names_str = ", ".join(imported.name for imported in stmt.names)
+            violations.append(
+                self._meta.create_violation(
+                    file=source_file.file_path,
+                    line=stmt.line,
+                    column=stmt.column,
+                    message=f"相対インポートが使用されている（from {stmt.level_dots}{stmt.module_str} import ...）",
+                    reason="相対インポートは依存関係を不透明にし、モジュール移動時にインポートパスの修正が必要になる",
+                    suggestion=f"`from {stmt.level_dots}{stmt.module_str} import {names_str}` をプロジェクトルートからの絶対インポートに書き換えてください",
                 )
+            )
         return tuple(violations)

@@ -3,8 +3,6 @@
 仕様は docs/rules/no-mock-usage.md を参照。
 """
 
-import ast
-
 from paladin.rule.types import RuleMeta, SourceFile, Violation
 
 _FORBIDDEN_NAMES = frozenset({"Mock", "MagicMock"})
@@ -35,29 +33,29 @@ class NoMockUsageRule:
     def check(self, source_file: SourceFile) -> tuple[Violation, ...]:
         """単一ファイルに対する違反判定を行う"""
         violations: list[Violation] = []
-        for node in ast.walk(source_file.tree):
-            if isinstance(node, ast.ImportFrom):
-                if node.module == "unittest.mock":
-                    for alias in node.names:
-                        if alias.name in _FORBIDDEN_NAMES:
+        for stmt in source_file.imports:
+            if stmt.is_import_from:
+                if stmt.module_str == "unittest.mock":
+                    for imported in stmt.names:
+                        if imported.name in _FORBIDDEN_NAMES:
                             violations.append(
                                 self._meta.create_violation(
                                     file=source_file.file_path,
-                                    line=node.lineno,
-                                    column=node.col_offset,
-                                    message=f"{alias.name} のインポートは禁止されています",
+                                    line=stmt.line,
+                                    column=stmt.column,
+                                    message=f"{imported.name} のインポートは禁止されています",
                                     reason=_REASON,
                                     suggestion=self._meta.suggestion,
                                 )
                             )
-            elif isinstance(node, ast.Import):
-                for alias in node.names:
-                    if alias.name == "unittest.mock":
+            else:
+                for imported in stmt.names:
+                    if imported.name == "unittest.mock":
                         violations.append(
                             self._meta.create_violation(
                                 file=source_file.file_path,
-                                line=node.lineno,
-                                column=node.col_offset,
+                                line=stmt.line,
+                                column=stmt.column,
                                 message="unittest.mock のインポートは禁止されています",
                                 reason=_REASON,
                                 suggestion=self._meta.suggestion,
