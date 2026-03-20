@@ -45,7 +45,7 @@ class RuleSet:
             per_file_disabled: ファイルパスごとの disabled_rule_ids。指定されたファイルはこちらを優先使用する
         """
         # 事前準備: PreparableRule を実装するルールに source_files を渡す
-        for rule in self._rules:
+        for rule in (*self._rules, *self._multi_file_rules):
             if isinstance(rule, PreparableRule):
                 rule.prepare(source_files)
 
