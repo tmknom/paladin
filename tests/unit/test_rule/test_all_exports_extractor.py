@@ -11,11 +11,27 @@ def _sf(source: str, path: str = "src/paladin/__init__.py") -> SourceFile:
     return SourceFile(file_path=Path(path), tree=ast.parse(source), source=source)
 
 
+class TestAllExportsLineno:
+    """AllExports.lineno プロパティのテスト"""
+
+    def test_lineno_正常系_代入文の行番号を返すこと(self):
+        source = "\nx = 1\n__all__ = ['Foo']\n"
+        node = AllExportsExtractor().find_all_node(ast.parse(source))
+        assert node is not None
+        ae = AllExports(symbols=("Foo",), node=node)
+        assert ae.lineno == 3
+
+    def test_lineno_正常系_nodeがNoneのとき1を返すこと(self):
+        ae = AllExports(symbols=(), node=None)
+        assert ae.lineno == 1
+
+
 class TestAllExports:
     """AllExports 値オブジェクトのテスト"""
 
     def test_is_defined_正常系_nodeがあるとき真を返すこと(self):
         node = ast.parse("__all__ = []").body[0]
+        assert isinstance(node, ast.Assign)
         ae = AllExports(symbols=(), node=node)
         assert ae.is_defined is True
 

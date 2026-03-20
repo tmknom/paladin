@@ -5,7 +5,6 @@
 
 import ast
 from pathlib import Path
-from typing import cast
 
 from paladin.rule.all_exports_extractor import AllExportsExtractor
 from paladin.rule.package_resolver import PackageResolver
@@ -52,20 +51,20 @@ class NoUnusedExportRule:
         violations: list[Violation] = []
         for pkg_path, (file_path, symbols) in all_exports.items():
             used_symbols = usages.get(pkg_path, set())
-            for name, node in symbols.items():
+            for name, lineno in symbols.items():
                 if name not in used_symbols:
-                    violations.append(self._make_violation(file_path, node, name))
+                    violations.append(self._make_violation(file_path, lineno, name))
 
         return tuple(violations)
 
     def _collect_all_exports(
         self, source_files: SourceFiles
-    ) -> dict[str, tuple[Path, dict[str, ast.AST]]]:
-        """全 __init__.py の __all__ からシンボルと AST ノードを収集する
+    ) -> dict[str, tuple[Path, dict[str, int]]]:
+        """全 __init__.py の __all__ からシンボルと行番号を収集する
 
-        戻り値: {パッケージパス: (ファイルパス, {シンボル名: __all__ 代入文の AST ノード})}
+        戻り値: {パッケージパス: (ファイルパス, {シンボル名: __all__ 代入文の行番号})}
         """
-        result: dict[str, tuple[Path, dict[str, ast.AST]]] = {}
+        result: dict[str, tuple[Path, dict[str, int]]] = {}
 
         for source_file in source_files.init_files():
             pkg_path = self._resolver.resolve_exact_package_path(source_file.file_path)
@@ -76,8 +75,8 @@ class NoUnusedExportRule:
             if not all_exports.is_defined or all_exports.is_empty:
                 continue
 
-            assign_node: ast.AST = cast(ast.Assign, all_exports.node)
-            symbols: dict[str, ast.AST] = {name: assign_node for name in all_exports}
+            lineno = all_exports.lineno
+            symbols: dict[str, int] = {name: lineno for name in all_exports}
             result[pkg_path] = (source_file.file_path, symbols)
 
         return result
@@ -85,7 +84,7 @@ class NoUnusedExportRule:
     def _collect_usages(
         self,
         source_files: SourceFiles,
-        all_exports: dict[str, tuple[Path, dict[str, ast.AST]]],
+        all_exports: dict[str, tuple[Path, dict[str, int]]],
     ) -> dict[str, set[str]]:
         """プロダクションコード全体から利用されているシンボルを収集する
 
@@ -155,12 +154,11 @@ class NoUnusedExportRule:
             return None
         return ".".join(reversed(parts))
 
-    def _make_violation(self, file_path: Path, node: ast.AST, name: str) -> Violation:
+    def _make_violation(self, file_path: Path, lineno: int, name: str) -> Violation:
         """診断メッセージ仕様に従い Violation を生成する"""
-        line = getattr(node, "lineno", 1)
         return self._meta.create_violation(
             file=file_path,
-            line=line,
+            line=lineno,
             column=0,
             message=f"`__all__` のシンボル `{name}` はどの別パッケージからも利用されていない",
             reason="利用されていないシンボルを公開し続けると、不必要な後方互換義務が生じる",

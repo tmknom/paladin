@@ -559,6 +559,27 @@ class TestNoDirectInternalImportRulePrepare:
         # Assert: paladin が自動導出されるため違反を検出
         assert len(result) == 1
 
+    def test_check_エッジケース_import_from_moduleがNoneの場合はスキップすること(self):
+        # Arrange: level=0 かつ module=None の ImportFrom を手動構築する
+        # （通常の Python 構文では生成されないが、AST を直接操作すると再現できる）
+        rule = _rule(("paladin",))
+        tree = ast.parse("")
+        import_from = ast.ImportFrom(
+            module=None,
+            names=[ast.alias(name="Foo", asname=None)],
+            level=0,
+        )
+        ast.fix_missing_locations(import_from)
+        tree.body = [import_from]
+        source_file = SourceFile(file_path=Path("src/other/module.py"), tree=tree, source="")
+        source_files = SourceFiles(files=(source_file,))
+
+        # Act
+        result = rule.check(source_files)
+
+        # Assert: module=None のインポートはスキップされ違反なし
+        assert result == ()
+
     def test_check_エッジケース_パス深さが不足するinit_pyはpackage_exportsに登録されないこと(self):
         # Arrange: src/__init__.py のようにパスのセグメント数が2未満の場合
         # PackageResolver.resolve_exact_package_path が None を返すため登録をスキップする

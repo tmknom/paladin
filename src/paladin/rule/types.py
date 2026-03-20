@@ -3,10 +3,25 @@
 ルール判定の入出力・メタ情報・検査対象を表す値オブジェクトを定義する。
 """
 
+from __future__ import annotations
+
 import ast
-from collections.abc import Iterator
+from collections.abc import Iterable, Iterator
 from dataclasses import dataclass
 from pathlib import Path
+
+from paladin.rule.import_statement import ImportStatement, SourceLocation
+
+
+def _collect_imports(nodes: Iterable[ast.AST]) -> tuple[ImportStatement, ...]:
+    """AST ノード列からインポート文を収集して返す"""
+    result: list[ImportStatement] = []
+    for node in nodes:
+        if isinstance(node, ast.ImportFrom):
+            result.append(ImportStatement.from_import_from(node))
+        elif isinstance(node, ast.Import):
+            result.append(ImportStatement.from_import(node))
+    return tuple(result)
 
 
 @dataclass(frozen=True)
@@ -33,6 +48,24 @@ class SourceFile:
         if 1 <= lineno <= len(lines):
             return lines[lineno - 1].strip()
         return ""
+
+    @property
+    def imports(self) -> tuple[ImportStatement, ...]:
+        """全インポート文を抽出して返す（AST 全走査）"""
+        return _collect_imports(ast.walk(self.tree))
+
+    @property
+    def top_level_imports(self) -> tuple[ImportStatement, ...]:
+        """トップレベルのインポート文のみを抽出して返す"""
+        return _collect_imports(self.tree.body)
+
+    def location(self, line: int, column: int = 0) -> SourceLocation:
+        """指定した行・列の SourceLocation を返す"""
+        return SourceLocation(file=self.file_path, line=line, column=column)
+
+    def location_from(self, stmt: ImportStatement) -> SourceLocation:
+        """ImportStatement の位置から SourceLocation を返す"""
+        return SourceLocation(file=self.file_path, line=stmt.line, column=stmt.column)
 
 
 @dataclass(frozen=True)
@@ -112,6 +145,25 @@ class RuleMeta:
             file=file,
             line=line,
             column=column,
+            rule_id=self.rule_id,
+            rule_name=self.rule_name,
+            message=message,
+            reason=reason,
+            suggestion=suggestion,
+        )
+
+    def create_violation_at(
+        self,
+        location: SourceLocation,
+        message: str,
+        reason: str,
+        suggestion: str,
+    ) -> Violation:
+        """SourceLocation を受け取り Violation を生成する"""
+        return Violation(
+            file=location.file,
+            line=location.line,
+            column=location.column,
             rule_id=self.rule_id,
             rule_name=self.rule_name,
             message=message,

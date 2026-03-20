@@ -3,9 +3,6 @@
 仕様は docs/rules/no-cross-package-reexport.md を参照。
 """
 
-import ast
-from typing import cast
-
 from paladin.rule.all_exports_extractor import AllExportsExtractor
 from paladin.rule.package_resolver import PackageResolver
 from paladin.rule.types import RuleMeta, SourceFile, Violation
@@ -45,8 +42,7 @@ class NoCrossPackageReexportRule:
         if not all_exports.is_defined or all_exports.is_empty:
             return ()
 
-        import_mapping = self._collect_import_mapping(source_file.tree)
-        assign_node = cast(ast.Assign, all_exports.node)
+        import_mapping = self._collect_import_mapping(source_file)
 
         violations: list[Violation] = []
         for name in all_exports:
@@ -58,7 +54,7 @@ class NoCrossPackageReexportRule:
                 violations.append(
                     self._make_violation(
                         source_file=source_file,
-                        line=assign_node.lineno,
+                        line=all_exports.lineno,
                         name=name,
                         source_package=source_package,
                         current_package=current_package,
@@ -66,23 +62,22 @@ class NoCrossPackageReexportRule:
                 )
         return tuple(violations)
 
-    def _collect_import_mapping(self, tree: ast.Module) -> dict[str, str]:
-        """AST からトップレベルの from X import Y 文を収集し {シンボル名: インポート元} を返す。
+    def _collect_import_mapping(self, source_file: SourceFile) -> dict[str, str]:
+        """トップレベルの from X import Y 文を収集し {シンボル名: インポート元} を返す。
 
         - as エイリアスがある場合は asname をキーとする
         - 相対インポート（level >= 1）はスキップする
         """
         mapping: dict[str, str] = {}
-        for node in tree.body:
-            if not isinstance(node, ast.ImportFrom):
+        for stmt in source_file.top_level_imports:
+            if not stmt.is_import_from:
                 continue
-            if node.level is not None and node.level >= 1:
-                continue  # 相対インポートはスキップ
-            if node.module is None:
+            if stmt.is_relative:
                 continue
-            for alias in node.names:
-                key = alias.asname if alias.asname else alias.name
-                mapping[key] = node.module
+            if not stmt.has_module:
+                continue
+            for imported in stmt.names:
+                mapping[imported.bound_name] = stmt.module_str
         return mapping
 
     def _make_violation(

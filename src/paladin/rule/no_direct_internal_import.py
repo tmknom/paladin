@@ -3,10 +3,10 @@
 仕様は docs/rules/no-direct-internal-import.md を参照。
 """
 
-import ast
 from pathlib import Path
 
 from paladin.rule.all_exports_extractor import AllExportsExtractor
+from paladin.rule.import_statement import ImportStatement, ModulePath
 from paladin.rule.package_resolver import NON_PACKAGE_DIRS, PackageResolver
 from paladin.rule.types import RuleMeta, SourceFile, SourceFiles, Violation
 
@@ -67,12 +67,11 @@ class NoDirectInternalImportRule:
                         return src_root
         return None
 
-    def _is_subpackage_on_filesystem(self, module_path: str, src_root: Path | None) -> bool:
-        """module_path に対応する src/ 配下のディレクトリに __init__.py が存在するかを確認する"""
+    def _is_subpackage_on_filesystem(self, module: ModulePath, src_root: Path | None) -> bool:
+        """Module に対応する src/ 配下のディレクトリに __init__.py が存在するかを確認する"""
         if src_root is None:
             return False
-        segments = module_path.split(".")
-        package_dir = src_root.joinpath(*segments)
+        package_dir = src_root.joinpath(*module.segments)
         return (package_dir / "__init__.py").is_file()
 
     def _build_package_exports(self, source_files: SourceFiles) -> dict[str, set[str]]:
@@ -150,42 +149,38 @@ class NoDirectInternalImportRule:
         violations: list[Violation] = []
         own_packages = self._resolve_own_packages(source_file.file_path)
 
-        for node in ast.walk(source_file.tree):
-            if not isinstance(node, ast.ImportFrom):
+        for stmt in source_file.imports:
+            if not stmt.is_import_from:
                 continue
-            if node.level != 0:  # 相対インポートは対象外
+            if stmt.is_relative:
                 continue
-            if node.module is None:
-                continue
-
-            segments = node.module.split(".")
-            if len(segments) < 3:  # 3階層未満は対象外
+            module = stmt.module
+            if module is None:
                 continue
 
-            top_pkg = segments[0]
-            if top_pkg not in self._root_packages:
+            if module.depth < 3:  # 3階層未満は対象外
                 continue
 
-            import_package = ".".join(segments[:2])
+            if module.top_level not in self._root_packages:
+                continue
+
+            import_package = module.package_key
 
             # 同一パッケージ（またはテストの対応プロダクションパッケージ）は対象外
-            # own_packages が import_package より深い階層を持つ場合もプレフィックス一致で判定する
-            # 例: own = {"paladin.foundation.error"}, import = "paladin.foundation" → 除外
             if PackageResolver.is_own_package(import_package, own_packages):
                 continue
 
             # インポートモジュール自体がサブパッケージ（__init__.py を持つ）なら対象外
-            # 例: from paladin.foundation.model import X → paladin.foundation.model はサブパッケージ
-            if node.module in package_exports:
+            if module.value in package_exports:
                 continue
-            # source_files に含まれない __init__.py はファイルシステムで確認する
-            if self._is_subpackage_on_filesystem(node.module, src_root):
+            if self._is_subpackage_on_filesystem(module, src_root):
                 continue
 
-            for alias in node.names:
-                name = alias.name
-                if self._should_report(name, import_package, package_exports):
-                    violations.append(self._make_violation(source_file, node, name, import_package))
+            for imported in stmt.names:
+                if self._should_report(imported.name, import_package, package_exports):
+                    violations.append(
+                        self._make_violation(source_file, stmt, imported.name, import_package)
+                    )
 
         return violations
 
@@ -211,16 +206,16 @@ class NoDirectInternalImportRule:
     def _make_violation(
         self,
         source_file: SourceFile,
-        node: ast.ImportFrom,
+        stmt: ImportStatement,
         name: str,
         package: str,
     ) -> Violation:
         """違反オブジェクトを生成する"""
-        module_path = node.module or ""
+        module_path = stmt.module_str
         return self._meta.create_violation(
             file=source_file.file_path,
-            line=node.lineno,
-            column=node.col_offset,
+            line=stmt.line,
+            column=stmt.column,
             message=f"`from {module_path} import {name}` は内部モジュールへの直接参照である",
             reason=f"`{package}` の内部実装に直接依存しており、パッケージの公開 API を経由していない",
             suggestion=f"`from {module_path} import {name}` を `from {package} import {name}` に書き換えてください",
