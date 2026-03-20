@@ -13,3 +13,4 @@
 | [Python開発ワークフロー](workflow.md) | 技術スタック・開発コマンド・開発規律・開発フロー |
 | [pyproject.toml設定](pyproject.md) | ビルド・テスト・Linter・型チェック設定ガイド |
 | [仕様ドキュメント設計](specs.md) | 仕様ドキュメントの設計戦略と運用フロー |
+| [Pythonテスト設計](testing.md) | テストの種類・配置・Fake パターン・命名規則・ガードレール |
