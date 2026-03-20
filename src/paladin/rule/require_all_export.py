@@ -44,10 +44,8 @@ class RequireAllExportRule:
         else:
             suggestion = "`__all__` リストを定義し、公開するシンボルを明示的に列挙してください"
         return (
-            self._meta.create_violation(
-                file=source_file.file_path,
-                line=1,
-                column=0,
+            self._meta.create_violation_at(
+                location=source_file.location(1),
                 message="__init__.py に __all__ が定義されていない",
                 reason="__all__ が未定義の場合、パッケージの公開インタフェースが不明確になり、意図しないシンボルが外部に露出するリスクがある",
                 suggestion=suggestion,

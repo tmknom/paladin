@@ -98,10 +98,8 @@ class NoLocalImportRule:
         source_file: SourceFile,
     ) -> Violation:
         import_text = source_file.get_line(node.lineno)
-        return self._meta.create_violation(
-            file=source_file.file_path,
-            line=node.lineno,
-            column=node.col_offset,
+        return self._meta.create_violation_at(
+            location=source_file.location(node.lineno, node.col_offset),
             message=f"{scope} 内に import 文があります",
             reason="import 文はモジュールのトップレベルに配置することで依存関係を明示し、インポートのタイミングを予測可能にします",
             suggestion=f"`{import_text}` をファイル冒頭のインポートセクションに移動し、{scope} 内から削除してください",

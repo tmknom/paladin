@@ -10,7 +10,7 @@ from collections.abc import Iterable, Iterator
 from dataclasses import dataclass
 from pathlib import Path
 
-from paladin.rule.import_statement import ImportStatement, SourceLocation
+from paladin.rule.import_statement import AbsoluteFromImport, ImportStatement, SourceLocation
 
 
 def _collect_imports(nodes: Iterable[ast.AST]) -> tuple[ImportStatement, ...]:
@@ -59,12 +59,26 @@ class SourceFile:
         """トップレベルのインポート文のみを抽出して返す"""
         return _collect_imports(self.tree.body)
 
+    @property
+    def absolute_from_imports(self) -> tuple[AbsoluteFromImport, ...]:
+        """絶対 from import 文のみを抽出して返す"""
+        return tuple(
+            AbsoluteFromImport(
+                module=stmt.module,
+                names=stmt.names,
+                line=stmt.line,
+                column=stmt.column,
+            )
+            for stmt in self.imports
+            if stmt.is_absolute_from_import and stmt.module is not None
+        )
+
     def location(self, line: int, column: int = 0) -> SourceLocation:
         """指定した行・列の SourceLocation を返す"""
         return SourceLocation(file=self.file_path, line=line, column=column)
 
-    def location_from(self, stmt: ImportStatement) -> SourceLocation:
-        """ImportStatement の位置から SourceLocation を返す"""
+    def location_from(self, stmt: ImportStatement | AbsoluteFromImport) -> SourceLocation:
+        """ImportStatement または AbsoluteFromImport の位置から SourceLocation を返す"""
         return SourceLocation(file=self.file_path, line=stmt.line, column=stmt.column)
 
 
@@ -130,27 +144,6 @@ class RuleMeta:
     intent: str
     guidance: str
     suggestion: str
-
-    def create_violation(
-        self,
-        file: Path,
-        line: int,
-        column: int,
-        message: str,
-        reason: str,
-        suggestion: str,
-    ) -> Violation:
-        """rule_id, rule_name を自動補完して Violation を生成する"""
-        return Violation(
-            file=file,
-            line=line,
-            column=column,
-            rule_id=self.rule_id,
-            rule_name=self.rule_name,
-            message=message,
-            reason=reason,
-            suggestion=suggestion,
-        )
 
     def create_violation_at(
         self,

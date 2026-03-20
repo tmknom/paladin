@@ -5,7 +5,7 @@
 
 import sys
 
-from paladin.rule.import_statement import ImportStatement, ModulePath
+from paladin.rule.import_statement import AbsoluteFromImport, ImportStatement, ModulePath
 from paladin.rule.package_resolver import PackageResolver
 from paladin.rule.types import RuleMeta, SourceFile, SourceFiles, Violation
 
@@ -39,33 +39,27 @@ class RequireQualifiedThirdPartyRule:
     def check(self, source_file: SourceFile) -> tuple[Violation, ...]:
         """単一ファイルに対する違反判定を行う"""
         violations: list[Violation] = []
+        for imp in source_file.absolute_from_imports:
+            self._check_import_from(imp, violations, source_file)
         for stmt in source_file.imports:
-            if stmt.is_import_from:
-                self._check_import_from(stmt, violations, source_file)
-            else:
+            if not stmt.is_import_from:
                 self._check_import_as(stmt, violations, source_file)
         return tuple(violations)
 
     def _check_import_from(
         self,
-        stmt: ImportStatement,
+        imp: AbsoluteFromImport,
         violations: list[Violation],
         source_file: SourceFile,
     ) -> None:
-        if stmt.is_relative:
+        top = imp.top_level
+        if self._is_excluded(top):
             return
-        if not stmt.has_module:
-            return  # pragma: no cover
-        top = stmt.top_level_module
-        if top is None or self._is_excluded(top):
-            return
-        module_str = stmt.module_str
-        for imported in stmt.names:
+        module_str = imp.module_str
+        for imported in imp.names:
             violations.append(
-                self._meta.create_violation(
-                    file=source_file.file_path,
-                    line=stmt.line,
-                    column=stmt.column,
+                self._meta.create_violation_at(
+                    location=source_file.location_from(imp),
                     message=f"`from {module_str} import {imported.name}` はサードパーティライブラリの直接インポートである",
                     reason="外部依存の境界を明示するために、サードパーティライブラリは完全修飾名で使用する必要がある",
                     suggestion=f"`from {module_str} import {imported.name}` を `import {module_str}` に書き換え、使用箇所の `{imported.name}` を `{module_str}.{imported.name}` に置換してください",
@@ -85,10 +79,8 @@ class RequireQualifiedThirdPartyRule:
             if self._is_excluded(top):
                 continue
             violations.append(
-                self._meta.create_violation(
-                    file=source_file.file_path,
-                    line=stmt.line,
-                    column=stmt.column,
+                self._meta.create_violation_at(
+                    location=source_file.location_from(stmt),
                     message=f"`import {imported.name} as {imported.asname}` はサードパーティライブラリのエイリアスインポートである",
                     reason="外部依存の境界を明示するために、サードパーティライブラリは完全修飾名で使用する必要がある",
                     suggestion=f"`import {imported.name} as {imported.asname}` を `import {imported.name}` に書き換え、使用箇所の `{imported.asname}` を `{imported.name}` に置換してください",

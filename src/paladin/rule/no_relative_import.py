@@ -33,10 +33,8 @@ class NoRelativeImportRule:
                 continue
             names_str = ", ".join(imported.name for imported in stmt.names)
             violations.append(
-                self._meta.create_violation(
-                    file=source_file.file_path,
-                    line=stmt.line,
-                    column=stmt.column,
+                self._meta.create_violation_at(
+                    location=source_file.location_from(stmt),
                     message=f"相対インポートが使用されている（from {stmt.level_dots}{stmt.module_str} import ...）",
                     reason="相対インポートは依存関係を不透明にし、モジュール移動時にインポートパスの修正が必要になる",
                     suggestion=f"`from {stmt.level_dots}{stmt.module_str} import {names_str}` をプロジェクトルートからの絶対インポートに書き換えてください",

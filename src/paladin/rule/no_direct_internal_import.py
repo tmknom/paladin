@@ -6,7 +6,7 @@
 from pathlib import Path
 
 from paladin.rule.all_exports_extractor import AllExportsExtractor
-from paladin.rule.import_statement import ImportStatement, ModulePath
+from paladin.rule.import_statement import AbsoluteFromImport, ModulePath
 from paladin.rule.package_resolver import NON_PACKAGE_DIRS, PackageResolver
 from paladin.rule.types import RuleMeta, SourceFile, SourceFiles, Violation
 
@@ -149,37 +149,29 @@ class NoDirectInternalImportRule:
         violations: list[Violation] = []
         own_packages = self._resolve_own_packages(source_file.file_path)
 
-        for stmt in source_file.imports:
-            if not stmt.is_import_from:
-                continue
-            if stmt.is_relative:
-                continue
-            module = stmt.module
-            if module is None:
+        for imp in source_file.absolute_from_imports:
+            if imp.module.depth < 3:  # 3階層未満は対象外
                 continue
 
-            if module.depth < 3:  # 3階層未満は対象外
+            if imp.module.top_level not in self._root_packages:
                 continue
 
-            if module.top_level not in self._root_packages:
-                continue
-
-            import_package = module.package_key
+            import_package = imp.module.package_key
 
             # 同一パッケージ（またはテストの対応プロダクションパッケージ）は対象外
             if PackageResolver.is_own_package(import_package, own_packages):
                 continue
 
             # インポートモジュール自体がサブパッケージ（__init__.py を持つ）なら対象外
-            if module.value in package_exports:
+            if imp.module.value in package_exports:
                 continue
-            if self._is_subpackage_on_filesystem(module, src_root):
+            if self._is_subpackage_on_filesystem(imp.module, src_root):
                 continue
 
-            for imported in stmt.names:
+            for imported in imp.names:
                 if self._should_report(imported.name, import_package, package_exports):
                     violations.append(
-                        self._make_violation(source_file, stmt, imported.name, import_package)
+                        self._make_violation(source_file, imp, imported.name, import_package)
                     )
 
         return violations
@@ -206,16 +198,14 @@ class NoDirectInternalImportRule:
     def _make_violation(
         self,
         source_file: SourceFile,
-        stmt: ImportStatement,
+        imp: AbsoluteFromImport,
         name: str,
         package: str,
     ) -> Violation:
         """違反オブジェクトを生成する"""
-        module_path = stmt.module_str
-        return self._meta.create_violation(
-            file=source_file.file_path,
-            line=stmt.line,
-            column=stmt.column,
+        module_path = imp.module_str
+        return self._meta.create_violation_at(
+            location=source_file.location_from(imp),
             message=f"`from {module_path} import {name}` は内部モジュールへの直接参照である",
             reason=f"`{package}` の内部実装に直接依存しており、パッケージの公開 API を経由していない",
             suggestion=f"`from {module_path} import {name}` を `from {package} import {name}` に書き換えてください",

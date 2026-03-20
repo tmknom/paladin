@@ -4,6 +4,7 @@ import ast
 from pathlib import Path
 
 from paladin.rule.import_statement import (
+    AbsoluteFromImport,
     ImportedName,
     ImportStatement,
     ModulePath,
@@ -219,6 +220,74 @@ class TestImportStatement:
         stmt = ImportStatement.from_import_from(node)
         assert stmt.line == 1
         assert stmt.column == 0
+
+
+class TestImportStatementIsAbsoluteFromImport:
+    """ImportStatement.is_absolute_from_import プロパティのテスト"""
+
+    def test_is_absolute_from_import_正常系_絶対fromインポートのとき真を返すこと(self):
+        source = "from paladin.check import Foo\n"
+        node = ast.parse(source).body[0]
+        assert isinstance(node, ast.ImportFrom)
+        stmt = ImportStatement.from_import_from(node)
+        assert stmt.is_absolute_from_import is True
+
+    def test_is_absolute_from_import_正常系_相対fromインポートのとき偽を返すこと(self):
+        source = "from .check import Foo\n"
+        node = ast.parse(source).body[0]
+        assert isinstance(node, ast.ImportFrom)
+        stmt = ImportStatement.from_import_from(node)
+        assert stmt.is_absolute_from_import is False
+
+    def test_is_absolute_from_import_正常系_通常importのとき偽を返すこと(self):
+        source = "import paladin\n"
+        node = ast.parse(source).body[0]
+        assert isinstance(node, ast.Import)
+        stmt = ImportStatement.from_import(node)
+        assert stmt.is_absolute_from_import is False
+
+    def test_is_absolute_from_import_正常系_moduleなしのとき偽を返すこと(self):
+        source = "from . import foo\n"
+        node = ast.parse(source).body[0]
+        assert isinstance(node, ast.ImportFrom)
+        stmt = ImportStatement.from_import_from(node)
+        assert stmt.is_absolute_from_import is False
+
+
+class TestAbsoluteFromImport:
+    """AbsoluteFromImport 値オブジェクトのテスト"""
+
+    def _make(self) -> AbsoluteFromImport:
+        return AbsoluteFromImport(
+            module=ModulePath("paladin.check.formatter"),
+            names=(ImportedName(name="Foo", asname=None),),
+            line=1,
+            column=0,
+        )
+
+    def test_module_str_正常系_モジュールパス文字列を返すこと(self):
+        imp = self._make()
+        assert imp.module_str == "paladin.check.formatter"
+
+    def test_top_level_正常系_先頭セグメントを返すこと(self):
+        imp = self._make()
+        assert imp.top_level == "paladin"
+
+    def test_module_型がModulePathとして確定していること(self):
+        imp = self._make()
+        # module は ModulePath 型が確定しているため .depth 等に直接アクセスできる
+        assert imp.module.depth == 3
+        assert imp.module.package_key == "paladin.check"
+
+    def test_names_正常系_インポート名タプルを保持すること(self):
+        imp = self._make()
+        assert len(imp.names) == 1
+        assert imp.names[0].name == "Foo"
+
+    def test_line_column_正常系_位置情報を保持すること(self):
+        imp = self._make()
+        assert imp.line == 1
+        assert imp.column == 0
 
 
 class TestSourceLocation:

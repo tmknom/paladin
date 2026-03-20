@@ -4,6 +4,7 @@
 """
 
 from paladin.rule.all_exports_extractor import AllExportsExtractor
+from paladin.rule.import_statement import ModulePath
 from paladin.rule.package_resolver import PackageResolver
 from paladin.rule.types import RuleMeta, SourceFile, Violation
 
@@ -39,18 +40,19 @@ class NoCrossPackageReexportRule:
             return ()
 
         all_exports = self._extractor.extract(source_file)
-        if not all_exports.is_defined or all_exports.is_empty:
+        if not all_exports.has_exports:
             return ()
 
         import_mapping = self._collect_import_mapping(source_file)
 
+        current_module = ModulePath(current_package)
         violations: list[Violation] = []
         for name in all_exports:
             if name not in import_mapping:
                 continue
-            import_source = import_mapping[name]
-            if not PackageResolver.is_subpackage(import_source, current_package):
-                source_package = PackageResolver.extract_package_key(import_source)
+            import_module = ModulePath(import_mapping[name])
+            if not import_module.is_subpackage_of(current_module):
+                source_package = import_module.package_key
                 violations.append(
                     self._make_violation(
                         source_file=source_file,
@@ -70,11 +72,7 @@ class NoCrossPackageReexportRule:
         """
         mapping: dict[str, str] = {}
         for stmt in source_file.top_level_imports:
-            if not stmt.is_import_from:
-                continue
-            if stmt.is_relative:
-                continue
-            if not stmt.has_module:
+            if not stmt.is_absolute_from_import:
                 continue
             for imported in stmt.names:
                 mapping[imported.bound_name] = stmt.module_str
@@ -89,10 +87,8 @@ class NoCrossPackageReexportRule:
         current_package: str,
     ) -> Violation:
         """診断メッセージ仕様に従い Violation を生成する"""
-        return self._meta.create_violation(
-            file=source_file.file_path,
-            line=line,
-            column=0,
+        return self._meta.create_violation_at(
+            location=source_file.location(line),
             message=f"__all__ に別パッケージのシンボル `{name}` が含まれている（定義元: `{source_package}`）",
             reason=f"`{source_package}` で定義されたシンボルを `{current_package}` の公開 API として再エクスポートすると、パッケージ境界が曖昧になる",
             suggestion=f"`{name}` を __all__ から削除し、利用者が `from {source_package} import {name}` を直接使用するよう誘導してください",
