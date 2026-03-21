@@ -4,6 +4,7 @@ RuleSet のインスタンス生成と具象ルールの組み立てを担う。
 """
 
 from paladin.rule.no_cross_package_reexport import NoCrossPackageReexportRule
+from paladin.rule.no_deep_nesting import NoDeepNestingRule
 from paladin.rule.no_direct_internal_import import NoDirectInternalImportRule
 from paladin.rule.no_local_import import NoLocalImportRule
 from paladin.rule.no_mock_usage import NoMockUsageRule
@@ -29,6 +30,7 @@ class RuleSetFactory:
                 NoNonInitAllRule(),
                 NoCrossPackageReexportRule(),
                 NoMockUsageRule(),
+                NoDeepNestingRule(),
             ),
             multi_file_rules=(NoDirectInternalImportRule(), NoUnusedExportRule()),
         )
