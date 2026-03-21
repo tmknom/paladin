@@ -70,6 +70,54 @@ class TestRuleSetFactory:
         assert "no-unused-export" in rule_ids
         assert "no-deep-nesting" in rule_ids
 
+    def test_create_正常系_no_third_party_importルールが登録されていること(self):
+        result = RuleSetFactory().create()
+        assert "no-third-party-import" in result.rule_ids
+
+    def test_create_正常系_全ルールが登録されていること_11ルール(self):
+        result = RuleSetFactory().create()
+        rule_ids = result.rule_ids
+        assert "require-all-export" in rule_ids
+        assert "no-relative-import" in rule_ids
+        assert "no-local-import" in rule_ids
+        assert "require-qualified-third-party" in rule_ids
+        assert "no-direct-internal-import" in rule_ids
+        assert "no-non-init-all" in rule_ids
+        assert "no-cross-package-reexport" in rule_ids
+        assert "no-mock-usage" in rule_ids
+        assert "no-unused-export" in rule_ids
+        assert "no-deep-nesting" in rule_ids
+        assert "no-third-party-import" in rule_ids
+
+    def test_create_正常系_rule_optionsでallow_dirsを指定できること(self):
+        # Arrange
+        rule_options: dict[str, dict[str, object]] = {
+            "no-third-party-import": {"allow-dirs": ["src/foundation/"]}
+        }
+
+        # Act
+        result = RuleSetFactory().create(rule_options=rule_options)
+
+        # Assert: ルールが登録されていること
+        assert "no-third-party-import" in result.rule_ids
+
+    def test_create_正常系_引数なしで後方互換性を保つこと(self):
+        # allow_dirs 未指定でもデフォルト引数で呼び出せる
+        result = RuleSetFactory().create()
+        assert "no-third-party-import" in result.rule_ids
+
+    def test_create_正常系_allow_dirsがlist以外の場合は空タプルを返すこと(self):
+        # Arrange: allow-dirs に不正な型（文字列）を渡す
+        rule_options: dict[str, dict[str, object]] = {
+            "no-third-party-import": {"allow-dirs": "src/foundation/"}
+        }
+
+        # Act
+        result = RuleSetFactory().create(rule_options=rule_options)
+
+        # Assert: 不正な型でも例外なく動作する
+        assert "no-third-party-import" in result.rule_ids
+
     def test_create_正常系_no_unused_exportルールが登録されていること(self):
         result = RuleSetFactory().create()
         assert "no-unused-export" in result.rule_ids

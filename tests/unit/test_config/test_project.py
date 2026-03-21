@@ -672,3 +672,65 @@ no-relative-import = false
         # Assert
         assert result.project_name == "my_project"
         assert result.rules == {"no-relative-import": False}
+
+    def test_load_正常系_rule_optionsセクションを含むProjectConfigを返すこと(self):
+        # Arrange
+        toml_content = """\
+[tool.paladin.rule."no-third-party-import"]
+allow-dirs = ["src/foundation/"]
+"""
+        reader = InMemoryFsReader(contents={"pyproject.toml": toml_content})
+        loader = ProjectConfigLoader(reader=reader)
+
+        # Act
+        result = loader.load()
+
+        # Assert
+        assert result.rule_options == {"no-third-party-import": {"allow-dirs": ["src/foundation/"]}}
+
+    def test_load_正常系_rule_optionsの複数ディレクトリを読み込めること(self):
+        # Arrange
+        toml_content = """\
+[tool.paladin.rule."no-third-party-import"]
+allow-dirs = ["src/foundation/", "src/infra/"]
+"""
+        reader = InMemoryFsReader(contents={"pyproject.toml": toml_content})
+        loader = ProjectConfigLoader(reader=reader)
+
+        # Act
+        result = loader.load()
+
+        # Assert
+        assert result.rule_options == {
+            "no-third-party-import": {"allow-dirs": ["src/foundation/", "src/infra/"]}
+        }
+
+    def test_load_エッジケース_rule_optionsセクションがない場合空dictになること(self):
+        # Arrange
+        toml_content = """\
+[tool.paladin]
+other_key = "value"
+"""
+        reader = InMemoryFsReader(contents={"pyproject.toml": toml_content})
+        loader = ProjectConfigLoader(reader=reader)
+
+        # Act
+        result = loader.load()
+
+        # Assert
+        assert result.rule_options == {}
+
+    def test_load_エッジケース_tool_paladinがない場合rule_optionsが空dictになること(self):
+        # Arrange
+        toml_content = """\
+[tool.other]
+key = "value"
+"""
+        reader = InMemoryFsReader(contents={"pyproject.toml": toml_content})
+        loader = ProjectConfigLoader(reader=reader)
+
+        # Act
+        result = loader.load()
+
+        # Assert
+        assert result.rule_options == {}

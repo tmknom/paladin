@@ -22,15 +22,20 @@ class CheckOrchestratorProvider:
     """
 
     @log
-    def provide(self) -> CheckOrchestrator:
+    def provide(
+        self, rule_options: dict[str, dict[str, object]] | None = None
+    ) -> CheckOrchestrator:
         """CheckOrchestratorを構築
+
+        Args:
+            rule_options: ルール固有のオプション設定
 
         Returns:
             設定済みのCheckOrchestrator
         """
         reader = TextFileSystemReader()
         parser = AstParser(reader=reader)
-        rule_set = RuleSetFactory().create()
+        rule_set = RuleSetFactory().create(rule_options=rule_options)
         return CheckOrchestrator(
             collector=FileCollector(),
             parser=parser,
