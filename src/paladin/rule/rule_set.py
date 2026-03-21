@@ -7,7 +7,7 @@ from collections.abc import Mapping
 from pathlib import Path
 
 from paladin.rule.protocol import MultiFileRule, PreparableRule, Rule
-from paladin.rule.types import RuleMeta, SourceFiles, Violation, Violations
+from paladin.rule.types import RuleMeta, SourceFile, SourceFiles, Violation, Violations
 
 
 class RuleSet:
@@ -56,15 +56,23 @@ class RuleSet:
                 if per_file_disabled is not None
                 else disabled_rule_ids
             )
-            for rule in self._rules:
-                if rule.meta.rule_id in effective_disabled:
-                    continue
-                violations.extend(rule.check(source_file))
+            violations.extend(self._run_single_file_rules(source_file, effective_disabled))
         for multi_rule in self._multi_file_rules:
             if multi_rule.meta.rule_id in disabled_rule_ids:
                 continue
             violations.extend(multi_rule.check(source_files))
         return Violations(items=tuple(violations))
+
+    def _run_single_file_rules(
+        self, source_file: SourceFile, disabled_rule_ids: frozenset[str]
+    ) -> list[Violation]:
+        """1ファイルに対してシングルファイルルールを適用して違反リストを返す"""
+        violations: list[Violation] = []
+        for rule in self._rules:
+            if rule.meta.rule_id in disabled_rule_ids:
+                continue
+            violations.extend(rule.check(source_file))
+        return violations
 
     def list_rules(self) -> tuple[RuleMeta, ...]:
         """登録済みルールのメタ情報一覧を返す"""

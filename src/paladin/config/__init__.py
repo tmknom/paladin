@@ -12,7 +12,6 @@ from paladin.config.env_var import EnvVarConfig
 from paladin.config.project import (
     OverrideEntry,
     PerFileIgnoreEntry,
-    ProjectConfig,
     ProjectConfigLoader,
 )
 from paladin.config.resolver import TargetResolver
@@ -22,7 +21,6 @@ __all__ = [
     "EnvVarConfig",
     "OverrideEntry",
     "PerFileIgnoreEntry",
-    "ProjectConfig",
     "ProjectConfigLoader",
     "TargetResolver",
 ]

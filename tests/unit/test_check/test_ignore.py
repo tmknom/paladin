@@ -11,7 +11,8 @@ from paladin.check.ignore import (
     LineIgnoreParser,
     ViolationFilter,
 )
-from paladin.config import PerFileIgnoreEntry, ProjectConfig
+from paladin.config import PerFileIgnoreEntry
+from paladin.config.project import ProjectConfig
 from paladin.rule import SourceFile, SourceFiles, Violation, Violations
 
 

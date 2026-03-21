@@ -3,6 +3,7 @@
 仕様は docs/rules/no-mock-usage.md を参照。
 """
 
+from paladin.rule.import_statement import ImportStatement
 from paladin.rule.types import RuleMeta, SourceFile, Violation
 
 _FORBIDDEN_NAMES = frozenset({"Mock", "MagicMock"})
@@ -35,26 +36,39 @@ class NoMockUsageRule:
         violations: list[Violation] = []
         for stmt in source_file.imports:
             if stmt.is_import_from:
-                if stmt.module_str == "unittest.mock":
-                    for imported in stmt.names:
-                        if imported.name in _FORBIDDEN_NAMES:
-                            violations.append(
-                                self._meta.create_violation_at(
-                                    location=source_file.location_from(stmt),
-                                    message=f"{imported.name} のインポートは禁止されています",
-                                    reason=_REASON,
-                                    suggestion=self._meta.suggestion,
-                                )
-                            )
+                violations.extend(self._check_import_from(source_file, stmt))
             else:
-                for imported in stmt.names:
-                    if imported.name == "unittest.mock":
-                        violations.append(
-                            self._meta.create_violation_at(
-                                location=source_file.location_from(stmt),
-                                message="unittest.mock のインポートは禁止されています",
-                                reason=_REASON,
-                                suggestion=self._meta.suggestion,
-                            )
-                        )
+                violations.extend(self._check_import(source_file, stmt))
         return tuple(violations)
+
+    def _check_import_from(self, source_file: SourceFile, stmt: ImportStatement) -> list[Violation]:
+        """From ... import 文から Mock/MagicMock の違反を収集する"""
+        if stmt.module_str != "unittest.mock":
+            return []
+        violations: list[Violation] = []
+        for imported in stmt.names:
+            if imported.name in _FORBIDDEN_NAMES:
+                violations.append(
+                    self._meta.create_violation_at(
+                        location=source_file.location_from(stmt),
+                        message=f"{imported.name} のインポートは禁止されています",
+                        reason=_REASON,
+                        suggestion=self._meta.suggestion,
+                    )
+                )
+        return violations
+
+    def _check_import(self, source_file: SourceFile, stmt: ImportStatement) -> list[Violation]:
+        """Import 文から unittest.mock の違反を収集する"""
+        violations: list[Violation] = []
+        for imported in stmt.names:
+            if imported.name == "unittest.mock":
+                violations.append(
+                    self._meta.create_violation_at(
+                        location=source_file.location_from(stmt),
+                        message="unittest.mock のインポートは禁止されています",
+                        reason=_REASON,
+                        suggestion=self._meta.suggestion,
+                    )
+                )
+        return violations

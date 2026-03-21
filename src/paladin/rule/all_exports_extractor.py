@@ -56,17 +56,29 @@ class AllExportsExtractor:
     def _find_all_node(self, tree: ast.Module) -> ast.Assign | ast.AugAssign | None:
         """トップレベルの __all__ 代入ノードを返す（存在しなければ None）"""
         for node in tree.body:
-            if isinstance(node, ast.Assign):
-                for target in node.targets:
-                    if isinstance(target, ast.Name) and target.id == "__all__":
-                        return node
-            elif (
-                isinstance(node, ast.AugAssign)
-                and isinstance(node.target, ast.Name)
-                and node.target.id == "__all__"
-            ):
-                return node
+            result = self._match_all_node(node)
+            if result is not None:
+                return result
         return None
+
+    def _match_all_node(self, node: ast.stmt) -> ast.Assign | ast.AugAssign | None:
+        """Node が __all__ 代入であれば返す。そうでなければ None を返す"""
+        if isinstance(node, ast.Assign) and self._is_all_assign(node):
+            return node
+        if (
+            isinstance(node, ast.AugAssign)
+            and isinstance(node.target, ast.Name)
+            and node.target.id == "__all__"
+        ):
+            return node
+        return None
+
+    def _is_all_assign(self, node: ast.Assign) -> bool:
+        """ast.Assign が __all__ への代入かどうかを返す"""
+        for target in node.targets:
+            if isinstance(target, ast.Name) and target.id == "__all__":
+                return True
+        return False
 
     def _extract_symbols(self, node: ast.Assign | ast.AugAssign) -> tuple[str, ...]:
         """__all__ 代入ノードから文字列リテラルのシンボル群を抽出する"""
@@ -111,9 +123,10 @@ class AllExportsExtractor:
             ):
                 exports.update(self._extract_symbols(node))
 
-            if isinstance(node, ast.ImportFrom) and node.level >= 1 and node.names:
-                for alias in node.names:
-                    name = alias.asname if alias.asname else alias.name
-                    exports.add(name)
+            if not (isinstance(node, ast.ImportFrom) and node.level >= 1 and node.names):
+                continue
+            for alias in node.names:
+                name = alias.asname if alias.asname else alias.name
+                exports.add(name)
 
         return exports

@@ -9,6 +9,15 @@ from pathlib import Path
 from paladin.foundation.log.configurator import LogConfigurator
 
 
+def _remove_file_handlers(logger: logging.Logger) -> None:
+    """ロガーから FileHandler を閉じて取り除く"""
+    for handler in logger.handlers[:]:
+        if not isinstance(handler, logging.FileHandler):
+            continue
+        handler.close()
+        logger.removeHandler(handler)
+
+
 class TestLogConfigurator:
     """LogConfigurator クラスのテスト"""
 
@@ -66,10 +75,7 @@ class TestLogConfigurator:
             assert isinstance(log_path_2, Path)
 
             # FileHandler のないコンソールのみの状態で再初期化を試みると None を返す
-            for handler in logger.handlers[:]:
-                if isinstance(handler, logging.FileHandler):
-                    handler.close()
-                    logger.removeHandler(handler)
+            _remove_file_handlers(logger)
 
             configurator3 = LogConfigurator(app_name="test_app", level="INFO")
             log_path_3 = configurator3.configure_plain()

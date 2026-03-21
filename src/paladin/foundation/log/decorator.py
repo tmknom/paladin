@@ -37,13 +37,13 @@ def _format_value(value: Any) -> str:
     # dict: キー数が閾値以上なら最初の1キー・値ペア + 総数
     if isinstance(value, dict):
         typed_dict = cast("dict[Any, Any]", value)
-        if len(typed_dict) >= _DICT_TRUNCATE_THRESHOLD:
-            if typed_dict:
-                first_key: Any = next(iter(typed_dict))
-                first_value = repr(typed_dict[first_key])
-                return f"{{{first_key!r}: {first_value}, ... ({len(typed_dict)} keys)}}"
+        if len(typed_dict) < _DICT_TRUNCATE_THRESHOLD:
+            return repr(typed_dict)
+        if not typed_dict:
             return "{... (0 keys)}"
-        return repr(typed_dict)
+        first_key: Any = next(iter(typed_dict))
+        first_value = repr(typed_dict[first_key])
+        return f"{{{first_key!r}: {first_value}, ... ({len(typed_dict)} keys)}}"
 
     # 文字列: 長さが閾値以上なら最初の100文字 + 総数
     if isinstance(value, str):

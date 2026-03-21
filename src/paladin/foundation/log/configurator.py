@@ -105,10 +105,7 @@ class LogConfigurator:
         # 再初期化を防ぐためのガード処理
         root_logger = logging.getLogger()
         if root_logger.handlers:
-            for h in root_logger.handlers:
-                if isinstance(h, logging.FileHandler):
-                    return Path(h.baseFilename)
-            return None
+            return self._find_existing_log_path(root_logger.handlers)
 
         # ログファイルパスの設定（ファイル出力ありの場合のみ）
         log_path = None
@@ -132,6 +129,13 @@ class LogConfigurator:
         logging.captureWarnings(True)
         sys.stderr.flush()
         return log_path
+
+    def _find_existing_log_path(self, handlers: list[logging.Handler]) -> Path | None:
+        """既存のファイルハンドラーからログファイルパスを返す。なければ None を返す"""
+        for h in handlers:
+            if isinstance(h, logging.FileHandler):
+                return Path(h.baseFilename)
+        return None
 
     def _build_dictconfig(
         self,

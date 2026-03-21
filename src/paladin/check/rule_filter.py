@@ -29,11 +29,12 @@ class RuleFilter:
         """
         disabled: set[str] = set()
         for rule_id, enabled in rules.items():
-            if not enabled:
-                if rule_id not in known_rule_ids:
-                    logger.warning("Unknown rule ID in [tool.paladin.rules]: %s", rule_id)
-                    continue
-                disabled.add(rule_id)
+            if enabled:
+                continue
+            if rule_id not in known_rule_ids:
+                logger.warning("Unknown rule ID in [tool.paladin.rules]: %s", rule_id)
+                continue
+            disabled.add(rule_id)
         return frozenset(disabled)
 
     def filter(

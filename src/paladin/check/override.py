@@ -21,6 +21,14 @@ class OverrideResolver:
             return pattern
         return "**/" + pattern
 
+    def _matches_any_pattern(self, patterns: tuple[str, ...], file_path: Path) -> bool:
+        """ファイルパスがパターンのいずれかにマッチするかを返す"""
+        for pattern in patterns:
+            normalized = self._normalize_glob_pattern(pattern)
+            if PurePath(file_path).full_match(normalized):
+                return True
+        return False
+
     def resolve(
         self,
         overrides: tuple[OverrideEntry, ...],
@@ -42,11 +50,8 @@ class OverrideResolver:
         """
         last_match: OverrideEntry | None = None
         for override in overrides:
-            for pattern in override.files:
-                normalized = self._normalize_glob_pattern(pattern)
-                if PurePath(str(file_path)).full_match(normalized):
-                    last_match = override
-                    break
+            if self._matches_any_pattern(override.files, file_path):
+                last_match = override
 
         if last_match is None:
             return base_rules
