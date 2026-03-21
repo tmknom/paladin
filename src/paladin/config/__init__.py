@@ -9,7 +9,6 @@ Docs:
 
 from paladin.config.app import AppConfig
 from paladin.config.env_var import EnvVarConfig
-from paladin.config.path import PathConfig
 from paladin.config.project import (
     OverrideEntry,
     PerFileIgnoreEntry,
@@ -22,7 +21,6 @@ __all__ = [
     "AppConfig",
     "EnvVarConfig",
     "OverrideEntry",
-    "PathConfig",
     "PerFileIgnoreEntry",
     "ProjectConfig",
     "ProjectConfigLoader",
