@@ -20,3 +20,4 @@
 | [no-mock-usage](no-mock-usage.md) | Mock/MagicMock のインポートを禁止する |
 | [no-unused-export](no-unused-export.md) | `__init__.py` の `__all__` に定義したシンボルが別パッケージから利用されていないことを禁止する |
 | [no-third-party-import](no-third-party-import.md) | 許可ディレクトリ以外でのサードパーティライブラリのインポートを禁止する |
+| [no-cross-package-import](no-cross-package-import.md) | 許可ディレクトリ以外のパッケージからのクロスパッケージインポートを禁止する |
