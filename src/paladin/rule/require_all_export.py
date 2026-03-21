@@ -6,6 +6,7 @@
 import ast
 
 from paladin.rule.all_exports_extractor import AllExportsExtractor
+from paladin.rule.import_statement import ImportedName
 from paladin.rule.types import RuleMeta, SourceFile, Violation
 
 
@@ -72,13 +73,18 @@ class RequireAllExportRule:
         """
         symbols: list[str] = []
         for stmt in source_file.top_level_imports:
-            if stmt.is_relative:
-                for imported in stmt.names:
-                    if not imported.bound_name.startswith("_"):
-                        symbols.append(imported.bound_name)
+            if not stmt.is_relative:
+                continue
+            symbols.extend(self._public_imported_names(stmt.names))
         for node in source_file.tree.body:
             if isinstance(
                 node, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)
             ) and not node.name.startswith("_"):
                 symbols.append(node.name)
         return symbols
+
+    def _public_imported_names(self, names: tuple[ImportedName, ...]) -> list[str]:
+        """インポートされた名前のうち公開シンボル（_ 始まりでないもの）を返す"""
+        return [
+            imported.bound_name for imported in names if not imported.bound_name.startswith("_")
+        ]

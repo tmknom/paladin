@@ -120,9 +120,13 @@ class PackageResolver:
             src_dir = candidate / "src"
             if not src_dir.is_dir():
                 continue
-            for child in src_dir.iterdir():
-                if child.is_dir() and not child.name.startswith("."):
-                    root_packages.add(child.name)
+            self._collect_packages_from_src(src_dir, root_packages)
+
+    def _collect_packages_from_src(self, src_dir: Path, root_packages: set[str]) -> None:
+        """src/ ディレクトリ直下のパッケージを収集する"""
+        for child in src_dir.iterdir():
+            if child.is_dir() and not child.name.startswith("."):
+                root_packages.add(child.name)
 
     def _find_anchor(self, dir_parts: tuple[str, ...]) -> tuple[int, str]:
         """NON_PACKAGE_DIRS の最後の出現位置をアンカーとして返す

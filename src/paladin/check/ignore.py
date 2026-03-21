@@ -61,8 +61,7 @@ class FileIgnoreParser:
 
             # docstring 内をスキップ
             if in_docstring:
-                if docstring_quote in line:
-                    in_docstring = False
+                in_docstring = docstring_quote not in line
                 i += 1
                 continue
 
@@ -84,31 +83,14 @@ class FileIgnoreParser:
             # docstring 開始の検出
             if stripped.startswith('"""') or stripped.startswith("'''"):
                 docstring_quote = stripped[:3]
-                # 同一行で閉じている場合
-                rest = stripped[3:]
-                if docstring_quote in rest:
-                    i += 1
-                    continue
-                in_docstring = True
+                in_docstring = docstring_quote not in stripped[3:]
                 i += 1
                 continue
 
             # ignore-file ディレクティブの検出
-            match = self._DIRECTIVE_PATTERN.match(stripped)
-            if match:
-                rule_spec = match.group(2)
-                if rule_spec is None:
-                    return FileIgnoreDirective(
-                        file_path=file_path,
-                        ignore_all=True,
-                        ignored_rules=frozenset(),
-                    )
-                rules = frozenset(r.strip() for r in rule_spec.split(","))
-                return FileIgnoreDirective(
-                    file_path=file_path,
-                    ignore_all=False,
-                    ignored_rules=rules,
-                )
+            directive = self._parse_directive(file_path, stripped)
+            if directive is not None:
+                return directive
 
             # 通常コメント行（# paladin: ではない）をスキップ
             if stripped.startswith("#"):
@@ -122,6 +104,25 @@ class FileIgnoreParser:
             file_path=file_path,
             ignore_all=False,
             ignored_rules=frozenset(),
+        )
+
+    def _parse_directive(self, file_path: Path, stripped: str) -> FileIgnoreDirective | None:
+        """行テキストから ignore-file ディレクティブを解析する。該当しない場合は None を返す"""
+        match = self._DIRECTIVE_PATTERN.match(stripped)
+        if match is None:
+            return None
+        rule_spec = match.group(2)
+        if rule_spec is None:
+            return FileIgnoreDirective(
+                file_path=file_path,
+                ignore_all=True,
+                ignored_rules=frozenset(),
+            )
+        rules = frozenset(r.strip() for r in rule_spec.split(","))
+        return FileIgnoreDirective(
+            file_path=file_path,
+            ignore_all=False,
+            ignored_rules=rules,
         )
 
     def parse_all(self, source_files: SourceFiles) -> tuple[FileIgnoreDirective, ...]:
@@ -311,24 +312,24 @@ class ConfigIgnoreResolver:
             ]
             if not matched_entries:
                 continue
-
-            if any(entry.ignore_all for entry in matched_entries):
-                result.append(
-                    FileIgnoreDirective(
-                        file_path=file_path,
-                        ignore_all=True,
-                        ignored_rules=frozenset(),
-                    )
-                )
-            else:
-                merged_rules: frozenset[str] = frozenset()
-                for entry in matched_entries:
-                    merged_rules = merged_rules | entry.rule_ids
-                result.append(
-                    FileIgnoreDirective(
-                        file_path=file_path,
-                        ignore_all=False,
-                        ignored_rules=merged_rules,
-                    )
-                )
+            result.append(self._build_directive(file_path, matched_entries))
         return tuple(result)
+
+    def _build_directive(
+        self, file_path: Path, matched_entries: list[PerFileIgnoreEntry]
+    ) -> FileIgnoreDirective:
+        """マッチしたエントリ群から FileIgnoreDirective を生成する"""
+        if any(entry.ignore_all for entry in matched_entries):
+            return FileIgnoreDirective(
+                file_path=file_path,
+                ignore_all=True,
+                ignored_rules=frozenset(),
+            )
+        merged_rules: frozenset[str] = frozenset()
+        for entry in matched_entries:
+            merged_rules = merged_rules | entry.rule_ids
+        return FileIgnoreDirective(
+            file_path=file_path,
+            ignore_all=False,
+            ignored_rules=merged_rules,
+        )

@@ -1,4 +1,5 @@
-from paladin.config import OverrideEntry, PerFileIgnoreEntry, ProjectConfig, ProjectConfigLoader
+from paladin.config import OverrideEntry, PerFileIgnoreEntry, ProjectConfigLoader
+from paladin.config.project import ProjectConfig
 from paladin.foundation.fs import FileSystemError
 from tests.unit.fakes import ErrorFsReader, InMemoryFsReader
 

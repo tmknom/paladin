@@ -116,12 +116,19 @@ def _calc_max_depth(
     nested_classes: list[ast.ClassDef],
 ) -> int:
     """ステートメントリストを走査して最大ネスト深度を返す（body直下=depth0）"""
-    max_depth = 0
-    for stmt in stmts:
-        depth = _walk_depth(stmt, nested_funcs=nested_funcs, nested_classes=nested_classes)
-        if depth > max_depth:
-            max_depth = depth
-    return max_depth
+    return _max_depth_in_stmts(stmts, nested_funcs=nested_funcs, nested_classes=nested_classes)
+
+
+def _collect_if_branches(node: ast.If, dest: list[list[ast.stmt]]) -> None:
+    """if/elif/else チェーンの全分岐 body を同一深度として収集する"""
+    dest.append(node.body)
+    if node.orelse:
+        # orelse が単一の ast.If = elif パターン
+        if len(node.orelse) == 1 and isinstance(node.orelse[0], ast.If):
+            _collect_if_branches(node.orelse[0], dest)
+        else:
+            # else ブロック
+            dest.append(node.orelse)
 
 
 def _collect_try_stmts(node: ast.AST, dest: list[list[ast.stmt]]) -> None:
@@ -139,6 +146,25 @@ def _collect_try_stmts(node: ast.AST, dest: list[list[ast.stmt]]) -> None:
     finalbody: list[ast.stmt] = getattr(node, "finalbody", [])
     if finalbody:
         dest.append(finalbody)
+
+
+def _collect_child_stmt_lists(node: ast.AST, dest: list[list[ast.stmt]]) -> None:
+    """複合文ノードの body 系リストを dest に収集する"""
+    if isinstance(node, ast.If):
+        _collect_if_branches(node, dest)
+    elif isinstance(node, (ast.For, ast.AsyncFor, ast.While)):
+        dest.append(node.body)
+        if node.orelse:
+            dest.append(node.orelse)
+    elif isinstance(node, (ast.With, ast.AsyncWith)):
+        dest.append(node.body)
+    elif isinstance(node, ast.Try) or (
+        _TRY_STAR_TYPE is not None and isinstance(node, _TRY_STAR_TYPE)
+    ):
+        _collect_try_stmts(node, dest)
+    elif isinstance(node, ast.Match):
+        for case in node.cases:
+            dest.append(case.body)
 
 
 def _walk_depth(
@@ -161,37 +187,42 @@ def _walk_depth(
         nested_classes.append(node)
         return 0
 
-    # 複合文の body/orelse/handlers/finalbody を収集する
     child_stmt_lists: list[list[ast.stmt]] = []
-
-    if isinstance(node, (ast.If, ast.For, ast.AsyncFor, ast.While)):
-        child_stmt_lists.append(node.body)
-        if node.orelse:
-            child_stmt_lists.append(node.orelse)
-
-    elif isinstance(node, (ast.With, ast.AsyncWith)):
-        child_stmt_lists.append(node.body)
-
-    elif isinstance(node, ast.Try) or (
-        _TRY_STAR_TYPE is not None and isinstance(node, _TRY_STAR_TYPE)
-    ):
-        # ast.Try と ast.TryStar（Python 3.11+ の except*）は同じ構造を持つ
-        _collect_try_stmts(node, child_stmt_lists)
-
-    elif isinstance(node, ast.Match):
-        for case in node.cases:
-            child_stmt_lists.append(case.body)
+    _collect_child_stmt_lists(node, child_stmt_lists)
 
     if not child_stmt_lists:
-        # 複合文でない or 複合文だが子リストがない場合
         return 0
 
     # 各子リスト内の最大深度を計算し、+1（この複合文に入る分）する
-    max_child_depth = 0
-    for stmt_list in child_stmt_lists:
-        for stmt in stmt_list:
-            d = _walk_depth(stmt, nested_funcs=nested_funcs, nested_classes=nested_classes)
-            if d > max_child_depth:
-                max_child_depth = d
-
+    max_child_depth = _max_depth_in_lists(
+        child_stmt_lists, nested_funcs=nested_funcs, nested_classes=nested_classes
+    )
     return 1 + max_child_depth
+
+
+def _max_depth_in_lists(
+    stmt_lists: list[list[ast.stmt]],
+    nested_funcs: list[ast.FunctionDef | ast.AsyncFunctionDef],
+    nested_classes: list[ast.ClassDef],
+) -> int:
+    """複数の stmt リストを走査して最大深度を返す"""
+    max_depth = 0
+    for stmt_list in stmt_lists:
+        d = _max_depth_in_stmts(stmt_list, nested_funcs=nested_funcs, nested_classes=nested_classes)
+        if d > max_depth:
+            max_depth = d
+    return max_depth
+
+
+def _max_depth_in_stmts(
+    stmts: list[ast.stmt],
+    nested_funcs: list[ast.FunctionDef | ast.AsyncFunctionDef],
+    nested_classes: list[ast.ClassDef],
+) -> int:
+    """Stmt リストを走査して最大深度を返す"""
+    max_depth = 0
+    for stmt in stmts:
+        d = _walk_depth(stmt, nested_funcs=nested_funcs, nested_classes=nested_classes)
+        if d > max_depth:
+            max_depth = d
+    return max_depth

@@ -20,7 +20,7 @@ from paladin.check.parser import AstParser
 from paladin.check.result import CheckReport, CheckResult
 from paladin.check.rule_filter import RuleFilter
 from paladin.foundation.log import log
-from paladin.rule import RuleSet
+from paladin.rule import RuleSet, SourceFiles
 
 
 class CheckOrchestrator:
@@ -86,18 +86,7 @@ class CheckOrchestrator:
         base_disabled = self.rule_filter.resolve_disabled_rules(
             context.rules, self.rule_set.rule_ids
         )
-        per_file_disabled: dict[Path, frozenset[str]] | None = None
-        if context.overrides:
-            per_file_disabled = {}
-            for sf in source_files:
-                merged_rules = self.override_resolver.resolve(
-                    context.overrides, sf.file_path, context.rules
-                )
-                file_disabled = self.rule_filter.resolve_disabled_rules(
-                    merged_rules, self.rule_set.rule_ids
-                )
-                if file_disabled != base_disabled:
-                    per_file_disabled[sf.file_path] = file_disabled
+        per_file_disabled = self._resolve_per_file_disabled(context, source_files, base_disabled)
         violations = self.rule_set.run(
             source_files,
             disabled_rule_ids=base_disabled,
@@ -115,6 +104,27 @@ class CheckOrchestrator:
             target_files=target_files, source_files=source_files, violations=violations
         )
         return self.formatter.format(result, context.format)
+
+    def _resolve_per_file_disabled(
+        self,
+        context: CheckContext,
+        source_files: SourceFiles,
+        base_disabled: frozenset[str],
+    ) -> dict[Path, frozenset[str]] | None:
+        """オーバーライド設定からファイルごとの disabled_rule_ids を解決する"""
+        if not context.overrides:
+            return None
+        per_file_disabled: dict[Path, frozenset[str]] = {}
+        for sf in source_files:
+            merged_rules = self.override_resolver.resolve(
+                context.overrides, sf.file_path, context.rules
+            )
+            file_disabled = self.rule_filter.resolve_disabled_rules(
+                merged_rules, self.rule_set.rule_ids
+            )
+            if file_disabled != base_disabled:
+                per_file_disabled[sf.file_path] = file_disabled
+        return per_file_disabled
 
     def _merge_directives(
         self,

@@ -492,17 +492,41 @@ class TestNoDeepNestingRuleCheck:
         assert len(result) == 1
         assert "4" in result[0].message
 
-    def test_check_正常系_elseブロックも深度としてカウントされること(self):
+    def test_check_正常系_else内のネストでも深度がカウントされること(self):
         # Arrange
         rule = NoDeepNestingRule()
-        # else ブランチに入るのもネスト深度1増加として扱う
+        # else ブランチは if と同一深度（+0）。else 内のネスト自体が深度を積む
+        # for(depth 1) → if/else(depth 1) → for(depth 2) → if(depth 3) → 違反あり
         source = (
             "def foo():\n"
-            "    if True:\n"
-            "        pass\n"
+            "    for x in items:\n"
+            "        if cond_a:\n"
+            "            pass\n"
+            "        else:\n"
+            "            for y in items:\n"
+            "                if cond_b:\n"
+            "                    pass\n"
+        )
+        source_file = _make_source_file(source)
+
+        # Act
+        result = rule.check(source_file)
+
+        # Assert
+        assert len(result) == 1
+
+    def test_check_正常系_for_else文のelseブランチが深度カウントされること(self):
+        # Arrange
+        # for...else の orelse ブランチ（for の orelse は for と同一深度）
+        rule = NoDeepNestingRule()
+        source = (
+            "def foo():\n"
+            "    for x in items:\n"
+            "        if cond_a:\n"
+            "            pass\n"
             "    else:\n"
-            "        if True:\n"
-            "            if True:\n"
+            "        for y in items:\n"
+            "            if cond_b:\n"
             "                pass\n"
         )
         source_file = _make_source_file(source)
@@ -726,3 +750,73 @@ class TestNoDeepNestingRuleCheck:
 
         # Assert
         assert len(result) == 1
+
+    # ── Phase 7: elif 深度カウント ────────────────────────────────
+
+    def test_check_正常系_elifは深度を増やさないこと(self):
+        # Arrange
+        rule = NoDeepNestingRule()
+        # for(depth 1) → if/elif/elif(depth 2) → depth 2 のみ → 違反なし
+        source = (
+            "def foo():\n"
+            "    for x in items:\n"
+            "        if cond_a:\n"
+            "            do_a()\n"
+            "        elif cond_b:\n"
+            "            do_b()\n"
+            "        elif cond_c:\n"
+            "            do_c()\n"
+        )
+        source_file = _make_source_file(source)
+
+        # Act
+        result = rule.check(source_file)
+
+        # Assert
+        assert result == ()
+
+    def test_check_正常系_elif内のネストで違反を検出すること(self):
+        # Arrange
+        rule = NoDeepNestingRule()
+        # if(depth 1) → elif(depth 1) → for(depth 2) → if(depth 3) → 違反あり
+        source = (
+            "def foo():\n"
+            "    if cond_a:\n"
+            "        pass\n"
+            "    elif cond_b:\n"
+            "        for x in items:\n"
+            "            if cond_c:\n"
+            "                pass\n"
+        )
+        source_file = _make_source_file(source)
+
+        # Act
+        result = rule.check(source_file)
+
+        # Assert
+        assert len(result) == 1
+
+    def test_check_正常系_長いelifチェーンでも深度が増えないこと(self):
+        # Arrange
+        rule = NoDeepNestingRule()
+        # 5分岐の if/elif/elif/elif/else でも depth 1 → 違反なし
+        source = (
+            "def foo():\n"
+            "    if cond_a:\n"
+            "        pass\n"
+            "    elif cond_b:\n"
+            "        pass\n"
+            "    elif cond_c:\n"
+            "        pass\n"
+            "    elif cond_d:\n"
+            "        pass\n"
+            "    else:\n"
+            "        pass\n"
+        )
+        source_file = _make_source_file(source)
+
+        # Act
+        result = rule.check(source_file)
+
+        # Assert
+        assert result == ()

@@ -58,13 +58,21 @@ class NoDirectInternalImportRule:
         <project_root>/src を返す。
         """
         for source_file in source_files:
-            parts = source_file.file_path.parts
-            for i, part in enumerate(parts):
-                if part in NON_PACKAGE_DIRS:
-                    project_root = Path(*parts[:i]) if i > 0 else Path()
-                    src_root = project_root / "src"
-                    if src_root.is_dir():
-                        return src_root
+            result = self._find_src_root(source_file.file_path)
+            if result is not None:
+                return result
+        return None
+
+    def _find_src_root(self, file_path: Path) -> Path | None:
+        """1ファイルのパスから src/ ディレクトリを推定する"""
+        parts = file_path.parts
+        for i, part in enumerate(parts):
+            if part not in NON_PACKAGE_DIRS:
+                continue
+            project_root = Path(*parts[:i]) if i > 0 else Path()
+            src_root = project_root / "src"
+            if src_root.is_dir():
+                return src_root
         return None
 
     def _is_subpackage_on_filesystem(self, module: ModulePath, src_root: Path | None) -> bool:
@@ -168,12 +176,26 @@ class NoDirectInternalImportRule:
             if self._is_subpackage_on_filesystem(imp.module, src_root):
                 continue
 
-            for imported in imp.names:
-                if self._should_report(imported.name, import_package, package_exports):
-                    violations.append(
-                        self._make_violation(source_file, imp, imported.name, import_package)
-                    )
+            violations.extend(
+                self._check_imported_names(source_file, imp, import_package, package_exports)
+            )
 
+        return violations
+
+    def _check_imported_names(
+        self,
+        source_file: SourceFile,
+        imp: AbsoluteFromImport,
+        import_package: str,
+        package_exports: dict[str, set[str]],
+    ) -> list[Violation]:
+        """インポートの各 name を検査して違反リストを返す"""
+        violations: list[Violation] = []
+        for imported in imp.names:
+            if self._should_report(imported.name, import_package, package_exports):
+                violations.append(
+                    self._make_violation(source_file, imp, imported.name, import_package)
+                )
         return violations
 
     def _should_report(

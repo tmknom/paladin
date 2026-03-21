@@ -1,7 +1,7 @@
 import pytest
 
 from paladin.check.rule_filter import RuleFilter
-from paladin.config import ProjectConfig
+from paladin.config.project import ProjectConfig
 from tests.unit.fakes import FakeRule
 
 

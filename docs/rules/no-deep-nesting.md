@@ -117,11 +117,11 @@ def process_nodes(self, nodes: list[ast.stmt]) -> list[Violation]:
 
 ### ネストのカウント方法
 
-関数/メソッドの `body` の直下をネスト深度0とします。以下の複合文の `body`（および `orelse`/`handlers`/`finalbody`）に入るたびに深度を1増やします。
+関数/メソッドの `body` の直下をネスト深度0とします。以下の複合文の `body` に入るたびに深度を1増やします。
 
-- `if` / `elif` / `else`
-- `for` / `else`
-- `while` / `else`
+- `if`（`elif` / `else` は同一分岐ブロックとして扱い、深度を増やさない）
+- `for`（`else` は `for` と同一深度として扱う）
+- `while`（`else` は `while` と同一深度として扱う）
 - `with` / `async with`
 - `try` / `except` / `else` / `finally`
 - `match` / `case`（Python 3.10+）

@@ -9,7 +9,7 @@ from pathlib import Path
 from paladin.rule.all_exports_extractor import AllExportsExtractor
 from paladin.rule.import_statement import ModulePath, SourceLocation
 from paladin.rule.package_resolver import PackageResolver
-from paladin.rule.types import RuleMeta, SourceFiles, Violation
+from paladin.rule.types import RuleMeta, SourceFile, SourceFiles, Violation
 
 
 class NoUnusedExportRule:
@@ -52,11 +52,22 @@ class NoUnusedExportRule:
         violations: list[Violation] = []
         for pkg_path, (file_path, symbols) in all_exports.items():
             used_symbols = usages.get(pkg_path, set())
-            for name, lineno in symbols.items():
-                if name not in used_symbols:
-                    violations.append(self._make_violation(file_path, lineno, name))
+            violations.extend(self._collect_unused(file_path, symbols, used_symbols))
 
         return tuple(violations)
+
+    def _collect_unused(
+        self,
+        file_path: Path,
+        symbols: dict[str, int],
+        used_symbols: set[str],
+    ) -> list[Violation]:
+        """Symbols の中から未使用のものを違反として返す"""
+        violations: list[Violation] = []
+        for name, lineno in symbols.items():
+            if name not in used_symbols:
+                violations.append(self._make_violation(file_path, lineno, name))
+        return violations
 
     def _collect_all_exports(
         self, source_files: SourceFiles
@@ -95,63 +106,71 @@ class NoUnusedExportRule:
         戻り値: {パッケージパス: 利用されているシンボル名のセット}
         """
         usages: dict[str, set[str]] = {}
-
         for source_file in source_files:
-            is_test_file = source_file.is_test_file
-            user_pkg_key = self._resolver.resolve_package_key(source_file.file_path)
-            user_exact_pkg = self._resolver.resolve_exact_package_path(source_file.file_path)
-            effective_user_key = user_exact_pkg or user_pkg_key
-
-            # AST を1回だけ走査して Import / ImportFrom / Attribute を同時に収集する
-            all_nodes = list(ast.walk(source_file.tree))
-
-            # パターン2用: import 文からインポートされたモジュール名を収集する
-            imported_modules: set[str] = set()
-            for node in all_nodes:
-                if isinstance(node, ast.Import):
-                    for alias in node.names:
-                        imported_modules.add(alias.name)
-
-            for node in all_nodes:
-                # パターン1: from paladin.check import Foo
-                if isinstance(node, ast.ImportFrom):
-                    if node.module is None or node.level != 0:
-                        continue
-                    if node.module not in all_exports:
-                        continue
-
-                    # テストファイルからの利用はテストパッケージの export にのみカウントする
-                    if is_test_file and not self._is_test_export(node.module, all_exports):
-                        continue
-
-                    # 同一パッケージ（またはサブパッケージ）からの利用は除外
-                    if self._is_same_or_sub_package(effective_user_key, node.module):
-                        continue
-
-                    for alias in node.names:
-                        usages.setdefault(node.module, set()).add(alias.name)
-
-                # パターン2: import paladin.check 後の paladin.check.CheckOrchestrator（属性アクセス）
-                elif isinstance(node, ast.Attribute):
-                    module_name = self._reconstruct_module_name(node.value)
-                    if module_name is None:
-                        continue
-                    if module_name not in imported_modules:
-                        continue
-                    if module_name not in all_exports:
-                        continue
-
-                    # テストファイルからの利用はテストパッケージの export にのみカウントする
-                    if is_test_file and not self._is_test_export(module_name, all_exports):
-                        continue
-
-                    # 同一パッケージ（またはサブパッケージ）からの利用は除外
-                    if self._is_same_or_sub_package(effective_user_key, module_name):
-                        continue
-
-                    usages.setdefault(module_name, set()).add(node.attr)
-
+            self._collect_usages_from_file(source_file, all_exports, usages)
         return usages
+
+    def _collect_usages_from_file(
+        self,
+        source_file: SourceFile,
+        all_exports: dict[str, tuple[Path, dict[str, int]]],
+        usages: dict[str, set[str]],
+    ) -> None:
+        """1ファイルの AST を走査して usages を更新する"""
+        is_test_file = source_file.is_test_file
+        user_pkg_key = self._resolver.resolve_package_key(source_file.file_path)
+        user_exact_pkg = self._resolver.resolve_exact_package_path(source_file.file_path)
+        effective_user_key = user_exact_pkg or user_pkg_key
+
+        # AST を1回だけ走査して Import / ImportFrom / Attribute を同時に収集する
+        all_nodes = list(ast.walk(source_file.tree))
+        imported_modules = self._collect_imported_module_names(all_nodes)
+
+        for node in all_nodes:
+            self._process_node(
+                node, all_exports, imported_modules, is_test_file, effective_user_key, usages
+            )
+
+    def _collect_imported_module_names(self, all_nodes: list[ast.AST]) -> set[str]:
+        """Import 文から直接インポートされたモジュール名を収集する"""
+        return {
+            alias.name for node in all_nodes if isinstance(node, ast.Import) for alias in node.names
+        }
+
+    def _process_node(
+        self,
+        node: ast.AST,
+        all_exports: dict[str, tuple[Path, dict[str, int]]],
+        imported_modules: set[str],
+        is_test_file: bool,
+        effective_user_key: str | None,
+        usages: dict[str, set[str]],
+    ) -> None:
+        """1 AST ノードを処理して usages を更新する"""
+        if isinstance(node, ast.ImportFrom):
+            if node.module is None or node.level != 0:
+                return
+            if node.module not in all_exports:
+                return
+            if is_test_file and not self._is_test_export(node.module, all_exports):
+                return
+            if self._is_same_or_sub_package(effective_user_key, node.module):
+                return
+            for alias in node.names:
+                usages.setdefault(node.module, set()).add(alias.name)
+        elif isinstance(node, ast.Attribute):
+            module_name = self._reconstruct_module_name(node.value)
+            if module_name is None:
+                return
+            if module_name not in imported_modules:
+                return
+            if module_name not in all_exports:
+                return
+            if is_test_file and not self._is_test_export(module_name, all_exports):
+                return
+            if self._is_same_or_sub_package(effective_user_key, module_name):
+                return
+            usages.setdefault(module_name, set()).add(node.attr)
 
     def _is_same_or_sub_package(self, user_pkg: str | None, export_pkg: str) -> bool:
         """利用元が export パッケージと同一か、そのサブパッケージかどうかを返す"""
