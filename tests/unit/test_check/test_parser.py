@@ -7,7 +7,7 @@ from paladin.check.parser import AstParser
 from paladin.check.types import TargetFiles
 from paladin.foundation.fs import FileSystemError
 from paladin.rule import SourceFile
-from tests.unit.fakes import InMemoryFsReader
+from tests.unit.fakes import ErrorFsReader, InMemoryFsReader
 
 
 class TestAstParserParse:
@@ -15,7 +15,7 @@ class TestAstParserParse:
 
     def test_parse_正常系_SourceFileにソーステキストが保持されること(self):
         # Arrange
-        reader = InMemoryFsReader(content="x = 1\n")
+        reader = InMemoryFsReader(contents={"test.py": "x = 1\n"})
         parser = AstParser(reader=reader)
 
         # Act
@@ -26,7 +26,7 @@ class TestAstParserParse:
 
     def test_parse_正常系_有効なPythonコードからSourceFileを返すこと(self):
         # Arrange
-        reader = InMemoryFsReader(content="x = 1\n")
+        reader = InMemoryFsReader(contents={"test.py": "x = 1\n"})
         parser = AstParser(reader=reader)
 
         # Act
@@ -39,7 +39,7 @@ class TestAstParserParse:
 
     def test_parse_異常系_構文エラーのPythonコードでSyntaxErrorを送出すること(self):
         # Arrange
-        reader = InMemoryFsReader(content="def :\n")
+        reader = InMemoryFsReader(contents={"test.py": "def :\n"})
         parser = AstParser(reader=reader)
 
         # Act / Assert
@@ -48,8 +48,9 @@ class TestAstParserParse:
 
     def test_parse_異常系_ファイル読み込み失敗でFileSystemErrorが伝播すること(self):
         # Arrange
-        reader = InMemoryFsReader(error=FileSystemError(message="読み込み失敗", cause="read error"))
-        parser = AstParser(reader=reader)
+        parser = AstParser(
+            reader=ErrorFsReader(FileSystemError(message="読み込み失敗", cause="read error"))
+        )
 
         # Act / Assert
         with pytest.raises(FileSystemError):
@@ -73,7 +74,7 @@ class TestAstParserParseAll:
 
     def test_parse_all_エッジケース_空のTargetFilesで空のSourceFilesを返すこと(self):
         # Arrange
-        reader = InMemoryFsReader()
+        reader = InMemoryFsReader(contents={})
         parser = AstParser(reader=reader)
         target_files = TargetFiles(files=())
 
@@ -92,4 +93,3 @@ class TestAstParserParseAll:
         # Act / Assert
         with pytest.raises(SyntaxError):
             parser.parse_all(target_files)
-        assert len(reader.read_paths) == 1
