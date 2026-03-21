@@ -36,3 +36,16 @@ class TestE2ENoUnusedExport:
 
         # Assert
         assert result.returncode == 0
+
+    def test_check_準拠確認_テストパッケージのエクスポートがテストから利用されて違反が報告されないこと(
+        self,
+        run_paladin_check: Callable[[Path], subprocess.CompletedProcess[str]],
+    ):
+        # Arrange: tests/unit/fakes/__init__.py の FakeHelper が別テストから利用されている
+        target = FIXTURES_DIR / "compliant_test_export"
+
+        # Act
+        result = run_paladin_check(target)
+
+        # Assert
+        assert result.returncode == 0
