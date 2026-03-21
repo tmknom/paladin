@@ -425,3 +425,51 @@ class TestNoUnusedExportRuleIntegration:
 
         # _root_packages が空のため早期リターンし、空タプルを返す
         assert result == ()
+
+    def test_check_正常系_tests配下のinit_pyのallシンボルがテストから利用されていれば違反しないこと(
+        self,
+    ):
+        # Arrange: tests/unit/fakes/__init__.py の FakeRule がテストから利用されている
+        fakes_init_source = '__all__ = ["FakeRule"]\n'
+        test_source = "from tests.unit.fakes import FakeRule\n"
+        source_files = _make_source_files(
+            (fakes_init_source, "tests/unit/fakes/__init__.py"),
+            (test_source, "tests/unit/test_check/test_foo.py"),
+        )
+        rule = _rule(("paladin",))
+
+        result = rule.check(source_files)
+
+        assert len(result) == 0
+
+    def test_check_正常系_プロダクションallシンボルがテストからのみ利用されていれば違反すること(
+        self,
+    ):
+        # Arrange: src/paladin/check/__init__.py の Foo がテストからのみ利用されている
+        init_source = '__all__ = ["Foo"]\n'
+        test_source = "from paladin.check import Foo\n"
+        source_files = _make_source_files(
+            (init_source, "src/paladin/check/__init__.py"),
+            (test_source, "tests/unit/test_check/test_foo.py"),
+        )
+        rule = _rule(("paladin",))
+
+        result = rule.check(source_files)
+
+        assert len(result) == 1
+
+    def test_check_正常系_テストから属性アクセス形式でプロダクションallを参照しても利用とみなさないこと(
+        self,
+    ):
+        # Arrange: テストから import paladin.check + paladin.check.Foo 形式での参照はカウントしない
+        init_source = '__all__ = ["Foo"]\n'
+        test_source = "import paladin.check\nx = paladin.check.Foo\n"
+        source_files = _make_source_files(
+            (init_source, "src/paladin/check/__init__.py"),
+            (test_source, "tests/unit/test_check/test_foo.py"),
+        )
+        rule = _rule(("paladin",))
+
+        result = rule.check(source_files)
+
+        assert len(result) == 1

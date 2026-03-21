@@ -87,15 +87,20 @@ class NoUnusedExportRule:
         source_files: SourceFiles,
         all_exports: dict[str, tuple[Path, dict[str, int]]],
     ) -> dict[str, set[str]]:
-        """プロダクションコード全体から利用されているシンボルを収集する
+        """全ファイルから利用されているシンボルを収集する
+
+        プロダクションコードの export はプロダクションコードからの利用のみカウントする。
+        テストコードの export はテストコードからの利用もカウントする。
 
         戻り値: {パッケージパス: 利用されているシンボル名のセット}
         """
         usages: dict[str, set[str]] = {}
 
-        for source_file in source_files.production_files():
-            # 利用元のパッケージキー
+        for source_file in source_files:
+            is_test_file = source_file.is_test_file
             user_pkg_key = self._resolver.resolve_package_key(source_file.file_path)
+            user_exact_pkg = self._resolver.resolve_exact_package_path(source_file.file_path)
+            effective_user_key = user_exact_pkg or user_pkg_key
 
             # AST を1回だけ走査して Import / ImportFrom / Attribute を同時に収集する
             all_nodes = list(ast.walk(source_file.tree))
@@ -115,15 +120,18 @@ class NoUnusedExportRule:
                     if node.module not in all_exports:
                         continue
 
-                    # 同一パッケージからの利用は除外
-                    export_pkg_key = ModulePath(node.module).package_key
-                    if PackageResolver.is_same_package_exact(user_pkg_key, export_pkg_key):
+                    # テストファイルからの利用はテストパッケージの export にのみカウントする
+                    if is_test_file and not self._is_test_export(node.module, all_exports):
+                        continue
+
+                    # 同一パッケージ（またはサブパッケージ）からの利用は除外
+                    if self._is_same_or_sub_package(effective_user_key, node.module):
                         continue
 
                     for alias in node.names:
                         usages.setdefault(node.module, set()).add(alias.name)
 
-                # パターン2: paladin.check.CheckOrchestrator（属性アクセス）
+                # パターン2: import paladin.check 後の paladin.check.CheckOrchestrator（属性アクセス）
                 elif isinstance(node, ast.Attribute):
                     module_name = self._reconstruct_module_name(node.value)
                     if module_name is None:
@@ -133,14 +141,30 @@ class NoUnusedExportRule:
                     if module_name not in all_exports:
                         continue
 
-                    # 同一パッケージからの利用は除外
-                    export_pkg_key = ModulePath(module_name).package_key
-                    if PackageResolver.is_same_package_exact(user_pkg_key, export_pkg_key):
+                    # テストファイルからの利用はテストパッケージの export にのみカウントする
+                    if is_test_file and not self._is_test_export(module_name, all_exports):
+                        continue
+
+                    # 同一パッケージ（またはサブパッケージ）からの利用は除外
+                    if self._is_same_or_sub_package(effective_user_key, module_name):
                         continue
 
                     usages.setdefault(module_name, set()).add(node.attr)
 
         return usages
+
+    def _is_same_or_sub_package(self, user_pkg: str | None, export_pkg: str) -> bool:
+        """利用元が export パッケージと同一か、そのサブパッケージかどうかを返す"""
+        if user_pkg is None:
+            return False
+        return ModulePath(user_pkg).is_subpackage_of(ModulePath(export_pkg))
+
+    def _is_test_export(
+        self, module: str, all_exports: dict[str, tuple[Path, dict[str, int]]]
+    ) -> bool:
+        """Export 元がテストコードかどうかを返す（呼び出し前に module の存在確認済みを前提とする）"""
+        file_path = all_exports[module][0]
+        return "tests" in file_path.parts
 
     def _reconstruct_module_name(self, node: ast.expr) -> str | None:
         """ast.Attribute の value から a.b.c 形式のモジュール名を再構築する"""
