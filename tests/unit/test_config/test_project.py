@@ -1,6 +1,6 @@
 from paladin.config import OverrideEntry, PerFileIgnoreEntry, ProjectConfig, ProjectConfigLoader
 from paladin.foundation.fs import FileSystemError
-from tests.unit.fakes import InMemoryFsReader
+from tests.unit.fakes import ErrorFsReader, InMemoryFsReader
 
 
 class TestOverrideEntry:
@@ -130,7 +130,7 @@ class TestProjectConfigLoader:
 [tool.paladin.per-file-ignores]
 "tests/**" = ["R-001", "R-002"]
 """
-        reader = InMemoryFsReader(content=toml_content)
+        reader = InMemoryFsReader(contents={"pyproject.toml": toml_content})
         loader = ProjectConfigLoader(reader=reader)
 
         # Act
@@ -150,7 +150,7 @@ class TestProjectConfigLoader:
 "tests/**" = ["R-001"]
 "scripts/**" = ["R-002", "R-003"]
 """
-        reader = InMemoryFsReader(content=toml_content)
+        reader = InMemoryFsReader(contents={"pyproject.toml": toml_content})
         loader = ProjectConfigLoader(reader=reader)
 
         # Act
@@ -167,7 +167,7 @@ class TestProjectConfigLoader:
 [tool.paladin.per-file-ignores]
 "tests/**" = ["*"]
 """
-        reader = InMemoryFsReader(content=toml_content)
+        reader = InMemoryFsReader(contents={"pyproject.toml": toml_content})
         loader = ProjectConfigLoader(reader=reader)
 
         # Act
@@ -183,10 +183,11 @@ class TestProjectConfigLoader:
         self,
     ):
         # Arrange
-        reader = InMemoryFsReader(
-            error=FileSystemError(message="ファイルが見つかりません", cause=Exception("not found"))
+        loader = ProjectConfigLoader(
+            reader=ErrorFsReader(
+                FileSystemError(message="ファイルが見つかりません", cause=Exception("not found"))
+            )
         )
-        loader = ProjectConfigLoader(reader=reader)
 
         # Act
         result = loader.load()
@@ -203,7 +204,7 @@ class TestProjectConfigLoader:
 [tool.other]
 key = "value"
 """
-        reader = InMemoryFsReader(content=toml_content)
+        reader = InMemoryFsReader(contents={"pyproject.toml": toml_content})
         loader = ProjectConfigLoader(reader=reader)
 
         # Act
@@ -218,7 +219,7 @@ key = "value"
 [tool.paladin]
 other_key = "value"
 """
-        reader = InMemoryFsReader(content=toml_content)
+        reader = InMemoryFsReader(contents={"pyproject.toml": toml_content})
         loader = ProjectConfigLoader(reader=reader)
 
         # Act
@@ -234,7 +235,7 @@ other_key = "value"
 [tool.paladin.rules]
 no-relative-import = false
 """
-        reader = InMemoryFsReader(content=toml_content)
+        reader = InMemoryFsReader(contents={"pyproject.toml": toml_content})
         loader = ProjectConfigLoader(reader=reader)
 
         # Act
@@ -252,7 +253,7 @@ no-relative-import = false
 [tool.paladin.rules]
 no-relative-import = false
 """
-        reader = InMemoryFsReader(content=toml_content)
+        reader = InMemoryFsReader(contents={"pyproject.toml": toml_content})
         loader = ProjectConfigLoader(reader=reader)
 
         # Act
@@ -268,7 +269,7 @@ no-relative-import = false
 [tool.paladin.rules]
 require-all-export = true
 """
-        reader = InMemoryFsReader(content=toml_content)
+        reader = InMemoryFsReader(contents={"pyproject.toml": toml_content})
         loader = ProjectConfigLoader(reader=reader)
 
         # Act
@@ -283,7 +284,7 @@ require-all-export = true
 [tool.paladin]
 other_key = "value"
 """
-        reader = InMemoryFsReader(content=toml_content)
+        reader = InMemoryFsReader(contents={"pyproject.toml": toml_content})
         loader = ProjectConfigLoader(reader=reader)
 
         # Act
@@ -297,7 +298,7 @@ other_key = "value"
         toml_content = """\
 [tool.paladin.rules]
 """
-        reader = InMemoryFsReader(content=toml_content)
+        reader = InMemoryFsReader(contents={"pyproject.toml": toml_content})
         loader = ProjectConfigLoader(reader=reader)
 
         # Act
@@ -312,7 +313,7 @@ other_key = "value"
 [tool.paladin.rules]
 no-relative-import = false
 """
-        reader = InMemoryFsReader(content=toml_content)
+        reader = InMemoryFsReader(contents={"pyproject.toml": toml_content})
         loader = ProjectConfigLoader(reader=reader)
 
         # Act
@@ -328,7 +329,7 @@ no-relative-import = false
 [tool.paladin]
 include = ["src/"]
 """
-        reader = InMemoryFsReader(content=toml_content)
+        reader = InMemoryFsReader(contents={"pyproject.toml": toml_content})
         loader = ProjectConfigLoader(reader=reader)
 
         # Act
@@ -343,7 +344,7 @@ include = ["src/"]
 [tool.paladin]
 exclude = [".venv/"]
 """
-        reader = InMemoryFsReader(content=toml_content)
+        reader = InMemoryFsReader(contents={"pyproject.toml": toml_content})
         loader = ProjectConfigLoader(reader=reader)
 
         # Act
@@ -359,7 +360,7 @@ exclude = [".venv/"]
 include = ["src/"]
 exclude = [".venv/"]
 """
-        reader = InMemoryFsReader(content=toml_content)
+        reader = InMemoryFsReader(contents={"pyproject.toml": toml_content})
         loader = ProjectConfigLoader(reader=reader)
 
         # Act
@@ -375,7 +376,7 @@ exclude = [".venv/"]
 [tool.paladin]
 include = ["src/", "lib/"]
 """
-        reader = InMemoryFsReader(content=toml_content)
+        reader = InMemoryFsReader(contents={"pyproject.toml": toml_content})
         loader = ProjectConfigLoader(reader=reader)
 
         # Act
@@ -390,7 +391,7 @@ include = ["src/", "lib/"]
 [tool.paladin]
 other_key = "value"
 """
-        reader = InMemoryFsReader(content=toml_content)
+        reader = InMemoryFsReader(contents={"pyproject.toml": toml_content})
         loader = ProjectConfigLoader(reader=reader)
 
         # Act
@@ -405,7 +406,7 @@ other_key = "value"
 [tool.paladin]
 other_key = "value"
 """
-        reader = InMemoryFsReader(content=toml_content)
+        reader = InMemoryFsReader(contents={"pyproject.toml": toml_content})
         loader = ProjectConfigLoader(reader=reader)
 
         # Act
@@ -422,7 +423,7 @@ other_key = "value"
 [tool.other]
 key = "value"
 """
-        reader = InMemoryFsReader(content=toml_content)
+        reader = InMemoryFsReader(contents={"pyproject.toml": toml_content})
         loader = ProjectConfigLoader(reader=reader)
 
         # Act
@@ -441,7 +442,7 @@ files = ["tests/**"]
 [tool.paladin.overrides.rules]
 require-all-export = false
 """
-        reader = InMemoryFsReader(content=toml_content)
+        reader = InMemoryFsReader(contents={"pyproject.toml": toml_content})
         loader = ProjectConfigLoader(reader=reader)
 
         # Act
@@ -468,7 +469,7 @@ files = ["scripts/**", "tools/**"]
 [tool.paladin.overrides.rules]
 no-relative-import = false
 """
-        reader = InMemoryFsReader(content=toml_content)
+        reader = InMemoryFsReader(contents={"pyproject.toml": toml_content})
         loader = ProjectConfigLoader(reader=reader)
 
         # Act
@@ -487,7 +488,7 @@ no-relative-import = false
 [tool.paladin]
 other_key = "value"
 """
-        reader = InMemoryFsReader(content=toml_content)
+        reader = InMemoryFsReader(contents={"pyproject.toml": toml_content})
         loader = ProjectConfigLoader(reader=reader)
 
         # Act
@@ -505,7 +506,7 @@ files = []
 [tool.paladin.overrides.rules]
 require-all-export = false
 """
-        reader = InMemoryFsReader(content=toml_content)
+        reader = InMemoryFsReader(contents={"pyproject.toml": toml_content})
         loader = ProjectConfigLoader(reader=reader)
 
         # Act
@@ -522,7 +523,7 @@ require-all-export = false
 [[tool.paladin.overrides]]
 files = ["tests/**"]
 """
-        reader = InMemoryFsReader(content=toml_content)
+        reader = InMemoryFsReader(contents={"pyproject.toml": toml_content})
         loader = ProjectConfigLoader(reader=reader)
 
         # Act
@@ -539,7 +540,7 @@ files = ["tests/**"]
 [project]
 name = "myapp"
 """
-        reader = InMemoryFsReader(content=toml_content)
+        reader = InMemoryFsReader(contents={"pyproject.toml": toml_content})
         loader = ProjectConfigLoader(reader=reader)
 
         # Act
@@ -554,7 +555,7 @@ name = "myapp"
 [project]
 name = "my-app"
 """
-        reader = InMemoryFsReader(content=toml_content)
+        reader = InMemoryFsReader(contents={"pyproject.toml": toml_content})
         loader = ProjectConfigLoader(reader=reader)
 
         # Act
@@ -569,7 +570,7 @@ name = "my-app"
 [project]
 name = "my.app"
 """
-        reader = InMemoryFsReader(content=toml_content)
+        reader = InMemoryFsReader(contents={"pyproject.toml": toml_content})
         loader = ProjectConfigLoader(reader=reader)
 
         # Act
@@ -584,7 +585,7 @@ name = "my.app"
 [project]
 name = "MyApp"
 """
-        reader = InMemoryFsReader(content=toml_content)
+        reader = InMemoryFsReader(contents={"pyproject.toml": toml_content})
         loader = ProjectConfigLoader(reader=reader)
 
         # Act
@@ -599,7 +600,7 @@ name = "MyApp"
 [project]
 name = "my--app"
 """
-        reader = InMemoryFsReader(content=toml_content)
+        reader = InMemoryFsReader(contents={"pyproject.toml": toml_content})
         loader = ProjectConfigLoader(reader=reader)
 
         # Act
@@ -614,7 +615,7 @@ name = "my--app"
 [tool.paladin]
 other_key = "value"
 """
-        reader = InMemoryFsReader(content=toml_content)
+        reader = InMemoryFsReader(contents={"pyproject.toml": toml_content})
         loader = ProjectConfigLoader(reader=reader)
 
         # Act
@@ -629,7 +630,7 @@ other_key = "value"
 [project]
 version = "1.0.0"
 """
-        reader = InMemoryFsReader(content=toml_content)
+        reader = InMemoryFsReader(contents={"pyproject.toml": toml_content})
         loader = ProjectConfigLoader(reader=reader)
 
         # Act
@@ -640,10 +641,11 @@ version = "1.0.0"
 
     def test_load_エッジケース_pyproject_tomlが存在しない場合project_nameがNoneであること(self):
         # Arrange
-        reader = InMemoryFsReader(
-            error=FileSystemError(message="ファイルが見つかりません", cause=Exception("not found"))
+        loader = ProjectConfigLoader(
+            reader=ErrorFsReader(
+                FileSystemError(message="ファイルが見つかりません", cause=Exception("not found"))
+            )
         )
-        loader = ProjectConfigLoader(reader=reader)
 
         # Act
         result = loader.load()
@@ -660,7 +662,7 @@ name = "my-project"
 [tool.paladin.rules]
 no-relative-import = false
 """
-        reader = InMemoryFsReader(content=toml_content)
+        reader = InMemoryFsReader(contents={"pyproject.toml": toml_content})
         loader = ProjectConfigLoader(reader=reader)
 
         # Act
