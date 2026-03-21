@@ -71,7 +71,7 @@ def check(
         per_file_ignores=project_config.per_file_ignores,
         overrides=project_config.overrides,
     )
-    orchestrator = CheckOrchestratorProvider().provide()
+    orchestrator = CheckOrchestratorProvider().provide(rule_options=project_config.rule_options)
     result = orchestrator.orchestrate(context)
     typer.echo(result.text)
     raise typer.Exit(code=result.exit_code)

@@ -1,0 +1,5 @@
+[project]
+name = "e2e-violation"
+
+[tool.paladin.rule."no-third-party-import"]
+allow-dirs = ["src/foundation/"]

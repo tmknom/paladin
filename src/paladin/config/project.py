@@ -43,6 +43,7 @@ class ProjectConfig:
     include: tuple[str, ...] = field(default=())
     exclude: tuple[str, ...] = field(default=())
     overrides: tuple[OverrideEntry, ...] = field(default=())
+    rule_options: dict[str, dict[str, object]] = field(default_factory=lambda: {})
 
 
 class ProjectConfigLoader:
@@ -73,6 +74,7 @@ class ProjectConfigLoader:
         rules = self._parse_rules(data)
         include, exclude = self._parse_include_exclude(data)
         overrides = self._parse_overrides(data)
+        rule_options = self._parse_rule_options(data)
         return ProjectConfig(
             project_name=project_name,
             per_file_ignores=per_file_ignores,
@@ -80,6 +82,7 @@ class ProjectConfigLoader:
             include=include,
             exclude=exclude,
             overrides=overrides,
+            rule_options=rule_options,
         )
 
     def _parse_project_name(self, data: dict[str, object]) -> str | None:
@@ -163,6 +166,23 @@ class ProjectConfigLoader:
                 )
             )
         return tuple(entries)
+
+    def _parse_rule_options(self, data: dict[str, object]) -> dict[str, dict[str, object]]:
+        """TOML データから [tool.paladin.rule] セクションをパースする
+
+        Args:
+            data: tomllib.loads() で解析した TOML データ
+
+        Returns:
+            ルール ID をキー、オプション dict を値とする dict。セクションが存在しない場合は空 dict
+        """
+        try:
+            tool_section: dict[str, object] = data["tool"]  # type: ignore[assignment]
+            paladin_section: dict[str, object] = tool_section["paladin"]  # type: ignore[assignment,index]
+            rule_section: dict[str, dict[str, object]] = paladin_section["rule"]  # type: ignore[assignment,index]
+            return {k: dict(v) for k, v in rule_section.items()}
+        except KeyError:
+            return {}
 
     def _parse_per_file_ignores(self, data: dict[str, object]) -> tuple[PerFileIgnoreEntry, ...]:
         """TOML データから per_file_ignores エントリを解析する
