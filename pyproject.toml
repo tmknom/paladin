@@ -41,6 +41,9 @@ testpaths = ["tests"]
 source = ["src"]  # 計測対象を src/ 配下に限定する
 patch = ["subprocess"]  # subprocess 経由の子プロセスも計測対象に含める
 
+[tool.paladin.rule."max-method-length"]
+max-lines = 100
+
 [tool.ruff]
 line-length = 100
 target-version = "py313"

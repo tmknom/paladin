@@ -5,6 +5,7 @@ RuleSet のインスタンス生成と具象ルールの組み立てを担う。
 
 from typing import cast
 
+from paladin.rule.max_method_length import MaxMethodLengthRule
 from paladin.rule.no_cross_package_import import NoCrossPackageImportRule
 from paladin.rule.no_cross_package_reexport import NoCrossPackageReexportRule
 from paladin.rule.no_deep_nesting import NoDeepNestingRule
@@ -28,6 +29,7 @@ class RuleSetFactory:
         """プロダクションで使うデフォルトのルール一式を返す"""
         third_party_allow_dirs = self._extract_allow_dirs(rule_options, "no-third-party-import")
         cross_package_allow_dirs = self._extract_allow_dirs(rule_options, "no-cross-package-import")
+        max_lines, max_test_lines = self._extract_method_length_options(rule_options)
         return RuleSet(
             rules=(
                 RequireAllExportRule(),
@@ -40,6 +42,7 @@ class RuleSetFactory:
                 NoDeepNestingRule(),
                 NoThirdPartyImportRule(allow_dirs=third_party_allow_dirs),
                 NoCrossPackageImportRule(allow_dirs=cross_package_allow_dirs),
+                MaxMethodLengthRule(max_lines=max_lines, max_test_lines=max_test_lines),
             ),
             multi_file_rules=(
                 NoDirectInternalImportRule(),
@@ -61,3 +64,17 @@ class RuleSetFactory:
         if not isinstance(raw, list):
             return ()
         return tuple(str(item) for item in cast(list[object], raw))
+
+    def _extract_method_length_options(
+        self,
+        rule_options: dict[str, dict[str, object]] | None,
+    ) -> tuple[int, int]:
+        """rule_options から max-method-length の max-lines / max-test-lines を取り出す"""
+        if rule_options is None:
+            return 50, 100
+        opts = rule_options.get("max-method-length", {})
+        raw_max = opts.get("max-lines", 50)
+        raw_test = opts.get("max-test-lines", 100)
+        max_lines = raw_max if isinstance(raw_max, int) else 50
+        max_test_lines = raw_test if isinstance(raw_test, int) else 100
+        return max_lines, max_test_lines
