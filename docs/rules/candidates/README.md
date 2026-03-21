@@ -10,4 +10,3 @@
 | ルール名 | 概要 |
 |------------|------|
 | [max-file-length](max-file-length.md) | 単一ファイルの行数上限を超えた場合に違反を検出する |
-| [max-class-length](max-class-length.md) | 単一クラスの行数上限を超えた場合に違反を検出する |
