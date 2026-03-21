@@ -109,6 +109,27 @@ class TestRuleSetFactory:
         assert "no-third-party-import" in rule_ids
         assert "no-cross-package-import" in rule_ids
 
+    def test_create_正常系_no_testing_test_codeルールが登録されていること(self):
+        result = RuleSetFactory().create()
+        assert "no-testing-test-code" in result.rule_ids
+
+    def test_create_正常系_全ルールが登録されていること_13ルール(self):
+        result = RuleSetFactory().create()
+        rule_ids = result.rule_ids
+        assert "require-all-export" in rule_ids
+        assert "no-relative-import" in rule_ids
+        assert "no-local-import" in rule_ids
+        assert "require-qualified-third-party" in rule_ids
+        assert "no-direct-internal-import" in rule_ids
+        assert "no-non-init-all" in rule_ids
+        assert "no-cross-package-reexport" in rule_ids
+        assert "no-mock-usage" in rule_ids
+        assert "no-unused-export" in rule_ids
+        assert "no-deep-nesting" in rule_ids
+        assert "no-third-party-import" in rule_ids
+        assert "no-cross-package-import" in rule_ids
+        assert "no-testing-test-code" in rule_ids
+
     def test_create_正常系_rule_optionsでallow_dirsを指定できること(self):
         # Arrange
         rule_options: dict[str, dict[str, object]] = {

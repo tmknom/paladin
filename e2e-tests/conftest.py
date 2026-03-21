@@ -7,6 +7,8 @@ from pathlib import Path
 
 import pytest
 
+collect_ignore_glob = ["**/fixtures/**"]
+
 
 @pytest.fixture
 def run_paladin_check() -> Callable[[Path], subprocess.CompletedProcess[str]]:
