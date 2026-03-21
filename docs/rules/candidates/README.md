@@ -12,7 +12,6 @@
 | [no-testing-test-code](no-testing-test-code.md) | `tests/` 配下のコードに対するテストの作成を禁止する |
 | [no-third-party-import](no-third-party-import.md) | 許可ディレクトリ以外でのサードパーティライブラリのインポートを禁止する |
 | [no-cross-package-import](no-cross-package-import.md) | 許可ディレクトリ以外のパッケージからのクロスパッケージインポートを禁止する |
-| [no-deep-nesting](no-deep-nesting.md) | 単一メソッド/関数内で3段階以上のネストを禁止する |
 | [max-file-length](max-file-length.md) | 単一ファイルの行数上限を超えた場合に違反を検出する |
 | [max-class-length](max-class-length.md) | 単一クラスの行数上限を超えた場合に違反を検出する |
 | [max-method-length](max-method-length.md) | 単一メソッド/関数の行数上限を超えた場合に違反を検出する |
