@@ -5,6 +5,7 @@ RuleSet のインスタンス生成と具象ルールの組み立てを担う。
 
 from typing import cast
 
+from paladin.rule.no_cross_package_import import NoCrossPackageImportRule
 from paladin.rule.no_cross_package_reexport import NoCrossPackageReexportRule
 from paladin.rule.no_deep_nesting import NoDeepNestingRule
 from paladin.rule.no_direct_internal_import import NoDirectInternalImportRule
@@ -24,7 +25,8 @@ class RuleSetFactory:
 
     def create(self, rule_options: dict[str, dict[str, object]] | None = None) -> RuleSet:
         """プロダクションで使うデフォルトのルール一式を返す"""
-        allow_dirs = self._extract_allow_dirs(rule_options)
+        third_party_allow_dirs = self._extract_allow_dirs(rule_options, "no-third-party-import")
+        cross_package_allow_dirs = self._extract_allow_dirs(rule_options, "no-cross-package-import")
         return RuleSet(
             rules=(
                 RequireAllExportRule(),
@@ -35,18 +37,21 @@ class RuleSetFactory:
                 NoCrossPackageReexportRule(),
                 NoMockUsageRule(),
                 NoDeepNestingRule(),
-                NoThirdPartyImportRule(allow_dirs=allow_dirs),
+                NoThirdPartyImportRule(allow_dirs=third_party_allow_dirs),
+                NoCrossPackageImportRule(allow_dirs=cross_package_allow_dirs),
             ),
             multi_file_rules=(NoDirectInternalImportRule(), NoUnusedExportRule()),
         )
 
     def _extract_allow_dirs(
-        self, rule_options: dict[str, dict[str, object]] | None
+        self,
+        rule_options: dict[str, dict[str, object]] | None,
+        rule_id: str,
     ) -> tuple[str, ...]:
-        """rule_options から no-third-party-import の allow-dirs を取り出す"""
+        """rule_options から指定ルールの allow-dirs を取り出す"""
         if rule_options is None:
             return ()
-        opts = rule_options.get("no-third-party-import", {})
+        opts = rule_options.get(rule_id, {})
         raw: object = opts.get("allow-dirs", [])
         if not isinstance(raw, list):
             return ()

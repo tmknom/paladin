@@ -89,6 +89,26 @@ class TestRuleSetFactory:
         assert "no-deep-nesting" in rule_ids
         assert "no-third-party-import" in rule_ids
 
+    def test_create_正常系_no_cross_package_importルールが登録されていること(self):
+        result = RuleSetFactory().create()
+        assert "no-cross-package-import" in result.rule_ids
+
+    def test_create_正常系_全ルールが登録されていること_12ルール(self):
+        result = RuleSetFactory().create()
+        rule_ids = result.rule_ids
+        assert "require-all-export" in rule_ids
+        assert "no-relative-import" in rule_ids
+        assert "no-local-import" in rule_ids
+        assert "require-qualified-third-party" in rule_ids
+        assert "no-direct-internal-import" in rule_ids
+        assert "no-non-init-all" in rule_ids
+        assert "no-cross-package-reexport" in rule_ids
+        assert "no-mock-usage" in rule_ids
+        assert "no-unused-export" in rule_ids
+        assert "no-deep-nesting" in rule_ids
+        assert "no-third-party-import" in rule_ids
+        assert "no-cross-package-import" in rule_ids
+
     def test_create_正常系_rule_optionsでallow_dirsを指定できること(self):
         # Arrange
         rule_options: dict[str, dict[str, object]] = {
@@ -100,6 +120,18 @@ class TestRuleSetFactory:
 
         # Assert: ルールが登録されていること
         assert "no-third-party-import" in result.rule_ids
+
+    def test_create_正常系_rule_optionsでno_cross_package_importのallow_dirsを指定できること(self):
+        # Arrange
+        rule_options: dict[str, dict[str, object]] = {
+            "no-cross-package-import": {"allow-dirs": ["src/myapp/rule/"]}
+        }
+
+        # Act
+        result = RuleSetFactory().create(rule_options=rule_options)
+
+        # Assert: ルールが登録されていること
+        assert "no-cross-package-import" in result.rule_ids
 
     def test_create_正常系_引数なしで後方互換性を保つこと(self):
         # allow_dirs 未指定でもデフォルト引数で呼び出せる
