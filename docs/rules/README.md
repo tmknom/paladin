@@ -23,3 +23,4 @@
 | [no-cross-package-import](no-cross-package-import.md) | 許可ディレクトリ以外のパッケージからのクロスパッケージインポートを禁止する |
 | [no-testing-test-code](no-testing-test-code.md) | `tests/` 配下のコードに対するテストの作成を禁止する |
 | [max-method-length](max-method-length.md) | 単一メソッド/関数の行数が設定された上限を超えた場合に違反を検出する |
+| [max-class-length](max-class-length.md) | 単一クラスの行数上限を超えた場合に違反を検出する |
