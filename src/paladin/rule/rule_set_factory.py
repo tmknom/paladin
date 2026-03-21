@@ -13,6 +13,7 @@ from paladin.rule.no_local_import import NoLocalImportRule
 from paladin.rule.no_mock_usage import NoMockUsageRule
 from paladin.rule.no_non_init_all import NoNonInitAllRule
 from paladin.rule.no_relative_import import NoRelativeImportRule
+from paladin.rule.no_testing_test_code import NoTestingTestCodeRule
 from paladin.rule.no_third_party_import import NoThirdPartyImportRule
 from paladin.rule.no_unused_export import NoUnusedExportRule
 from paladin.rule.require_all_export import RequireAllExportRule
@@ -40,7 +41,11 @@ class RuleSetFactory:
                 NoThirdPartyImportRule(allow_dirs=third_party_allow_dirs),
                 NoCrossPackageImportRule(allow_dirs=cross_package_allow_dirs),
             ),
-            multi_file_rules=(NoDirectInternalImportRule(), NoUnusedExportRule()),
+            multi_file_rules=(
+                NoDirectInternalImportRule(),
+                NoUnusedExportRule(),
+                NoTestingTestCodeRule(),
+            ),
         )
 
     def _extract_allow_dirs(
