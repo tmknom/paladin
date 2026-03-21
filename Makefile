@@ -8,7 +8,7 @@
 # ==============================================================================
 
 .PHONY: all
-all: sync fmt lint typecheck coverage test-e2e ## 一括実行
+all: sync fmt lint typecheck paladin coverage test-e2e ## 一括実行
 
 .PHONY: sync-online
 sync-online:
