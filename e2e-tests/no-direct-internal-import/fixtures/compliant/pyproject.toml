@@ -1,0 +1,2 @@
+[tool.paladin.rule."no-cross-package-import"]
+allow-dirs = ["src/beta/check/"]

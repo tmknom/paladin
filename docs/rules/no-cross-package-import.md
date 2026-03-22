@@ -79,7 +79,7 @@ allow-dirs = ["src/paladin/foundation/", "src/paladin/protocol/", "src/paladin/r
 - `allow-dirs` の各要素は `pyproject.toml` からの相対パスとして解釈される。末尾の `/` の有無によらずディレクトリとして扱う
 - `allow-dirs` に含まれるパッケージのモジュールは、どこからでもインポート可能
 - `allow-dirs` に含まれないパッケージのモジュールは、同一パッケージ内からのみインポート可能
-- `allow-dirs` が未指定の場合、このルールは何も検出しない
+- `allow-dirs` が未指定の場合、すべてのファイルでクロスパッケージインポートを禁止する
 - `no-third-party-import` にも `allow-dirs` があるが、TOML のルール別セクションでスコープされるため衝突しない
 
 ### 検出ロジック
@@ -100,6 +100,12 @@ allow-dirs = ["src/paladin/foundation/", "src/paladin/protocol/", "src/paladin/r
 ### 同一パッケージの定義
 
 同一パッケージかどうかの判定は `PackageResolver.resolve_package_key()` を用います。モジュールパスの先頭2セグメント（例: `paladin.check`）が一致する場合を同一パッケージとして扱います。これにより `paladin.check.orchestrator` から `paladin.check.formatter` へのインポートは違反になりません。
+
+### テストファイルのマッピング
+
+`tests/` 配下のテストファイルは、対応するプロダクションパッケージと同一視します。ディレクトリ名から `test_` プレフィックスを除去してプロダクションパッケージを算出します。
+
+例: `tests/unit/test_check/test_orchestrator.py` は `paladin.check` パッケージと同一視されます。このため、このファイルから `paladin.check.formatter` をインポートしても違反になりません。一方、`paladin.view.formatter` のインポートは異なるパッケージからのインポートとして違反になります。
 
 ### 関連ルールとの差分
 
