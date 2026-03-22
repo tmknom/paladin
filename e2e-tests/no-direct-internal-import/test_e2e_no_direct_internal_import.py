@@ -1,6 +1,7 @@
 """no-direct-internal-import ルールのE2Eテスト"""
 
 import subprocess
+import sys
 from collections.abc import Callable
 from pathlib import Path
 
@@ -24,15 +25,16 @@ class TestE2ENoDirectInternalImport:
         assert result.returncode == 1
         assert "no-direct-internal-import" in result.stdout
 
-    def test_check_準拠確認_initpy経由インポートで違反が報告されないこと(
-        self,
-        run_paladin_check: Callable[[Path], subprocess.CompletedProcess[str]],
-    ):
+    def test_check_準拠確認_initpy経由インポートで違反が報告されないこと(self):
         # Arrange
-        target = FIXTURES_DIR / "compliant" / "src" / "beta"
+        compliant_dir = FIXTURES_DIR / "compliant"
+        target = compliant_dir / "src" / "beta"
+        cmd = [sys.executable, "-m", "paladin.cli", "check", str(target)]
 
-        # Act
-        result = run_paladin_check(target)
+        # Act: cwd を compliant_dir にして pyproject.toml を読み込ませる
+        result = subprocess.run(
+            cmd, capture_output=True, text=True, timeout=30, cwd=str(compliant_dir)
+        )
 
         # Assert
         assert result.returncode == 0

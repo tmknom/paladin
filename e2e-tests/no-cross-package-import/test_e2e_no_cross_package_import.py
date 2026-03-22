@@ -44,16 +44,17 @@ class TestE2ENoCrossPackageImport:
         # Assert
         assert result.returncode == 0
 
-    def test_check_準拠確認_allow_dirs未設定で何も検出しないこと(
+    def test_check_違反検出_allow_dirs未設定で全ファイルの違反を検出すること(
         self,
         run_paladin_check: Callable[[Path], subprocess.CompletedProcess[str]],
     ):
         # Arrange: プロジェクトルートの pyproject.toml には allow-dirs 設定がないため
-        # クロスパッケージインポートがあっても no-cross-package-import は何も検出しない
+        # クロスパッケージインポートはすべて違反として検出される
         target = FIXTURES_DIR / "violation" / "src" / "myapp" / "view" / "handler.py"
 
         # Act: プロジェクトルートを cwd にして実行（conftest の run_paladin_check を使用）
         result = run_paladin_check(target)
 
-        # Assert: allow-dirs 未設定なので no-cross-package-import ルールは違反を報告しない
-        assert " no-cross-package-import " not in result.stdout
+        # Assert: allow-dirs 未設定なので no-cross-package-import ルールは全違反を報告する
+        assert result.returncode == 1
+        assert "no-cross-package-import" in result.stdout
