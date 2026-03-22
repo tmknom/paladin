@@ -99,7 +99,7 @@ Identify and read task-related sections below:
 
 ## Introduction
 
-- [Design concept](docs/intro/concept.md): Tool positioning, background, target values, optimization priorities, diagnostic philosophy, and scope strategy - Use when understanding why Paladin exists, what it optimizes for, or how it relates to existing tools
+- [Design concept](docs/intro/concept.md): Tool positioning, background, target values, optimization priorities, and diagnostic philosophy - Use when understanding why Paladin exists, what it optimizes for, or how it relates to existing tools
 - [Specifications](docs/intro/specifications.md): Target scope, functional requirements, diagnostic output requirements, quality requirements, rule requirements, and constraints - Use when understanding what Paladin must satisfy or reviewing acceptance criteria
 - [CLI interface draft](docs/intro/interface.md): Command structure (check/list/view/version), check output contract, exit codes, JSON/text output format - Use when understanding the CLI design direction or reviewing command options
 - [Repository structure](docs/intro/structure.md): Complete file layout with descriptions of each file and directory's role - Use when locating files, understanding project organization, or verifying the actual directory tree
