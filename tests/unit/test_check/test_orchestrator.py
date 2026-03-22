@@ -10,9 +10,8 @@ from paladin.check.override import OverrideResolver
 from paladin.check.parser import AstParser
 from paladin.check.result import CheckReport
 from paladin.check.rule_filter import RuleFilter
-from paladin.check.types import OutputFormat
-from paladin.config import OverrideEntry, PerFileIgnoreEntry
-from paladin.rule import RuleSet, Violation
+from paladin.foundation.output import OutputFormat
+from paladin.rule import OverrideEntry, PerFileIgnoreEntry, RuleSet, Violation
 from tests.unit.fakes import FakeRule, InMemoryFsReader
 
 

@@ -2,7 +2,7 @@
 
 import json
 
-from paladin.check import OutputFormat
+from paladin.foundation.output import OutputFormat
 from paladin.rule import Rule, RuleSet
 from paladin.view.context import ViewContext
 from paladin.view.formatter import ViewFormatterFactory

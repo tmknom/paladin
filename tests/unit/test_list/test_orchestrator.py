@@ -2,7 +2,7 @@
 
 import json
 
-from paladin.check import OutputFormat
+from paladin.foundation.output import OutputFormat
 from paladin.list.context import ListContext
 from paladin.list.formatter import ListFormatterFactory
 from paladin.list.orchestrator import ListOrchestrator

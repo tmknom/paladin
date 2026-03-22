@@ -6,9 +6,19 @@
 from paladin.rule.protocol import Rule
 from paladin.rule.rule_set import RuleSet
 from paladin.rule.rule_set_factory import RuleSetFactory
-from paladin.rule.types import RuleMeta, SourceFile, SourceFiles, Violation, Violations
+from paladin.rule.types import (
+    OverrideEntry,
+    PerFileIgnoreEntry,
+    RuleMeta,
+    SourceFile,
+    SourceFiles,
+    Violation,
+    Violations,
+)
 
 __all__ = [
+    "OverrideEntry",
+    "PerFileIgnoreEntry",
     "Rule",
     "RuleMeta",
     "RuleSet",

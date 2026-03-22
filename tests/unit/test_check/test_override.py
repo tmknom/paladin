@@ -3,7 +3,7 @@
 from pathlib import Path
 
 from paladin.check.override import OverrideResolver
-from paladin.config import OverrideEntry
+from paladin.rule import OverrideEntry
 
 
 class TestOverrideResolver:

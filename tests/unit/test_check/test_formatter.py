@@ -5,7 +5,8 @@ from pathlib import Path
 
 from paladin.check.formatter import CheckFormatterFactory, CheckJsonFormatter, CheckReportFormatter
 from paladin.check.result import CheckResult
-from paladin.check.types import OutputFormat, TargetFiles
+from paladin.check.types import TargetFiles
+from paladin.foundation.output import OutputFormat
 from paladin.rule import SourceFiles, Violation, Violations
 
 

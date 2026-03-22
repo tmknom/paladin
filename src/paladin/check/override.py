@@ -6,7 +6,7 @@
 
 from pathlib import Path, PurePath
 
-from paladin.config import OverrideEntry
+from paladin.rule import OverrideEntry
 
 
 class OverrideResolver:

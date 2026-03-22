@@ -34,12 +34,13 @@ from typing import Annotated
 # paladin: ignore[no-third-party-import]
 import typer
 
-from paladin.check import CheckContext, CheckOrchestratorProvider, OutputFormat
+from paladin.check import CheckContext, CheckOrchestratorProvider
 from paladin.config import AppConfig, EnvVarConfig, ProjectConfigLoader, TargetResolver
 from paladin.config.env_var import LogLevel
 from paladin.foundation.error import ErrorHandler
 from paladin.foundation.fs import TextFileSystemReader
 from paladin.foundation.log import LogConfigurator, log
+from paladin.foundation.output import OutputFormat
 from paladin.list import ListContext, ListOrchestratorProvider
 from paladin.transform import TransformContext, TransformOrchestratorProvider
 from paladin.version import VersionOrchestratorProvider

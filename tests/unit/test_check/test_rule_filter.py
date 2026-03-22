@@ -1,43 +1,42 @@
 import pytest
 
 from paladin.check.rule_filter import RuleFilter
-from paladin.config.project import ProjectConfig
 from tests.unit.fakes import FakeRule
 
 
 class TestRuleFilter:
     def test_resolve_disabled_rules_正常系_falseに設定されたルールIDを返すこと(self):
         # Arrange
-        config = ProjectConfig(rules={"no-relative-import": False, "require-all-export": True})
+        rules = {"no-relative-import": False, "require-all-export": True}
         known_rule_ids = frozenset({"no-relative-import", "require-all-export"})
         rule_filter = RuleFilter()
 
         # Act
-        result = rule_filter.resolve_disabled_rules(config.rules, known_rule_ids)
+        result = rule_filter.resolve_disabled_rules(rules, known_rule_ids)
 
         # Assert
         assert result == frozenset({"no-relative-import"})
 
     def test_resolve_disabled_rules_正常系_全ルールtrueの場合空のfrozensetを返すこと(self):
         # Arrange
-        config = ProjectConfig(rules={"no-relative-import": True, "require-all-export": True})
+        rules = {"no-relative-import": True, "require-all-export": True}
         known_rule_ids = frozenset({"no-relative-import", "require-all-export"})
         rule_filter = RuleFilter()
 
         # Act
-        result = rule_filter.resolve_disabled_rules(config.rules, known_rule_ids)
+        result = rule_filter.resolve_disabled_rules(rules, known_rule_ids)
 
         # Assert
         assert result == frozenset()
 
     def test_resolve_disabled_rules_エッジケース_空のrulesで空のfrozensetを返すこと(self):
         # Arrange
-        config = ProjectConfig(rules={})
+        rules: dict[str, bool] = {}
         known_rule_ids = frozenset({"no-relative-import", "require-all-export"})
         rule_filter = RuleFilter()
 
         # Act
-        result = rule_filter.resolve_disabled_rules(config.rules, known_rule_ids)
+        result = rule_filter.resolve_disabled_rules(rules, known_rule_ids)
 
         # Assert
         assert result == frozenset()
@@ -46,13 +45,13 @@ class TestRuleFilter:
         self, caplog: pytest.LogCaptureFixture
     ):
         # Arrange
-        config = ProjectConfig(rules={"unknown-rule": False})
+        rules = {"unknown-rule": False}
         known_rule_ids = frozenset({"require-all-export"})
         rule_filter = RuleFilter()
 
         # Act
         with caplog.at_level("WARNING"):
-            result = rule_filter.resolve_disabled_rules(config.rules, known_rule_ids)
+            result = rule_filter.resolve_disabled_rules(rules, known_rule_ids)
 
         # Assert
         assert "unknown-rule" not in result
@@ -60,12 +59,12 @@ class TestRuleFilter:
 
     def test_resolve_disabled_rules_正常系_複数ルールをfalseに設定した場合すべて返すこと(self):
         # Arrange
-        config = ProjectConfig(rules={"no-relative-import": False, "require-all-export": False})
+        rules = {"no-relative-import": False, "require-all-export": False}
         known_rule_ids = frozenset({"no-relative-import", "require-all-export"})
         rule_filter = RuleFilter()
 
         # Act
-        result = rule_filter.resolve_disabled_rules(config.rules, known_rule_ids)
+        result = rule_filter.resolve_disabled_rules(rules, known_rule_ids)
 
         # Assert
         assert result == frozenset({"no-relative-import", "require-all-export"})
