@@ -1,5 +1,5 @@
 [project]
 name = "e2e-violation-cross-package"
 
-[tool.paladin.rule."no-cross-package-import"]
+[tool.paladin.rule.no-cross-package-import]
 allow-dirs = ["src/myapp/rule/"]
