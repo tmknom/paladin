@@ -117,7 +117,7 @@ docs/
 ├── intro/                        # イントロダクション
 │   ├── README.md                 # ドキュメント索引
 │   ├── concept.md                # 基本方針
-│   ├── interface.md              # CLI インターフェイス設計草案
+│   ├── interface.md              # CLI インターフェイス
 │   ├── specifications.md         # 全体仕様
 │   └── structure.md              # プロジェクト構造（本ドキュメント）
 └── specs/                        # モジュール別仕様書

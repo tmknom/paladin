@@ -2,25 +2,62 @@
 
 ## 1. この文書の役割
 
-他のイントロドキュメントで言及されているが、未実装の機能を一覧化した文書です。
+実装が想定されているが、まだ実装されていない機能を一覧化した文書です。
 
-## 2. CLI オプション
+## 2. check コマンドのオプション
 
-### check コマンド
+| オプション | 備考 |
+|---|---|
+| `--rule <RULE_ID>` | 特定ルールのみ実行する |
+| `--exclude-rule <RULE_ID>` | 特定ルールを除外して実行する（`--ignore-rule` は違反を抑制するもので用途が異なる） |
+| `--output <FILE>` | 結果をファイルに書き出す |
+| `--quiet` | 違反がない場合は出力を抑制する |
 
-| オプション | 出典 | 備考 |
-|---|---|---|
-| `--rule <RULE_ID>` | interface.md 4.3 | 特定ルールのみ実行する |
-| `--exclude-rule <RULE_ID>` | interface.md 4.3 | 特定ルールを除外して実行する（`--ignore-rule` は違反を抑制するもので用途が異なる） |
-| `--format ndjson` | interface.md 4.3 | text / json のみ対応済み |
-| `--output <FILE>` | interface.md 4.3 | 結果をファイルに書き出す |
-| `--summary` / `--no-summary` | interface.md 4.3 | サマリーは現在常に出力される |
-| `--quiet` | interface.md 4.3 | 違反がない場合は出力を抑制する |
-| `--verbose` | interface.md 4.3 | `--log-level` がグローバルオプションとして存在するため、必要性は低い可能性がある |
+## 3. 各オプションの詳細
 
-### list / view コマンド
+### 3.1 --rule <RULE_ID>
 
-| オプション | 出典 | 備考 |
-|---|---|---|
-| `list --format json` | interface.md 8.2 | text のみ対応済み |
-| `view --format json` | interface.md 9.2 | text のみ対応済み |
+適用ルールを明示的に限定するオプションです。複数回指定可能とします。
+
+```text
+uv run paladin check src/ --rule PAL001 --rule PAL003
+```
+
+想定される用途:
+
+- 新規ルールを単体で試す
+- AI が特定観点だけ再確認する
+- 誤検出調査時に対象を絞る
+
+### 3.2 --exclude-rule <RULE_ID>
+
+指定ルールを解析対象から除外するオプションです。複数回指定可能とします。
+
+```text
+uv run paladin check src/ --exclude-rule PAL099
+```
+
+想定される用途:
+
+- 特定ルールの一時無効化
+- ルール適用前後の比較検証
+
+`--ignore-rule` は違反を抑制するオプションであり、ルールそのものを実行対象から除外する本オプションとは用途が異なります。
+
+### 3.3 --output <FILE>
+
+出力結果をファイルに保存するオプションです。
+
+```text
+uv run paladin check src/ --format json --output .paladin/result.json
+```
+
+想定される用途:
+
+- CI での実行結果の保存
+- AI が後続処理で読み込む
+- 違反履歴の比較検証
+
+### 3.4 --quiet
+
+最小限の出力に抑えるオプションです。主として終了コードや簡易結果だけを使いたい場面向けです。
