@@ -48,6 +48,10 @@ max-lines = 100
 max-lines = 225
 max-test-lines = 800
 
+[tool.paladin.rule."max-file-length"]
+max-lines = 340
+max-test-lines = 1050
+
 [tool.ruff]
 line-length = 100
 target-version = "py313"
