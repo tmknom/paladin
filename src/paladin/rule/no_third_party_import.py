@@ -44,8 +44,6 @@ class NoThirdPartyImportRule:
 
     def check(self, source_file: SourceFile) -> tuple[Violation, ...]:
         """単一ファイルに対する違反判定を行う"""
-        if not self._allow_dirs:
-            return ()
         if self._is_allowed(source_file.file_path):
             return ()
 
@@ -100,8 +98,11 @@ class NoThirdPartyImportRule:
 
     def _is_allowed(self, file_path: Path) -> bool:
         """ファイルパスが allow_dirs のいずれかに前方一致するかを判定する"""
-        path_str = str(file_path)
-        return any(path_str.startswith(allow_dir) for allow_dir in self._allow_dirs)
+        try:
+            rel_str = str(file_path.relative_to(Path.cwd()))
+        except ValueError:
+            rel_str = str(file_path)
+        return any(rel_str.startswith(allow_dir) for allow_dir in self._allow_dirs)
 
     def _is_third_party(self, module_name: str) -> bool:
         """標準ライブラリとルートパッケージを除いたサードパーティかを判定する"""

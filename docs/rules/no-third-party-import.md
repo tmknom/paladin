@@ -89,7 +89,7 @@ class EnvVarConfig(CoreSettings):
 allow-dirs = ["src/paladin/foundation/"]
 ```
 
-`allow-dirs` の各要素は `pyproject.toml` からの相対パスとして解釈されます。末尾の `/` の有無によらず、ディレクトリとして扱います。`allow-dirs` が未指定の場合、このルールは何も検出しません。
+`allow-dirs` の各要素は `pyproject.toml` からの相対パスとして解釈されます。末尾の `/` の有無によらず、ディレクトリとして扱います。`allow-dirs` が未指定の場合、すべてのファイルでサードパーティライブラリのインポートを禁止します。
 
 ### サードパーティかどうかの判定
 

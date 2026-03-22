@@ -41,6 +41,16 @@ testpaths = ["tests"]
 source = ["src"]  # 計測対象を src/ 配下に限定する
 patch = ["subprocess"]  # subprocess 経由の子プロセスも計測対象に含める
 
+[tool.paladin.rule."no-third-party-import"]
+# allow-dirs 未指定だと全ファイルでサードパーティインポートが禁止されるため、
+# このプロジェクトでサードパーティを直接使っている箇所を明示的に許可する。
+#
+# - src/paladin/foundation/ : pydantic / pydantic-settings / colorlog を使う基盤レイヤー
+# - src/paladin/transform/  : pydantic を使う型定義（TransformResult 等）
+# - tests/                  : pytest / pydantic をテストコードで直接インポート
+# - e2e-tests/              : E2Eテスト本体と fixtures（pytest・各種サードパーティを直接使用）
+allow-dirs = ["src/paladin/foundation/", "src/paladin/transform/", "tests/", "e2e-tests/"]
+
 [tool.paladin.rule."max-method-length"]
 max-lines = 100
 
