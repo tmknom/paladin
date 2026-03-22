@@ -1,11 +1,10 @@
 """Check層のドメインモデル定義
 
-パイプライン各段階の入出力を表す値オブジェクトと出力形式の列挙型を定義する。
+パイプライン各段階の入出力を表す値オブジェクトを定義する。
 """
 
 from collections.abc import Iterator
 from dataclasses import dataclass
-from enum import Enum
 from pathlib import Path
 
 
@@ -28,10 +27,3 @@ class TargetFiles:
     def __iter__(self) -> Iterator[Path]:
         """ファイルパスをイテレーションする"""
         return iter(self.files)
-
-
-class OutputFormat(Enum):
-    """チェック結果の出力フォーマット"""
-
-    TEXT = "text"
-    JSON = "json"

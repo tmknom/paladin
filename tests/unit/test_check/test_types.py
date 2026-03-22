@@ -1,6 +1,7 @@
 from pathlib import Path
 
-from paladin.check.types import OutputFormat, TargetFiles
+from paladin.check.types import TargetFiles
+from paladin.foundation.output import OutputFormat
 
 
 class TestTargetFiles:

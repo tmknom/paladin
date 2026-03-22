@@ -1,8 +1,8 @@
 from pathlib import Path
 
 from paladin.check.context import CheckContext
-from paladin.check.types import OutputFormat
-from paladin.config import OverrideEntry
+from paladin.foundation.output import OutputFormat
+from paladin.rule import OverrideEntry
 
 
 class TestCheckContext:

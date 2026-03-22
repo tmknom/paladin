@@ -10,8 +10,7 @@ import re
 from dataclasses import dataclass
 from pathlib import Path, PurePath
 
-from paladin.config import PerFileIgnoreEntry
-from paladin.rule import SourceFiles, Violation, Violations
+from paladin.rule import PerFileIgnoreEntry, SourceFiles, Violation, Violations
 
 
 @dataclass(frozen=True)

@@ -5,7 +5,7 @@
 
 import json
 
-from paladin.check import OutputFormat
+from paladin.foundation.output import OutputFormat
 from paladin.rule import RuleMeta
 
 _LABEL_RULE_ID = "Rule ID:"

@@ -12,25 +12,9 @@ from pathlib import Path
 
 from paladin.foundation.fs import FileSystemError
 from paladin.protocol import TextFileSystemReaderProtocol
+from paladin.rule import OverrideEntry, PerFileIgnoreEntry
 
 logger = logging.getLogger(__name__)
-
-
-@dataclass(frozen=True)
-class OverrideEntry:
-    """[[tool.paladin.overrides]] の単一エントリを保持する値オブジェクト"""
-
-    files: tuple[str, ...]
-    rules: dict[str, bool]
-
-
-@dataclass(frozen=True)
-class PerFileIgnoreEntry:
-    """per-file-ignores の単一エントリを保持する値オブジェクト"""
-
-    pattern: str
-    rule_ids: frozenset[str]
-    ignore_all: bool  # ["*"] 指定時に True
 
 
 @dataclass(frozen=True)

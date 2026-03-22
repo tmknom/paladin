@@ -6,7 +6,7 @@ CheckResult を text / JSON 形式の診断レポートに変換する。
 import json
 
 from paladin.check.result import CheckReport, CheckResult, CheckStatus, CheckSummary
-from paladin.check.types import OutputFormat
+from paladin.foundation.output import OutputFormat
 
 
 class CheckReportFormatter:

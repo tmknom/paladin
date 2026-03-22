@@ -6,7 +6,7 @@
 from __future__ import annotations
 
 import ast
-from collections.abc import Iterable, Iterator
+from collections.abc import Iterable, Iterator, Mapping
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -163,3 +163,20 @@ class RuleMeta:
             reason=reason,
             suggestion=suggestion,
         )
+
+
+@dataclass(frozen=True)
+class OverrideEntry:
+    """[[tool.paladin.overrides]] の単一エントリを保持する値オブジェクト"""
+
+    files: tuple[str, ...]
+    rules: Mapping[str, bool]
+
+
+@dataclass(frozen=True)
+class PerFileIgnoreEntry:
+    """per-file-ignores の単一エントリを保持する値オブジェクト"""
+
+    pattern: str
+    rule_ids: frozenset[str]
+    ignore_all: bool  # ["*"] 指定時に True

@@ -1,6 +1,6 @@
 """ViewContextクラスのテスト"""
 
-from paladin.check import OutputFormat
+from paladin.foundation.output import OutputFormat
 from paladin.view.context import ViewContext
 
 
