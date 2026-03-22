@@ -6,6 +6,7 @@ RuleSet のインスタンス生成と具象ルールの組み立てを担う。
 from typing import cast
 
 from paladin.rule.max_class_length import MaxClassLengthRule
+from paladin.rule.max_file_length import MaxFileLengthRule
 from paladin.rule.max_method_length import MaxMethodLengthRule
 from paladin.rule.no_cross_package_import import NoCrossPackageImportRule
 from paladin.rule.no_cross_package_reexport import NoCrossPackageReexportRule
@@ -36,6 +37,9 @@ class RuleSetFactory:
         class_max_lines, class_max_test_lines = self._extract_length_options(
             rule_options, "max-class-length", 200, 400
         )
+        file_max_lines, file_max_test_lines = self._extract_length_options(
+            rule_options, "max-file-length", 300, 500
+        )
         return RuleSet(
             rules=(
                 RequireAllExportRule(),
@@ -50,6 +54,7 @@ class RuleSetFactory:
                 NoCrossPackageImportRule(allow_dirs=cross_package_allow_dirs),
                 MaxMethodLengthRule(max_lines=max_lines, max_test_lines=max_test_lines),
                 MaxClassLengthRule(max_lines=class_max_lines, max_test_lines=class_max_test_lines),
+                MaxFileLengthRule(max_lines=file_max_lines, max_test_lines=file_max_test_lines),
             ),
             multi_file_rules=(
                 NoDirectInternalImportRule(),

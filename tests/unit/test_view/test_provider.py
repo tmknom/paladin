@@ -14,7 +14,7 @@ class TestViewOrchestratorProvider:
 
         # Assert
         assert isinstance(result, ViewOrchestrator)
-        assert len(rules) == 15
+        assert len(rules) == 16
         rule_ids = {r.rule_id for r in rules}
         assert "require-all-export" in rule_ids
         assert "no-relative-import" in rule_ids
@@ -31,3 +31,4 @@ class TestViewOrchestratorProvider:
         assert "no-testing-test-code" in rule_ids
         assert "max-method-length" in rule_ids
         assert "max-class-length" in rule_ids
+        assert "max-file-length" in rule_ids
