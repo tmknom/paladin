@@ -28,6 +28,10 @@ from datetime import datetime
 from pathlib import Path
 from typing import Annotated
 
+# CLIエントリーポイントは typer を直接使う必要があるため、no-third-party-import を抑制する。
+# typer は allow-dirs 外（src/paladin/ 直下）での利用だが、
+# アプリ起動点として typer.Typer / typer.Context 等を直接参照することは設計上避けられない。
+# paladin: ignore[no-third-party-import]
 import typer
 
 from paladin.check import CheckContext, CheckOrchestratorProvider, OutputFormat

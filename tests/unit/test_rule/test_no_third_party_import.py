@@ -48,7 +48,7 @@ class TestNoThirdPartyImportRuleMeta:
 class TestNoThirdPartyImportRuleAllowDirs:
     """NoThirdPartyImportRule の allow_dirs 設定のテスト"""
 
-    def test_check_正常系_allow_dirs未設定の場合は何も検出しないこと(self):
+    def test_check_正常系_allow_dirs未設定の場合は全ファイルで違反を検出すること(self):
         # Arrange
         source_files = _make_source_files(
             ("import requests\n", "src/app/main.py"),
@@ -59,7 +59,7 @@ class TestNoThirdPartyImportRuleAllowDirs:
         result = rule.check(source_files.files[0])
 
         # Assert
-        assert result == ()
+        assert len(result) == 1
 
     def test_check_正常系_許可ディレクトリ内のファイルは違反なしを返すこと(self):
         # Arrange
