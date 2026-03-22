@@ -61,3 +61,56 @@ uv run paladin check src/ --format json --output .paladin/result.json
 ### 3.4 --quiet
 
 最小限の出力に抑えるオプションです。主として終了コードや簡易結果だけを使いたい場面向けです。
+
+## 4. 設定ファイルの機能
+
+| 機能 | 備考 |
+|---|---|
+| `paladin.toml` 独立設定ファイル | `pyproject.toml` の `[tool.paladin]` より優先する |
+| `--config` オプション | CLI から設定ファイルパスを指定する |
+| ルール重大度の制御 | `true` / `false` を `"warning"` / `"error"` / `"off"` に拡張する |
+| `paladin config validate` コマンド | 設定ファイルの構文チェックと未知ルール ID の検出 |
+| `overrides` でのルール個別設定 | `[[tool.paladin.overrides]]` 内でルール個別設定を上書きする |
+
+## 5. 各機能の詳細
+
+### 5.1 paladin.toml 独立設定ファイル
+
+`paladin.toml` が存在する場合、`pyproject.toml` の `[tool.paladin]` より優先します。`paladin.toml` ではトップレベルの `[paladin]` プレフィックスは不要です。
+
+```toml
+# paladin.toml
+include = ["src/"]
+
+[rules]
+no-relative-import = false
+```
+
+### 5.2 --config オプション
+
+設定ファイルのパスを CLI から指定するオプションです。
+
+```text
+uv run paladin check src/ --config path/to/pyproject.toml
+```
+
+### 5.3 ルール重大度の制御
+
+ルールの違反を `"error"` / `"warning"` / `"off"` で制御する方式です。現在の `true` / `false` を拡張する形で導入できます。
+
+```toml
+[tool.paladin.rules]
+no-relative-import = "warning"
+```
+
+### 5.4 設定のバリデーションコマンド
+
+設定ファイルの構文チェックと、存在しないルール ID への参照の検出を行うコマンドです。
+
+```text
+uv run paladin config validate
+```
+
+### 5.5 overrides でのルール個別設定
+
+`[[tool.paladin.overrides]]` 内でルール個別設定（`rule` サブセクション）を上書きする機能です。
