@@ -12,6 +12,7 @@ from paladin.check.ignore import (
     ConfigIgnoreResolver,
     FileIgnoreDirective,
     FileIgnoreParser,
+    LineIgnoreDirective,
     LineIgnoreParser,
     ViolationFilter,
 )
@@ -96,7 +97,9 @@ class CheckOrchestrator:
         config_directives = ConfigIgnoreResolver().resolve(context.per_file_ignores, file_paths)
         comment_directives = FileIgnoreParser().parse_all(source_files)
         merged_directives = FileIgnoreDirective.merge(config_directives, comment_directives)
-        line_directives = LineIgnoreParser().parse_all(source_files)
+        line_directives: tuple[LineIgnoreDirective, ...] = LineIgnoreParser().parse_all(
+            source_files
+        )
         violations = self.violation_filter.filter(
             violations, merged_directives, line_directives, context.ignore_rules
         )

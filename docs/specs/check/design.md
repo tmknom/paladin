@@ -46,7 +46,12 @@ src/paladin/check/
 ├── orchestrator.py       # CheckOrchestrator
 ├── provider.py           # CheckOrchestratorProvider
 ├── collector.py          # FileCollector / PathExcluder
-├── ignore.py             # FileIgnoreDirective / FileIgnoreParser / LineIgnoreDirective / LineIgnoreParser / ViolationFilter / ConfigIgnoreResolver
+├── ignore/               # Ignore 機能サブパッケージ
+│   ├── __init__.py       # 公開シンボルの re-export
+│   ├── directive.py      # FileIgnoreDirective / LineIgnoreDirective
+│   ├── parser.py         # FileIgnoreParser / LineIgnoreParser
+│   ├── filter.py         # ViolationFilter
+│   └── resolver.py       # ConfigIgnoreResolver
 ├── parser.py             # AstParser
 ├── rule_filter.py        # RuleFilter
 ├── formatter.py          # CheckReportFormatter / CheckJsonFormatter / CheckFormatterFactory
@@ -63,7 +68,12 @@ tests/unit/test_check/
 ├── test_collector.py
 ├── test_context.py
 ├── test_formatter.py
-├── test_ignore.py
+├── test_ignore/
+│   ├── __init__.py
+│   ├── test_directive.py
+│   ├── test_parser.py
+│   ├── test_filter.py
+│   └── test_resolver.py
 ├── test_orchestrator.py
 ├── test_parser.py
 ├── test_provider.py
@@ -255,10 +265,10 @@ view/  → rule/ (RuleSet, RuleMeta)
 | 新しいルールを追加 | `rule/` に新ファイル、`rule/__init__.py`（`__all__`）、`rule/rule_set_factory.py`（`RuleSetFactory.create()`） | `RuleSet` / `CheckOrchestrator` の変更は不要 |
 | ルールのチェックロジックを変更 | 対象ルールの `.py` | 他コンポーネントへの影響なし |
 | ルール有効/無効ロジックを変更 | `rule_filter.py`（`RuleFilter`） | `CheckOrchestrator` の変更は不要 |
-| ファイル ignore の解析ロジックを変更 | `ignore.py`（`FileIgnoreParser`） | `ViolationFilter` / `CheckOrchestrator` の変更は不要 |
-| 行単位 ignore の解析ロジックを変更 | `ignore.py`（`LineIgnoreParser`） | `ViolationFilter` / `CheckOrchestrator` の変更は不要 |
-| 設定ファイル ignore のロジックを変更 | `ignore.py`（`ConfigIgnoreResolver`） | `ViolationFilter` / `CheckOrchestrator` の変更は不要 |
-| ignore のフィルタリングロジックを変更 | `ignore.py`（`ViolationFilter`） | 各パーサー / `CheckOrchestrator` の変更は不要 |
+| ファイル ignore の解析ロジックを変更 | `ignore/parser.py`（`FileIgnoreParser`） | `ViolationFilter` / `CheckOrchestrator` の変更は不要 |
+| 行単位 ignore の解析ロジックを変更 | `ignore/parser.py`（`LineIgnoreParser`） | `ViolationFilter` / `CheckOrchestrator` の変更は不要 |
+| 設定ファイル ignore のロジックを変更 | `ignore/resolver.py`（`ConfigIgnoreResolver`） | `ViolationFilter` / `CheckOrchestrator` の変更は不要 |
+| ignore のフィルタリングロジックを変更 | `ignore/filter.py`（`ViolationFilter`） | 各パーサー / `CheckOrchestrator` の変更は不要 |
 | exclude パターンの正規化ロジックを変更 | `collector.py`（`PathExcluder`） | `FileCollector` / `CheckOrchestrator` の変更は不要 |
 | `--rule` の選択ロジックを変更 | `rule_filter.py`（`RuleFilter._resolve_select_disabled`） | `CheckOrchestrator` の変更は不要 |
 | 実行時パラメータを追加 | `context.py`（`CheckContext`） | 追加フィールドは呼び出し元（CLI 層）が組み立てて渡す |
