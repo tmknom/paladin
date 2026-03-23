@@ -54,8 +54,13 @@ allow-dirs = ["src/paladin/foundation/", "src/paladin/transform/", "tests/", "e2
 [tool.paladin.rule.no-cross-package-import]
 allow-dirs = ["src/paladin/foundation/", "src/paladin/protocol/", "src/paladin/rule/"]
 
+[tool.paladin.per-file-ignores]
+# test_check/test_ignore/ は paladin.check.ignore（サブパッケージ）のテスト。
+# ルールの own_packages 判定が paladin.check.ignore になるため、
+# paladin.check.ignore からの import がクロスパッケージと誤検知される。
+"tests/unit/test_check/test_ignore/**" = ["no-cross-package-import"]
+
 [tool.paladin.rule.max-file-length]
-max-lines = 355
 max-test-lines = 1130
 
 [tool.paladin.rule.max-class-length]
