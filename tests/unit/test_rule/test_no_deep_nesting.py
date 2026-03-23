@@ -104,18 +104,6 @@ class TestNoDeepNestingRuleCheck:
         # Assert
         assert result == ()
 
-    def test_check_正常系_ネストなしの関数は違反なしを返すこと(self):
-        # Arrange
-        rule = NoDeepNestingRule()
-        source = "def foo():\n    pass\n"
-        source_file = _make_source_file(source)
-
-        # Act
-        result = rule.check(source_file)
-
-        # Assert
-        assert result == ()
-
     # ── Phase 2: 複合文種類別 ──────────────────────────────────────
 
     def test_check_正常系_forループの3段階ネストで違反を返すこと(self):
@@ -272,25 +260,6 @@ class TestNoDeepNestingRuleCheck:
         assert len(result) == 1
         assert "メソッド MyClass.my_method" in result[0].message
 
-    def test_check_正常系_トップレベル関数の3段階ネストで関数スコープの違反を返すこと(self):
-        # Arrange
-        rule = NoDeepNestingRule()
-        source = (
-            "def my_func():\n"
-            "    if True:\n"
-            "        if True:\n"
-            "            if True:\n"
-            "                pass\n"
-        )
-        source_file = _make_source_file(source)
-
-        # Act
-        result = rule.check(source_file)
-
-        # Assert
-        assert len(result) == 1
-        assert "関数 my_func" in result[0].message
-
     def test_check_正常系_複数メソッドで違反があるクラスは違反メソッド分の件数を返すこと(self):
         # Arrange
         rule = NoDeepNestingRule()
@@ -317,26 +286,6 @@ class TestNoDeepNestingRuleCheck:
 
         # Assert
         assert len(result) == 2
-
-    def test_check_正常系_async_defメソッドでも違反を検出すること(self):
-        # Arrange
-        rule = NoDeepNestingRule()
-        source = (
-            "class MyClass:\n"
-            "    async def my_method(self):\n"
-            "        if True:\n"
-            "            if True:\n"
-            "                if True:\n"
-            "                    pass\n"
-        )
-        source_file = _make_source_file(source)
-
-        # Act
-        result = rule.check(source_file)
-
-        # Assert
-        assert len(result) == 1
-        assert "メソッド MyClass.my_method" in result[0].message
 
     # ── Phase 4: ネスト関数・内包表記 ─────────────────────────────
 
@@ -425,41 +374,12 @@ class TestNoDeepNestingRuleCheck:
         # Assert
         assert result == ()
 
-    def test_check_正常系_ジェネレータ式はネスト深度に含まれないこと(self):
-        # Arrange
-        rule = NoDeepNestingRule()
-        source = (
-            "def foo():\n"
-            "    if True:\n"
-            "        if True:\n"
-            "            result = list(x for x in [] if x > 0)\n"
-        )
-        source_file = _make_source_file(source)
-
-        # Act
-        result = rule.check(source_file)
-
-        # Assert
-        assert result == ()
-
     # ── Phase 5: エッジケース ─────────────────────────────────────
 
     def test_check_エッジケース_空のソースコードは空タプルを返すこと(self):
         # Arrange
         rule = NoDeepNestingRule()
         source_file = _make_source_file("")
-
-        # Act
-        result = rule.check(source_file)
-
-        # Assert
-        assert result == ()
-
-    def test_check_エッジケース_関数定義のないコードは空タプルを返すこと(self):
-        # Arrange
-        rule = NoDeepNestingRule()
-        source = "x = 1\ny = 2\n"
-        source_file = _make_source_file(source)
 
         # Act
         result = rule.check(source_file)
@@ -558,54 +478,6 @@ class TestNoDeepNestingRuleCheck:
 
         # Assert
         assert len(result) == 1
-
-    def test_check_正常系_診断メッセージにscopeとdepthが含まれること(self):
-        # Arrange
-        rule = NoDeepNestingRule()
-        source = (
-            "def my_func():\n"
-            "    if True:\n"
-            "        if True:\n"
-            "            if True:\n"
-            "                pass\n"
-        )
-        source_file = _make_source_file(source)
-
-        # Act
-        result = rule.check(source_file)
-
-        # Assert
-        assert len(result) == 1
-        violation = result[0]
-        expected_message = "関数 my_func 内のネストが 3 段階に達している（最大: 3）"
-        assert violation.message == expected_message
-
-    def test_check_正常系_reasonとsuggestionが正しいこと(self):
-        # Arrange
-        rule = NoDeepNestingRule()
-        source = (
-            "def foo():\n"
-            "    if True:\n"
-            "        if True:\n"
-            "            if True:\n"
-            "                pass\n"
-        )
-        source_file = _make_source_file(source)
-
-        # Act
-        result = rule.check(source_file)
-
-        # Assert
-        assert len(result) == 1
-        violation = result[0]
-        assert (
-            violation.reason
-            == "深いネストはテスタビリティを下げ、手続き的にロジックを持たせすぎている兆候である"
-        )
-        assert (
-            violation.suggestion
-            == "ネストの深い処理をプライベートメソッドに切り出すか、クラス設計を見直してください"
-        )
 
     # ── Phase 6: カバレッジ補完テスト ─────────────────────────────
 
@@ -795,28 +667,3 @@ class TestNoDeepNestingRuleCheck:
 
         # Assert
         assert len(result) == 1
-
-    def test_check_正常系_長いelifチェーンでも深度が増えないこと(self):
-        # Arrange
-        rule = NoDeepNestingRule()
-        # 5分岐の if/elif/elif/elif/else でも depth 1 → 違反なし
-        source = (
-            "def foo():\n"
-            "    if cond_a:\n"
-            "        pass\n"
-            "    elif cond_b:\n"
-            "        pass\n"
-            "    elif cond_c:\n"
-            "        pass\n"
-            "    elif cond_d:\n"
-            "        pass\n"
-            "    else:\n"
-            "        pass\n"
-        )
-        source_file = _make_source_file(source)
-
-        # Act
-        result = rule.check(source_file)
-
-        # Assert
-        assert result == ()

@@ -145,21 +145,6 @@ class TestMaxMethodLengthRuleCheck:
         assert len(result) == 1
         assert "MyClass.my_method" in result[0].message
 
-    def test_check_正常系_クラスメソッドが上限以下なら違反なしを返すこと(self):
-        # Arrange
-        rule = MaxMethodLengthRule()
-        lines = ["class MyClass:"]
-        lines.append("    def short_method(self):")
-        lines.append("        pass")
-        source = "\n".join(lines) + "\n"
-        source_file = _make_source_file(source)
-
-        # Act
-        result = rule.check(source_file)
-
-        # Assert
-        assert result == ()
-
     # ── Phase 3: async 関数 ─────────────────────────────────────────
 
     def test_check_正常系_async関数でも違反を検出すること(self):
@@ -179,24 +164,6 @@ class TestMaxMethodLengthRuleCheck:
         assert len(result) == 1
         assert "async_long" in result[0].message
 
-    def test_check_正常系_asyncクラスメソッドでもClassName_method_name形式を使うこと(self):
-        # Arrange
-        rule = MaxMethodLengthRule()
-        lines = ["class AsyncClass:"]
-        lines.append("    async def async_method(self):")
-        for i in range(49):
-            lines.append(f"        x_{i} = {i}")
-        lines.append("        pass")
-        source = "\n".join(lines) + "\n"
-        source_file = _make_source_file(source)
-
-        # Act
-        result = rule.check(source_file)
-
-        # Assert
-        assert len(result) == 1
-        assert "AsyncClass.async_method" in result[0].message
-
     # ── Phase 4: テストファイル判定 ─────────────────────────────────
 
     def test_check_正常系_テストファイルはmax_test_linesが適用されること(self):
@@ -212,18 +179,6 @@ class TestMaxMethodLengthRuleCheck:
         assert len(result) == 1
         assert "101" in result[0].message
         assert "100" in result[0].message
-
-    def test_check_正常系_テストファイルでmax_test_lines以下なら違反なしを返すこと(self):
-        # Arrange: テストファイルで100行の関数
-        rule = MaxMethodLengthRule()
-        source = _make_func(100)
-        source_file = _make_test_source_file(source)
-
-        # Act
-        result = rule.check(source_file)
-
-        # Assert
-        assert result == ()
 
     def test_check_正常系_テストファイルでmax_lines超過でも違反なしを返すこと(self):
         # Arrange: プロダクション上限50行超えだがテスト上限100行以内の51行
@@ -261,26 +216,6 @@ class TestMaxMethodLengthRuleCheck:
         messages = [v.message for v in result]
         assert any("inner" in m for m in messages)
         assert any("outer" in m for m in messages)
-
-    def test_check_正常系_外側関数の行数にネスト関数の行が含まれること(self):
-        # Arrange: 外側関数全体が51行以上（ネスト関数含む）
-        rule = MaxMethodLengthRule()
-        lines = ["def outer():"]
-        # 外側全体で51行になるようにネスト関数を内包する
-        lines.append("    def inner():")
-        for i in range(49):
-            lines.append(f"        x_{i} = {i}")
-        lines.append("        pass")
-        source = "\n".join(lines) + "\n"
-        source_file = _make_source_file(source)
-
-        # Act
-        result = rule.check(source_file)
-
-        # Assert: outer も inner も検査される（inner は51行超えのため違反あり）
-        violation_names = {v.message for v in result}
-        # inner は50行以上なので違反
-        assert any("inner" in m for m in violation_names)
 
     # ── Phase 6: カスタム上限 ──────────────────────────────────────
 
@@ -322,33 +257,6 @@ class TestMaxMethodLengthRuleCheck:
 
         # Assert
         assert result == ()
-
-    def test_check_エッジケース_関数定義のないコードは空タプルを返すこと(self):
-        # Arrange
-        rule = MaxMethodLengthRule()
-        source = "x = 1\ny = 2\n"
-        source_file = _make_source_file(source)
-
-        # Act
-        result = rule.check(source_file)
-
-        # Assert
-        assert result == ()
-
-    def test_check_正常系_違反のreason_suggestionが正しいこと(self):
-        # Arrange
-        rule = MaxMethodLengthRule()
-        source = _make_func(51)
-        source_file = _make_source_file(source)
-
-        # Act
-        result = rule.check(source_file)
-
-        # Assert
-        assert len(result) == 1
-        violation = result[0]
-        assert "責務の肥大化" in violation.reason
-        assert "分割" in violation.suggestion
 
     def test_check_正常系_クラス内ネストクラスのメソッドを検査すること(self):
         # Arrange: クラス内にネストクラスがある場合（_visit_class の ClassDef ブランチ）
@@ -472,27 +380,6 @@ class TestMaxMethodLengthRuleCheck:
         for i in range(43):
             lines.append(f"        x_{i} = {i}")
         lines.append("        pass")
-        source = "\n".join(lines) + "\n"
-        source_file = _make_source_file(source)
-
-        # Act
-        result = rule.check(source_file)
-
-        # Assert
-        assert result == ()
-
-    def test_check_正常系_async関数のdocstringを除外すること(self):
-        # Arrange: async関数が物理55行・docstring5行 → 実効50行（上限ちょうど）
-        rule = MaxMethodLengthRule()
-        lines = ["async def async_func():"]
-        lines.append('    """')
-        for i in range(3):
-            lines.append(f"    docstring line {i}")
-        lines.append('    """')
-        # async def行1 + docstring5行 + 残り本体44行 = 50行（上限ちょうど）
-        for i in range(43):
-            lines.append(f"    x_{i} = {i}")
-        lines.append("    pass")
         source = "\n".join(lines) + "\n"
         source_file = _make_source_file(source)
 

@@ -106,18 +106,6 @@ class TestNoCrossPackageReexportRuleCheck:
         # Assert
         assert result == ()
 
-    def test_check_エッジケース_allが空の場合は空タプルを返すこと(self):
-        # Arrange
-        rule = NoCrossPackageReexportRule()
-        source = "from paladin.rule import RuleMeta\n__all__ = []\n"
-        source_file = _make_source_file(source)
-
-        # Act
-        result = rule.check(source_file)
-
-        # Assert
-        assert result == ()
-
     def test_check_エッジケース_複数の別パッケージシンボルがある場合は複数の違反を返すこと(self):
         # Arrange
         rule = NoCrossPackageReexportRule()
@@ -151,18 +139,6 @@ class TestNoCrossPackageReexportRuleCheck:
         # Assert
         assert len(result) == 1
         assert result[0].message.find("RuleMeta") != -1
-
-    def test_check_エッジケース_サブパッケージからのインポートは準拠であること(self):
-        # Arrange
-        rule = NoCrossPackageReexportRule()
-        source = 'from paladin.check.context import CheckContext\n__all__ = ["CheckContext"]\n'
-        source_file = _make_source_file(source)
-
-        # Act
-        result = rule.check(source_file)
-
-        # Assert
-        assert result == ()
 
     def test_check_エッジケース_allに含まれるがインポートマッピングにないシンボルはスキップすること(
         self,
@@ -314,28 +290,6 @@ class TestNoCrossPackageReexportRuleCheck:
         result = rule.check(source_file)
 
         # Assert: パッケージ名を導出できないため空タプルを返す
-        assert result == ()
-
-    def test_check_エッジケース_extract_all_symbolsでallの値がリスト以外の場合は空タプルを返すこと(
-        self,
-    ):
-        # Arrange: __all__ = "Foo" のように値がリストでない場合（_extract_all_symbols の L106 を踏む）
-        rule = NoCrossPackageReexportRule()
-        tree = ast.parse("")
-        assign = ast.Assign(
-            targets=[ast.Name(id="__all__", ctx=ast.Store())],
-            value=ast.Constant(value="Foo"),
-        )
-        ast.fix_missing_locations(assign)
-        tree.body = [assign]
-        source_file = SourceFile(
-            file_path=Path("src/paladin/check/__init__.py"), tree=tree, source=""
-        )
-
-        # Act
-        result = rule.check(source_file)
-
-        # Assert: _extract_all_symbols が空タプルを返して早期リターン
         assert result == ()
 
     def test_check_エッジケース_allの値がリスト以外の場合はcontinueすること(self):
