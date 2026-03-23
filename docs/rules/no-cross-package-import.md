@@ -72,7 +72,7 @@ from paladin.view.types import ViewResult  # 準拠: 同一パッケージ内の
 このルールは `allow-dirs` パラメータで、他パッケージからインポートしてよいディレクトリを指定します。
 
 ```toml
-[tool.paladin.rule."no-cross-package-import"]
+[tool.paladin.rule.no-cross-package-import]
 allow-dirs = ["src/paladin/foundation/", "src/paladin/protocol/", "src/paladin/rule/"]
 ```
 

@@ -677,7 +677,7 @@ no-relative-import = false
     def test_load_正常系_rule_optionsセクションを含むProjectConfigを返すこと(self):
         # Arrange
         toml_content = """\
-[tool.paladin.rule."no-third-party-import"]
+[tool.paladin.rule.no-third-party-import]
 allow-dirs = ["src/foundation/"]
 """
         reader = InMemoryFsReader(contents={"pyproject.toml": toml_content})
@@ -692,7 +692,7 @@ allow-dirs = ["src/foundation/"]
     def test_load_正常系_rule_optionsの複数ディレクトリを読み込めること(self):
         # Arrange
         toml_content = """\
-[tool.paladin.rule."no-third-party-import"]
+[tool.paladin.rule.no-third-party-import]
 allow-dirs = ["src/foundation/", "src/infra/"]
 """
         reader = InMemoryFsReader(contents={"pyproject.toml": toml_content})

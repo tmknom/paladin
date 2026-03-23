@@ -165,17 +165,17 @@ exclude = ["**/generated/**", "**/*_pb2.py"]
 ### 5.1 セクション名
 
 ```toml
-[tool.paladin.rule."<rule-id>"]
+[tool.paladin.rule.<rule-id>]
 ```
 
-ルール ID がハイフン区切りの名前であるため、TOML ではクォートが必要である。
+ルール ID はハイフン区切りの名前であるが、TOML v1.0 ではハイフンがベアキーに使用可能であるため、クォートは不要である。
 
 ### 5.2 書式
 
 ルール固有のパラメータをキー・値の形式で指定する。
 
 ```toml
-[tool.paladin.rule."<rule-id>"]
+[tool.paladin.rule.<rule-id>]
 param-name = value
 ```
 
@@ -197,17 +197,17 @@ param-name = value
 具体例を示す。
 
 ```toml
-[tool.paladin.rule."no-third-party-import"]
+[tool.paladin.rule.no-third-party-import]
 allow-dirs = ["src/paladin/foundation/", "src/paladin/transform/", "tests/", "e2e-tests/"]
 
-[tool.paladin.rule."no-cross-package-import"]
+[tool.paladin.rule.no-cross-package-import]
 allow-dirs = ["src/paladin/foundation/", "src/paladin/protocol/", "src/paladin/rule/"]
 
-[tool.paladin.rule."max-method-length"]
+[tool.paladin.rule.max-method-length]
 max-lines = 100
 max-test-lines = 100
 
-[tool.paladin.rule."max-class-length"]
+[tool.paladin.rule.max-class-length]
 max-lines = 225
 max-test-lines = 800
 ```
@@ -221,10 +221,10 @@ max-test-lines = 800
 
 ### 5.5 `[tool.paladin.rules]` との関係
 
-`[tool.paladin.rules]` はルールの有効/無効を制御し、`[tool.paladin.rule."<rule-id>"]` はルールの挙動パラメータを制御する。両者は独立した設定である。
+`[tool.paladin.rules]` はルールの有効/無効を制御し、`[tool.paladin.rule.<rule-id>]` はルールの挙動パラメータを制御する。両者は独立した設定である。
 
 - `[tool.paladin.rules]` でルールを `false` にしている場合、そのルールの設定は読み込まれるが適用されない
-- `[tool.paladin.rule."<rule-id>"]` を定義しても、そのルールは自動的に有効にはならない（デフォルトで有効であるため）
+- `[tool.paladin.rule.<rule-id>]` を定義しても、そのルールは自動的に有効にはならない（デフォルトで有効であるため）
 
 ## 6. ディレクトリ別設定
 
@@ -356,10 +356,10 @@ no-local-import = true
 require-qualified-third-party = true
 
 # ルール個別設定
-[tool.paladin.rule."no-third-party-import"]
+[tool.paladin.rule.no-third-party-import]
 allow-dirs = ["src/foundation/", "tests/"]
 
-[tool.paladin.rule."max-file-length"]
+[tool.paladin.rule.max-file-length]
 max-lines = 500
 max-test-lines = 1000
 
@@ -398,7 +398,7 @@ no-relative-import = false
 |---------|------|------|---------|---------|
 | ルール ON/OFF | `select` / `ignore` リスト | 個別設定を bool | 診断レベルを文字列 | `[tool.paladin.rules]` で bool |
 | 解析対象 | `include` / `exclude` リスト | `files` / `exclude` | `include` / `exclude` | `include` / `exclude` リスト |
-| ルール個別設定 | `[tool.ruff.lint.<category>]` | 個別キー | 個別キー | `[tool.paladin.rule."<id>"]` |
+| ルール個別設定 | `[tool.ruff.lint.<category>]` | 個別キー | 個別キー | `[tool.paladin.rule.<id>]` |
 | ディレクトリ別 | ネストした `ruff.toml` | `[[tool.mypy.overrides]]` | `executionEnvironments` | `[[tool.paladin.overrides]]` |
 | per-file-ignores | `[tool.ruff.lint.per-file-ignores]` | `overrides` で代替 | なし | `[tool.paladin.per-file-ignores]` |
 | `extend-*` 系 | あり | なし | なし | **なし** |

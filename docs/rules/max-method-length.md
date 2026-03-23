@@ -103,7 +103,7 @@ class TestCheckOrchestrator:
 このルールは `max-lines` と `max-test-lines` パラメータで行数の上限を指定します。
 
 ```toml
-[tool.paladin.rule."max-method-length"]
+[tool.paladin.rule.max-method-length]
 max-lines = 50
 max-test-lines = 100
 ```

@@ -85,7 +85,7 @@ class EnvVarConfig(CoreSettings):
 このルールは `allow-dirs` パラメータで許可ディレクトリを指定します。
 
 ```toml
-[tool.paladin.rule."no-third-party-import"]
+[tool.paladin.rule.no-third-party-import]
 allow-dirs = ["src/paladin/foundation/"]
 ```
 

@@ -67,7 +67,7 @@ class TestIntegrationMaxMethodLength:
         lines.append("    pass")
         py_file.write_text("\n".join(lines) + "\n")
         pyproject = tmp_dir / "pyproject.toml"
-        pyproject.write_text('[tool.paladin.rule."max-method-length"]\nmax-lines = 10\n')
+        pyproject.write_text("[tool.paladin.rule.max-method-length]\nmax-lines = 10\n")
 
         # Act
         cmd = [sys.executable, "-m", "paladin.cli", "check", str(src_dir)]
