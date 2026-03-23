@@ -80,9 +80,9 @@ class TestCheckOrchestrator:
 
 ### 行数のカウント方法
 
-`def` キーワードの行（`FunctionDef.lineno`）からメソッド/関数本体の最終行（`FunctionDef.body[-1]` の `end_lineno`）までの全行をカウントします。計算式は `end_lineno - lineno + 1` です。
+`def` キーワードの行（`FunctionDef.lineno`）からメソッド/関数本体の最終行（`FunctionDef.body[-1]` の `end_lineno`）までの全行をカウントし、先頭の docstring 行数を差し引きます。計算式は `(end_lineno - lineno + 1) - docstring_lines` です。
 
-空行・コメント行・docstring を含む、テキストとしての行数を基準とします。コードの意味的な行数ではなく、テキストとしての行数を基準とすることで、検出ロジックをシンプルに保ちます。
+docstring はメソッド/関数の責務を説明するものであり、責務の肥大化の指標にはなりません。そのため行数カウントから除外します。空行・コメント行は含みます。
 
 デコレータ（`@classmethod` 等）はメソッド/関数定義の外側に位置するため、行数に含めません。
 

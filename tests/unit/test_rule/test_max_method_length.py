@@ -23,6 +23,29 @@ def _make_func(num_lines: int, name: str = "foo") -> str:
     return "\n".join(lines) + "\n"
 
 
+def _make_func_with_docstring(num_lines: int, docstring_lines: int, name: str = "foo") -> str:
+    """指定の物理行数・docstring行数を持つトップレベル関数ソースを生成する
+
+    num_lines: def行を含む物理総行数
+    docstring_lines: docstringの行数（1以上）
+    """
+    lines = [f"def {name}():"]
+    # docstring を生成
+    if docstring_lines == 1:
+        lines.append('    """docstring"""')
+    else:
+        lines.append('    """')
+        for i in range(docstring_lines - 2):
+            lines.append(f"    docstring line {i}")
+        lines.append('    """')
+    # 残りの本体行を埋める（def行 + docstring行 + body行 = num_lines）
+    body_lines = num_lines - 1 - docstring_lines
+    for i in range(body_lines - 1):
+        lines.append(f"    x_{i} = {i}")
+    lines.append("    pass")
+    return "\n".join(lines) + "\n"
+
+
 class TestMaxMethodLengthRuleMeta:
     """MaxMethodLengthRule.meta のテスト"""
 
@@ -383,3 +406,132 @@ class TestMaxMethodLengthRuleCheck:
 
         # Assert
         assert len(result) == 2
+
+    # ── Phase 8: docstring 除外 ──────────────────────────────────────
+
+    def test_check_正常系_docstringを除外すると上限内に収まる関数は違反なしを返すこと(self):
+        # Arrange: 物理55行・docstring5行 → 実効50行（上限ちょうど）
+        rule = MaxMethodLengthRule()
+        source = _make_func_with_docstring(num_lines=55, docstring_lines=5)
+        source_file = _make_source_file(source)
+
+        # Act
+        result = rule.check(source_file)
+
+        # Assert
+        assert result == ()
+
+    def test_check_正常系_docstringを除外しても上限超過する関数は違反を返すこと(self):
+        # Arrange: 物理61行・docstring10行 → 実効51行（上限50を超過）
+        rule = MaxMethodLengthRule()
+        source = _make_func_with_docstring(num_lines=61, docstring_lines=10)
+        source_file = _make_source_file(source)
+
+        # Act
+        result = rule.check(source_file)
+
+        # Assert
+        assert len(result) == 1
+
+    def test_check_正常系_1行docstringを除外すること(self):
+        # Arrange: 物理51行・docstring1行 → 実効50行（上限ちょうど）
+        rule = MaxMethodLengthRule()
+        source = _make_func_with_docstring(num_lines=51, docstring_lines=1)
+        source_file = _make_source_file(source)
+
+        # Act
+        result = rule.check(source_file)
+
+        # Assert
+        assert result == ()
+
+    def test_check_正常系_violationメッセージにdocstring除外後の行数が表示されること(self):
+        # Arrange: 物理61行・docstring10行 → 実効51行
+        rule = MaxMethodLengthRule()
+        source = _make_func_with_docstring(num_lines=61, docstring_lines=10, name="long_func")
+        source_file = _make_source_file(source)
+
+        # Act
+        result = rule.check(source_file)
+
+        # Assert: メッセージに実効行数51が含まれ、物理行数61は含まれない
+        assert len(result) == 1
+        assert "51" in result[0].message
+        assert "61" not in result[0].message
+
+    def test_check_正常系_クラスメソッドのdocstringを除外すること(self):
+        # Arrange: クラスメソッドが物理55行・docstring5行 → 実効50行（上限ちょうど）
+        rule = MaxMethodLengthRule()
+        lines = ["class MyClass:"]
+        lines.append("    def my_method(self):")
+        lines.append('        """')
+        for i in range(3):
+            lines.append(f"        docstring line {i}")
+        lines.append('        """')
+        # def行1 + docstring5行 + 残り本体44行 = 50行（上限ちょうど）
+        for i in range(43):
+            lines.append(f"        x_{i} = {i}")
+        lines.append("        pass")
+        source = "\n".join(lines) + "\n"
+        source_file = _make_source_file(source)
+
+        # Act
+        result = rule.check(source_file)
+
+        # Assert
+        assert result == ()
+
+    def test_check_正常系_async関数のdocstringを除外すること(self):
+        # Arrange: async関数が物理55行・docstring5行 → 実効50行（上限ちょうど）
+        rule = MaxMethodLengthRule()
+        lines = ["async def async_func():"]
+        lines.append('    """')
+        for i in range(3):
+            lines.append(f"    docstring line {i}")
+        lines.append('    """')
+        # async def行1 + docstring5行 + 残り本体44行 = 50行（上限ちょうど）
+        for i in range(43):
+            lines.append(f"    x_{i} = {i}")
+        lines.append("    pass")
+        source = "\n".join(lines) + "\n"
+        source_file = _make_source_file(source)
+
+        # Act
+        result = rule.check(source_file)
+
+        # Assert
+        assert result == ()
+
+    def test_check_正常系_先頭文がExprでない場合はdocstring除外なしで行数計算すること(self):
+        # Arrange: 先頭文が代入文（ast.Assign）なので docstring なし → 物理51行がそのまま計上
+        rule = MaxMethodLengthRule()
+        lines = ["def foo():"]
+        lines.append("    x = 0")  # ast.Assign（ast.Exprではない）
+        for i in range(49):
+            lines.append(f"    y_{i} = {i}")
+        source = "\n".join(lines) + "\n"
+        source_file = _make_source_file(source)
+
+        # Act
+        result = rule.check(source_file)
+
+        # Assert: docstring除外なし → 物理51行 > 上限50行 → 違反あり
+        assert len(result) == 1
+
+    def test_check_正常系_先頭ExprがConstant_str以外の場合はdocstring除外なしで行数計算すること(
+        self,
+    ):
+        # Arrange: 先頭文が ast.Expr(ast.Call) → docstring として扱わない
+        rule = MaxMethodLengthRule()
+        lines = ["def foo():"]
+        lines.append("    print('hello')")  # ast.Expr(ast.Call)
+        for i in range(49):
+            lines.append(f"    y_{i} = {i}")
+        source = "\n".join(lines) + "\n"
+        source_file = _make_source_file(source)
+
+        # Act
+        result = rule.check(source_file)
+
+        # Assert: docstring除外なし → 物理51行 > 上限50行 → 違反あり
+        assert len(result) == 1

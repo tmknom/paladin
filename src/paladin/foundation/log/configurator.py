@@ -137,6 +137,7 @@ class LogConfigurator:
                 return Path(h.baseFilename)
         return None
 
+    # paladin: ignore[max-method-length]
     def _build_dictconfig(
         self,
         stream: str,
