@@ -28,6 +28,7 @@
 | 設定 ignore リゾルバー | `ConfigIgnoreResolver` | 設定ファイルの per-file-ignores パターンを照合して `FileIgnoreDirective` を生成する |
 | ignore 統合メソッド | `FileIgnoreDirective.merge` | 設定ファイル由来とコメント由来の `FileIgnoreDirective` を統合する（同一ファイルは `ignore_all` の論理和・`ignored_rules` の集合和） |
 | 違反フィルター | `ViolationFilter` | ファイル・行・CLI・設定の各 ignore ディレクティブに基づいて違反を除外する |
+| ignore ファサード | `IgnoreProcessor` | ignore ディレクティブの解析・統合・フィルタリングを一括実行するファサード |
 | レポートフォーマッター（text） | `CheckReportFormatter` | `CheckResult` を text 形式の `CheckReport` に変換 |
 | レポートフォーマッター（JSON） | `CheckJsonFormatter` | `CheckResult` を JSON 形式の `CheckReport` に変換 |
 | フォーマッターファクトリー | `CheckFormatterFactory` | `OutputFormat` に応じたフォーマッターへ委譲する |
@@ -49,8 +50,9 @@ src/paladin/check/
 ├── ignore/               # Ignore 機能サブパッケージ
 │   ├── __init__.py       # 公開シンボルの re-export
 │   ├── directive.py      # FileIgnoreDirective / LineIgnoreDirective
-│   ├── parser.py         # FileIgnoreParser / LineIgnoreParser
 │   ├── filter.py         # ViolationFilter
+│   ├── parser.py         # FileIgnoreParser / LineIgnoreParser
+│   ├── processor.py      # IgnoreProcessor
 │   └── resolver.py       # ConfigIgnoreResolver
 ├── parser.py             # AstParser
 ├── rule_filter.py        # RuleFilter
@@ -71,8 +73,9 @@ tests/unit/test_check/
 ├── test_ignore/
 │   ├── __init__.py
 │   ├── test_directive.py
-│   ├── test_parser.py
 │   ├── test_filter.py
+│   ├── test_parser.py
+│   ├── test_processor.py
 │   └── test_resolver.py
 ├── test_orchestrator.py
 ├── test_parser.py
@@ -93,13 +96,14 @@ tests/unit/test_check/
 3. `AstParser` が各ファイルを読み込み AST とソーステキストを生成する（`SourceFiles`）
 4. `RuleFilter` が `context.rules` と `context.select_rules` に基づいて無効ルール ID を解決する（`frozenset[str]`）
 5. `RuleSet` が有効ルールを全ファイルへ適用し、違反を集約する（`Violations`）
-6. `ConfigIgnoreResolver` が `context.per_file_ignores` パターンを照合し、設定由来の `FileIgnoreDirective` を生成する
-7. `FileIgnoreParser` がソーステキストのヘッダー領域を走査し、コメント由来の `FileIgnoreDirective` を抽出する
-8. 両 `FileIgnoreDirective` を統合する（同一ファイルは `ignore_all` と `ignored_rules` の和集合）
-9. `LineIgnoreParser` がソーステキストの直前コメントから `LineIgnoreDirective` を抽出する
-10. `ViolationFilter` がファイル・行・CLI の各 ignore 情報に基づいて違反をフィルタリングする（`Violations`）
-11. `CheckResult`（`TargetFiles` + `SourceFiles` + フィルタリング済み `Violations`）を組み立てる
-12. `CheckFormatterFactory` が `CheckContext.format`（`OutputFormat`）に応じて `CheckReportFormatter`（text）または `CheckJsonFormatter`（JSON）へ委譲し、`CheckReport` を生成して返す
+6. `IgnoreProcessor` が ignore ディレクティブの解析・統合・フィルタリングを一括実行する（`Violations`）
+    - `ConfigIgnoreResolver` が `context.per_file_ignores` パターンを照合し、設定由来の `FileIgnoreDirective` を生成する
+    - `FileIgnoreParser` がソーステキストのヘッダー領域を走査し、コメント由来の `FileIgnoreDirective` を抽出する
+    - 両 `FileIgnoreDirective` を統合する（同一ファイルは `ignore_all` と `ignored_rules` の和集合）
+    - `LineIgnoreParser` がソーステキストの直前コメントから `LineIgnoreDirective` を抽出する
+    - `ViolationFilter` がファイル・行・CLI の各 ignore 情報に基づいて違反をフィルタリングする
+7. `CheckResult`（`TargetFiles` + `SourceFiles` + フィルタリング済み `Violations`）を組み立てる
+8. `CheckFormatterFactory` が `CheckContext.format`（`OutputFormat`）に応じて `CheckReportFormatter`（text）または `CheckJsonFormatter`（JSON）へ委譲し、`CheckReport` を生成して返す
 
 ### ルール適用ロジック
 
@@ -192,15 +196,15 @@ view/  → rule/ (RuleSet, RuleMeta)
 
 **パターン正規化の規則**: 末尾スラッシュ付きのパターンや、拡張子・パス区切り・ワイルドカードを含まない単純名は、ディレクトリとして扱い配下すべてにマッチする `**/<name>/**` 形式へ変換される。
 
-### ViolationFilter をパイプラインの独立ステップとして配置
+### IgnoreProcessor をパイプラインの独立ステップとして配置
 
-**設計の意図**: ignore フィルタリングを `RuleSet.run` の後・`CheckResult` 生成の前に独立したステップとして挿入する。`ViolationFilter` は `CheckOrchestrator` にコンストラクタ注入し、各 ignore パーサー・リゾルバーは `orchestrate()` 内で直接生成する。
+**設計の意図**: ignore フィルタリングを `RuleSet.run` の後・`CheckResult` 生成の前に独立したステップとして挿入する。`IgnoreProcessor` は `CheckOrchestrator` にコンストラクタ注入し、ignore パッケージ内部の詳細（各パーサー・リゾルバー・フィルター）を隠蔽するファサードとして機能する。
 
-**なぜそう設計したか**: `RuleSet` の責務を「全ルールを全ファイルへ適用する」に限定し、ignore の関心事を分離することで、各コンポーネントのテスタビリティと拡張性を維持できる。`ViolationFilter`・`FileIgnoreParser`・`LineIgnoreParser`・`ConfigIgnoreResolver` はすべて純粋計算であり副作用を持たないため、Protocol による抽象化は YAGNI に該当する。
+**なぜそう設計したか**: `RuleSet` の責務を「全ルールを全ファイルへ適用する」に限定し、ignore の関心事を分離することで、各コンポーネントのテスタビリティと拡張性を維持できる。`IgnoreProcessor`・`ViolationFilter`・`FileIgnoreParser`・`LineIgnoreParser`・`ConfigIgnoreResolver` はすべて純粋計算であり副作用を持たないため、Protocol による抽象化は YAGNI に該当する。`CheckOrchestrator` は ignore パッケージの内部詳細（6クラス）を知る必要がなく、`IgnoreProcessor.apply()` を呼び出すだけでよい。
 
 **ignore の統合ロジック**: コメント由来（`FileIgnoreParser`）と設定ファイル由来（`ConfigIgnoreResolver`）の `FileIgnoreDirective` は `FileIgnoreDirective.merge()` で統合される。同一ファイルに両方が存在する場合は `ignore_all` の論理和・`ignored_rules` の集合和として扱われる。
 
-**トレードオフ**: 各パーサー・リゾルバーを `orchestrate()` 内で都度生成しているため、将来状態を持つ必要が生じた場合はコンストラクタ注入に変更する必要がある。現時点では状態なしで十分なため直接生成とする。
+**トレードオフ**: `IgnoreProcessor` 内部の各パーサー・リゾルバーは `apply()` 内で都度生成している。将来状態を持つ必要が生じた場合はコンストラクタ注入に変更する必要があるが、現時点では状態なしで十分なため直接生成とする。
 
 ### テストコード: Fake による副作用の分離
 
@@ -265,10 +269,10 @@ view/  → rule/ (RuleSet, RuleMeta)
 | 新しいルールを追加 | `rule/` に新ファイル、`rule/__init__.py`（`__all__`）、`rule/rule_set_factory.py`（`RuleSetFactory.create()`） | `RuleSet` / `CheckOrchestrator` の変更は不要 |
 | ルールのチェックロジックを変更 | 対象ルールの `.py` | 他コンポーネントへの影響なし |
 | ルール有効/無効ロジックを変更 | `rule_filter.py`（`RuleFilter`） | `CheckOrchestrator` の変更は不要 |
-| ファイル ignore の解析ロジックを変更 | `ignore/parser.py`（`FileIgnoreParser`） | `ViolationFilter` / `CheckOrchestrator` の変更は不要 |
-| 行単位 ignore の解析ロジックを変更 | `ignore/parser.py`（`LineIgnoreParser`） | `ViolationFilter` / `CheckOrchestrator` の変更は不要 |
-| 設定ファイル ignore のロジックを変更 | `ignore/resolver.py`（`ConfigIgnoreResolver`） | `ViolationFilter` / `CheckOrchestrator` の変更は不要 |
-| ignore のフィルタリングロジックを変更 | `ignore/filter.py`（`ViolationFilter`） | 各パーサー / `CheckOrchestrator` の変更は不要 |
+| ファイル ignore の解析ロジックを変更 | `ignore/parser.py`（`FileIgnoreParser`） | `IgnoreProcessor` / `CheckOrchestrator` の変更は不要 |
+| 行単位 ignore の解析ロジックを変更 | `ignore/parser.py`（`LineIgnoreParser`） | `IgnoreProcessor` / `CheckOrchestrator` の変更は不要 |
+| 設定ファイル ignore のロジックを変更 | `ignore/resolver.py`（`ConfigIgnoreResolver`） | `IgnoreProcessor` / `CheckOrchestrator` の変更は不要 |
+| ignore のフィルタリングロジックを変更 | `ignore/filter.py`（`ViolationFilter`） | `IgnoreProcessor` / `CheckOrchestrator` の変更は不要 |
 | exclude パターンの正規化ロジックを変更 | `collector.py`（`PathExcluder`） | `FileCollector` / `CheckOrchestrator` の変更は不要 |
 | `--rule` の選択ロジックを変更 | `rule_filter.py`（`RuleFilter._resolve_select_disabled`） | `CheckOrchestrator` の変更は不要 |
 | 実行時パラメータを追加 | `context.py`（`CheckContext`） | 追加フィールドは呼び出し元（CLI 層）が組み立てて渡す |

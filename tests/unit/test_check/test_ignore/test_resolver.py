@@ -2,7 +2,7 @@
 
 from pathlib import Path
 
-from paladin.check.ignore import ConfigIgnoreResolver
+from paladin.check.ignore.resolver import ConfigIgnoreResolver
 from paladin.rule import PerFileIgnoreEntry
 
 

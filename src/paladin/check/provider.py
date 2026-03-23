@@ -5,7 +5,7 @@
 
 from paladin.check.collector import FileCollector, PathExcluder
 from paladin.check.formatter import CheckFormatterFactory
-from paladin.check.ignore import ViolationFilter
+from paladin.check.ignore import IgnoreProcessor
 from paladin.check.orchestrator import CheckOrchestrator
 from paladin.check.override import OverrideResolver
 from paladin.check.parser import AstParser
@@ -41,7 +41,7 @@ class CheckOrchestratorProvider:
             parser=parser,
             rule_set=rule_set,
             formatter=CheckFormatterFactory(),
-            violation_filter=ViolationFilter(),
+            ignore_processor=IgnoreProcessor(),
             rule_filter=RuleFilter(),
             path_excluder=PathExcluder(),
             override_resolver=OverrideResolver(),

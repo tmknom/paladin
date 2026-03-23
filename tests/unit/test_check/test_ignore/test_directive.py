@@ -2,7 +2,7 @@
 
 from pathlib import Path
 
-from paladin.check.ignore import FileIgnoreDirective, LineIgnoreDirective
+from paladin.check.ignore.directive import FileIgnoreDirective, LineIgnoreDirective
 
 
 class TestFileIgnoreDirective:
