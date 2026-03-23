@@ -173,6 +173,7 @@ main()
 | グローバルオプションを追加 | `main_callback` に Typer Option 追加、`AppConfig`（keyword-only 引数追加） | config パッケージの `AppConfig.build()` も合わせて更新する |
 | サブコマンド専用オプションを追加 | サブコマンド関数に Typer Option 追加・優先度解決ロジック追加 | 優先度解決ロジックはサブコマンド関数内に置く（`AppConfig` に持たせない） |
 | `check` コマンドの出力形式を変更 | `check` 関数の `format` パラメータを変更、`CheckContext.format` へ反映 | `OutputFormat` 列挙型の値と対応する |
+| `check` コマンドにサブコマンド専用オプションを追加 | `check` 関数に Typer Option 追加・`CheckContext` の対応フィールドへ渡す | `CheckContext` フィールド追加も合わせて行う |
 | 設定の許容値を変更 | cli モジュールの変更は不要（config パッケージを変更） | - |
 | ビジネスロジックを変更 | cli モジュールの変更は不要（<feature> パッケージを変更） | - |
 

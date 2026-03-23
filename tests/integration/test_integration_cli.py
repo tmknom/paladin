@@ -222,6 +222,60 @@ class TestIntegrationCheckCLI:
         assert "status: ok" in result.stdout
 
 
+class TestIntegrationCheckRuleOption:
+    """check コマンドの --rule オプションの統合テスト"""
+
+    def test_check_正常系_ruleオプションで指定ルールのみ実行されること(self, tmp_dir: Path):
+        # Arrange: __init__.py に __all__ なし（require-all-export 違反）
+        # --rule no-relative-import を指定 → require-all-export がスキップされる
+        src_dir = tmp_dir / "src"
+        src_dir.mkdir()
+        init_file = src_dir / "__init__.py"
+        init_file.write_text("x = 1\n")
+
+        # Act
+        cmd = [
+            sys.executable,
+            "-m",
+            "paladin.cli",
+            "check",
+            str(src_dir),
+            "--rule",
+            "no-relative-import",
+        ]
+        result = subprocess.run(cmd, cwd=tmp_dir, capture_output=True, text=True, timeout=10)
+
+        # Assert: require-all-export がスキップされるため exit_code=0
+        assert result.returncode == 0
+        assert "status: ok" in result.stdout
+
+    def test_check_正常系_ruleオプション複数指定で指定ルールのみ実行されること(self, tmp_dir: Path):
+        # Arrange: __init__.py に __all__ なし（require-all-export 違反）
+        # --rule require-all-export --rule no-relative-import → require-all-export が実行される
+        src_dir = tmp_dir / "src"
+        src_dir.mkdir()
+        init_file = src_dir / "__init__.py"
+        init_file.write_text("x = 1\n")
+
+        # Act
+        cmd = [
+            sys.executable,
+            "-m",
+            "paladin.cli",
+            "check",
+            str(src_dir),
+            "--rule",
+            "require-all-export",
+            "--rule",
+            "no-relative-import",
+        ]
+        result = subprocess.run(cmd, cwd=tmp_dir, capture_output=True, text=True, timeout=10)
+
+        # Assert: require-all-export が実行され違反あり → exit_code=1
+        assert result.returncode == 1
+        assert "require-all-export" in result.stdout
+
+
 class TestIntegrationCheckConfig:
     """check コマンドの設定ファイル連携の統合テスト"""
 

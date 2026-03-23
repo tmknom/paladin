@@ -32,7 +32,7 @@
 | フォーマッターファクトリー | `CheckFormatterFactory` | `OutputFormat` に応じたフォーマッターへ委譲する |
 | 出力形式 | `OutputFormat` | `text` / `json` を表す列挙型 |
 | ルール Protocol | `Rule` | ルール実装が満たすべき契約の定義 |
-| 実行コンテキスト | `CheckContext` | 実行時パラメータ（解析対象パス群・出力形式・ignore 設定・exclude・ルール設定）を保持する値オブジェクト |
+| 実行コンテキスト | `CheckContext` | 実行時パラメータ（解析対象パス群・出力形式・適用ルール限定・ignore 設定・exclude・ルール設定）を保持する値オブジェクト |
 
 ### ファイルレイアウト
 
@@ -80,7 +80,7 @@ tests/unit/test_check/
 1. `FileCollector` が `context.targets` から `.py` ファイルを収集する（`TargetFiles`）
 2. `PathExcluder` が `context.exclude` パターンを適用し、対象外ファイルを除外する（`TargetFiles`）
 3. `AstParser` が各ファイルを読み込み AST とソーステキストを生成する（`SourceFiles`）
-4. `RuleFilter` が `context.rules` 設定に基づいて無効ルール ID を解決する（`frozenset[str]`）
+4. `RuleFilter` が `context.rules` と `context.select_rules` に基づいて無効ルール ID を解決する（`frozenset[str]`）
 5. `RuleSet` が有効ルールを全ファイルへ適用し、違反を集約する（`Violations`）
 6. `ConfigIgnoreResolver` が `context.per_file_ignores` パターンを照合し、設定由来の `FileIgnoreDirective` を生成する
 7. `FileIgnoreParser` がソーステキストのヘッダー領域を走査し、コメント由来の `FileIgnoreDirective` を抽出する
@@ -165,9 +165,11 @@ view/  → rule/ (RuleSet, RuleMeta)
 
 ### RuleFilter によるルール有効/無効の解決
 
-**設計の意図**: 設定ファイルの `[tool.paladin.rules]` セクションに基づいてルールを無効化する責務を `RuleFilter` として分離し、`RuleSet.run()` の呼び出し前に無効ルール ID を解決する。
+**設計の意図**: 設定ファイルの `[tool.paladin.rules]` セクションおよび CLI の `--rule` オプションに基づいてルールを無効化する責務を `RuleFilter` として分離し、`RuleSet.run()` の呼び出し前に無効ルール ID を解決する。
 
-**なぜそう設計したか**: ルール有効/無効の解決ロジック（未知 ID の警告処理を含む）を `RuleSet` や `CheckOrchestrator` から切り出すことで、設定ファイルの変更に伴うロジック修正を `rule_filter.py` に局所化できる。
+**なぜそう設計したか**: ルール有効/無効の解決ロジック（未知 ID の警告処理を含む）を `RuleSet` や `CheckOrchestrator` から切り出すことで、設定ファイルや CLI オプションの変更に伴うロジック修正を `rule_filter.py` に局所化できる。
+
+**`--rule` と `[tool.paladin.rules]` の AND 条件**: `--rule` は「ポジティブセレクション」として機能し、指定されたルール ID 以外を無効化する。`[tool.paladin.rules]` の `false` 設定はその後に適用されるため、`--rule` で選択されていても `rules: false` なら無効になる。空の `select_rules`（`--rule` 未指定）は全ルール適用を意味し、既存動作と後方互換である。
 
 **トレードオフ**: 未知のルール ID に対する警告は実行時のログ出力のみで、エラーとして停止しない。設定ミスを早期発見しにくい反面、新旧バージョン間でのルール ID の不一致に対しても解析を継続できる。
 
@@ -257,6 +259,7 @@ view/  → rule/ (RuleSet, RuleMeta)
 | 設定ファイル ignore のロジックを変更 | `ignore.py`（`ConfigIgnoreResolver`） | `ViolationFilter` / `CheckOrchestrator` の変更は不要 |
 | ignore のフィルタリングロジックを変更 | `ignore.py`（`ViolationFilter`） | 各パーサー / `CheckOrchestrator` の変更は不要 |
 | exclude パターンの正規化ロジックを変更 | `collector.py`（`PathExcluder`） | `FileCollector` / `CheckOrchestrator` の変更は不要 |
+| `--rule` の選択ロジックを変更 | `rule_filter.py`（`RuleFilter._resolve_select_disabled`） | `CheckOrchestrator` の変更は不要 |
 | 実行時パラメータを追加 | `context.py`（`CheckContext`） | 追加フィールドは呼び出し元（CLI 層）が組み立てて渡す |
 | レポート出力形式を変更 | `formatter.py`（`CheckReportFormatter` / `CheckJsonFormatter`） | `CheckOrchestrator` の変更は不要 |
 | 新しい出力形式を追加 | `types.py`（`OutputFormat`）、`formatter.py`（新フォーマッタークラス・`CheckFormatterFactory`） | `CheckOrchestrator` の変更は不要 |

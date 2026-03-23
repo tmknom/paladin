@@ -20,6 +20,7 @@ class CheckContext:
     Attributes:
         targets: 解析対象パス群（TargetResolver で解決済みのパス）
         format: チェック結果の出力フォーマット
+        select_rules: 適用を限定するルールID群（空の場合は全ルール適用）
         ignore_rules: 無視するルールID群
         exclude: 解析対象パスのexcludeパターン群
         rules: ルールの有効/無効設定
@@ -30,6 +31,7 @@ class CheckContext:
 
     targets: tuple[Path, ...]
     format: OutputFormat = OutputFormat.TEXT
+    select_rules: frozenset[str] = frozenset()
     ignore_rules: frozenset[str] = frozenset()
     exclude: tuple[str, ...] = ()
     rules: dict[str, bool] = field(default_factory=lambda: {})

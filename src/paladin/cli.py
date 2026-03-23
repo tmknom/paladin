@@ -57,6 +57,9 @@ def check(
         list[Path] | None, typer.Argument(help="解析対象のファイルまたはディレクトリ")
     ] = None,
     format: Annotated[OutputFormat, typer.Option("--format", help="出力形式")] = OutputFormat.TEXT,
+    rule: Annotated[
+        list[str] | None, typer.Option("--rule", help="適用するルール ID（複数回指定可）")
+    ] = None,
     ignore_rule: Annotated[
         list[str] | None, typer.Option("--ignore-rule", help="無視するルール ID（複数回指定可）")
     ] = None,
@@ -70,6 +73,7 @@ def check(
     context = CheckContext(
         targets=resolved_targets,
         format=format,
+        select_rules=frozenset(rule or []),
         ignore_rules=frozenset(ignore_rule or []),
         exclude=project_config.exclude,
         rules=project_config.rules,
