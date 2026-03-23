@@ -1,0 +1,5 @@
+[project]
+name = "e2e-violation-max-file-length"
+
+[tool.paladin.rule.max-file-length]
+max-lines = 10

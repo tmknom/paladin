@@ -26,6 +26,7 @@
 | 行単位 ignore ディレクティブ | `LineIgnoreDirective` | 行単位の ignore ディレクティブ情報（対象行番号・ルール ID）を保持する値オブジェクト |
 | 行単位 ignore パーサー | `LineIgnoreParser` | ソーステキストの直前コメントから行単位 ignore ディレクティブを抽出する |
 | 設定 ignore リゾルバー | `ConfigIgnoreResolver` | 設定ファイルの per-file-ignores パターンを照合して `FileIgnoreDirective` を生成する |
+| ignore 統合メソッド | `FileIgnoreDirective.merge` | 設定ファイル由来とコメント由来の `FileIgnoreDirective` を統合する（同一ファイルは `ignore_all` の論理和・`ignored_rules` の集合和） |
 | 違反フィルター | `ViolationFilter` | ファイル・行・CLI・設定の各 ignore ディレクティブに基づいて違反を除外する |
 | レポートフォーマッター（text） | `CheckReportFormatter` | `CheckResult` を text 形式の `CheckReport` に変換 |
 | レポートフォーマッター（JSON） | `CheckJsonFormatter` | `CheckResult` を JSON 形式の `CheckReport` に変換 |
@@ -187,7 +188,7 @@ view/  → rule/ (RuleSet, RuleMeta)
 
 **なぜそう設計したか**: `RuleSet` の責務を「全ルールを全ファイルへ適用する」に限定し、ignore の関心事を分離することで、各コンポーネントのテスタビリティと拡張性を維持できる。`ViolationFilter`・`FileIgnoreParser`・`LineIgnoreParser`・`ConfigIgnoreResolver` はすべて純粋計算であり副作用を持たないため、Protocol による抽象化は YAGNI に該当する。
 
-**ignore の統合ロジック**: コメント由来（`FileIgnoreParser`）と設定ファイル由来（`ConfigIgnoreResolver`）の `FileIgnoreDirective` は `CheckOrchestrator._merge_directives()` で統合される。同一ファイルに両方が存在する場合は `ignore_all` の論理和・`ignored_rules` の集合和として扱われる。
+**ignore の統合ロジック**: コメント由来（`FileIgnoreParser`）と設定ファイル由来（`ConfigIgnoreResolver`）の `FileIgnoreDirective` は `FileIgnoreDirective.merge()` で統合される。同一ファイルに両方が存在する場合は `ignore_all` の論理和・`ignored_rules` の集合和として扱われる。
 
 **トレードオフ**: 各パーサー・リゾルバーを `orchestrate()` 内で都度生成しているため、将来状態を持つ必要が生じた場合はコンストラクタ注入に変更する必要がある。現時点では状態なしで十分なため直接生成とする。
 
