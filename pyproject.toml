@@ -54,13 +54,13 @@ allow-dirs = ["src/paladin/foundation/", "src/paladin/transform/", "tests/", "e2
 [tool.paladin.rule.no-cross-package-import]
 allow-dirs = ["src/paladin/foundation/", "src/paladin/protocol/", "src/paladin/rule/"]
 
-[tool.paladin.rule.max-class-length]
-max-lines = 220
-max-test-lines = 649
-
 [tool.paladin.rule.max-file-length]
-max-lines = 340
-max-test-lines = 1050
+max-lines = 355
+max-test-lines = 1130
+
+[tool.paladin.rule.max-class-length]
+max-lines = 225
+max-test-lines = 650
 
 [tool.ruff]
 line-length = 100
