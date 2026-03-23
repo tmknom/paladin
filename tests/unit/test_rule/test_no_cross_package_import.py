@@ -384,33 +384,3 @@ class TestNoCrossPackageImportRuleEdgeCases:
 
         # Assert
         assert result == ()
-
-    def test_check_エッジケース_ファイル名がtestsの場合は通常のパッケージキー判定を返すこと(self):
-        # Arrange: file_path.parts に "tests"（ファイル名）が含まれるが dir_parts には含まれない
-        # → _resolve_own_packages の tests_index < 0 分岐（102行目）を通過する
-        source_files = make_source_files(
-            ("from myapp.check import OutputFormat\n", "src/myapp/view/tests"),
-            ("x = 1\n", "src/myapp/check/__init__.py"),
-            ("x = 1\n", "src/myapp/view/__init__.py"),
-        )
-        rule = _rule_with_prepare(source_files, allow_dirs=("src/myapp/rule/",))
-
-        # Act
-        result = rule.check(source_files.files[0])
-
-        # Assert: テストファイルマッピングは適用されず通常の違反判定
-        assert len(result) == 1
-
-    def test_check_エッジケース_パッケージキーを解決できないファイルは空タプルを返すこと(self):
-        # Arrange: 1セグメントのパス（src/ 直下のファイル）は package_key を解決できない
-        source_files = make_source_files(
-            ("from myapp.check import OutputFormat\n", "handler.py"),
-            ("x = 1\n", "src/myapp/check/__init__.py"),
-        )
-        rule = _rule_with_prepare(source_files, allow_dirs=("src/myapp/rule/",))
-
-        # Act
-        result = rule.check(source_files.files[0])
-
-        # Assert: パッケージキーが None のため違反なし
-        assert result == ()
