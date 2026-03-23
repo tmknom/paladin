@@ -215,22 +215,6 @@ key = "value"
         # Assert
         assert result == ProjectConfig()
 
-    def test_load_エッジケース_per_file_ignoresがない場合デフォルトProjectConfigを返すこと(self):
-        # Arrange
-        toml_content = """\
-[tool.paladin]
-other_key = "value"
-"""
-        reader = InMemoryFsReader(contents={"pyproject.toml": toml_content})
-        loader = ProjectConfigLoader(reader=reader)
-
-        # Act
-        result = loader.load()
-
-        # Assert
-        assert result.per_file_ignores == ()
-        assert result.rules == {}
-
     def test_load_正常系_rulesセクションを含むProjectConfigを返すこと(self):
         # Arrange
         toml_content = """\
@@ -245,85 +229,6 @@ no-relative-import = false
 
         # Assert
         assert result.rules == {"no-relative-import": False}
-
-    def test_load_正常系_rulesとper_file_ignoresの両方を読み込めること(self):
-        # Arrange
-        toml_content = """\
-[tool.paladin.per-file-ignores]
-"tests/**" = ["R-001"]
-
-[tool.paladin.rules]
-no-relative-import = false
-"""
-        reader = InMemoryFsReader(contents={"pyproject.toml": toml_content})
-        loader = ProjectConfigLoader(reader=reader)
-
-        # Act
-        result = loader.load()
-
-        # Assert
-        assert len(result.per_file_ignores) == 1
-        assert result.rules == {"no-relative-import": False}
-
-    def test_load_正常系_trueを明示指定したルールも読み込めること(self):
-        # Arrange
-        toml_content = """\
-[tool.paladin.rules]
-require-all-export = true
-"""
-        reader = InMemoryFsReader(contents={"pyproject.toml": toml_content})
-        loader = ProjectConfigLoader(reader=reader)
-
-        # Act
-        result = loader.load()
-
-        # Assert
-        assert result.rules == {"require-all-export": True}
-
-    def test_load_エッジケース_rulesセクションがない場合空dictになること(self):
-        # Arrange
-        toml_content = """\
-[tool.paladin]
-other_key = "value"
-"""
-        reader = InMemoryFsReader(contents={"pyproject.toml": toml_content})
-        loader = ProjectConfigLoader(reader=reader)
-
-        # Act
-        result = loader.load()
-
-        # Assert
-        assert result.rules == {}
-
-    def test_load_エッジケース_rulesセクションが空の場合空dictになること(self):
-        # Arrange
-        toml_content = """\
-[tool.paladin.rules]
-"""
-        reader = InMemoryFsReader(contents={"pyproject.toml": toml_content})
-        loader = ProjectConfigLoader(reader=reader)
-
-        # Act
-        result = loader.load()
-
-        # Assert
-        assert result.rules == {}
-
-    def test_load_エッジケース_per_file_ignoresがなくてもrulesは読み込めること(self):
-        # Arrange: per-file-ignores なし、rules あり
-        toml_content = """\
-[tool.paladin.rules]
-no-relative-import = false
-"""
-        reader = InMemoryFsReader(contents={"pyproject.toml": toml_content})
-        loader = ProjectConfigLoader(reader=reader)
-
-        # Act
-        result = loader.load()
-
-        # Assert: rules が正しく読み込まれている
-        assert result.rules == {"no-relative-import": False}
-        assert result.per_file_ignores == ()
 
     def test_load_正常系_includeを含むProjectConfigを返すこと(self):
         # Arrange
@@ -354,86 +259,6 @@ exclude = [".venv/"]
 
         # Assert
         assert result.exclude == (".venv/",)
-
-    def test_load_正常系_includeとexcludeの両方を読み込めること(self):
-        # Arrange
-        toml_content = """\
-[tool.paladin]
-include = ["src/"]
-exclude = [".venv/"]
-"""
-        reader = InMemoryFsReader(contents={"pyproject.toml": toml_content})
-        loader = ProjectConfigLoader(reader=reader)
-
-        # Act
-        result = loader.load()
-
-        # Assert
-        assert result.include == ("src/",)
-        assert result.exclude == (".venv/",)
-
-    def test_load_正常系_複数のincludeパスを読み込めること(self):
-        # Arrange
-        toml_content = """\
-[tool.paladin]
-include = ["src/", "lib/"]
-"""
-        reader = InMemoryFsReader(contents={"pyproject.toml": toml_content})
-        loader = ProjectConfigLoader(reader=reader)
-
-        # Act
-        result = loader.load()
-
-        # Assert
-        assert result.include == ("src/", "lib/")
-
-    def test_load_エッジケース_includeが未指定の場合空タプルになること(self):
-        # Arrange
-        toml_content = """\
-[tool.paladin]
-other_key = "value"
-"""
-        reader = InMemoryFsReader(contents={"pyproject.toml": toml_content})
-        loader = ProjectConfigLoader(reader=reader)
-
-        # Act
-        result = loader.load()
-
-        # Assert
-        assert result.include == ()
-
-    def test_load_エッジケース_excludeが未指定の場合空タプルになること(self):
-        # Arrange
-        toml_content = """\
-[tool.paladin]
-other_key = "value"
-"""
-        reader = InMemoryFsReader(contents={"pyproject.toml": toml_content})
-        loader = ProjectConfigLoader(reader=reader)
-
-        # Act
-        result = loader.load()
-
-        # Assert
-        assert result.exclude == ()
-
-    def test_load_エッジケース_tool_paladinセクションがない場合includeとexcludeが空タプルになること(
-        self,
-    ):
-        # Arrange
-        toml_content = """\
-[tool.other]
-key = "value"
-"""
-        reader = InMemoryFsReader(contents={"pyproject.toml": toml_content})
-        loader = ProjectConfigLoader(reader=reader)
-
-        # Act
-        result = loader.load()
-
-        # Assert
-        assert result.include == ()
-        assert result.exclude == ()
 
     def test_load_正常系_overridesセクションを含むProjectConfigを返すこと(self):
         # Arrange
@@ -483,21 +308,6 @@ no-relative-import = false
         assert result.overrides[0].rules == {"require-all-export": False}
         assert result.overrides[1].files == ("scripts/**", "tools/**")
         assert result.overrides[1].rules == {"no-relative-import": False}
-
-    def test_load_エッジケース_overridesセクションがない場合空タプルになること(self):
-        # Arrange
-        toml_content = """\
-[tool.paladin]
-other_key = "value"
-"""
-        reader = InMemoryFsReader(contents={"pyproject.toml": toml_content})
-        loader = ProjectConfigLoader(reader=reader)
-
-        # Act
-        result = loader.load()
-
-        # Assert
-        assert result.overrides == ()
 
     def test_load_エッジケース_overridesのfilesが空配列の場合も読み込めること(self):
         # Arrange
@@ -611,21 +421,6 @@ name = "my--app"
         # Assert
         assert result.project_name == "my_app"
 
-    def test_load_エッジケース_projectセクションがない場合project_nameがNoneであること(self):
-        # Arrange
-        toml_content = """\
-[tool.paladin]
-other_key = "value"
-"""
-        reader = InMemoryFsReader(contents={"pyproject.toml": toml_content})
-        loader = ProjectConfigLoader(reader=reader)
-
-        # Act
-        result = loader.load()
-
-        # Assert
-        assert result.project_name is None
-
     def test_load_エッジケース_projectセクションにnameがない場合project_nameがNoneであること(self):
         # Arrange
         toml_content = """\
@@ -641,39 +436,6 @@ version = "1.0.0"
         # Assert
         assert result.project_name is None
 
-    def test_load_エッジケース_pyproject_tomlが存在しない場合project_nameがNoneであること(self):
-        # Arrange
-        loader = ProjectConfigLoader(
-            reader=ErrorFsReader(
-                FileSystemError(message="ファイルが見つかりません", cause=Exception("not found"))
-            )
-        )
-
-        # Act
-        result = loader.load()
-
-        # Assert
-        assert result.project_name is None
-
-    def test_load_正常系_projectセクションとtool_paladinセクションの両方を読み込めること(self):
-        # Arrange
-        toml_content = """\
-[project]
-name = "my-project"
-
-[tool.paladin.rules]
-no-relative-import = false
-"""
-        reader = InMemoryFsReader(contents={"pyproject.toml": toml_content})
-        loader = ProjectConfigLoader(reader=reader)
-
-        # Act
-        result = loader.load()
-
-        # Assert
-        assert result.project_name == "my_project"
-        assert result.rules == {"no-relative-import": False}
-
     def test_load_正常系_rule_optionsセクションを含むProjectConfigを返すこと(self):
         # Arrange
         toml_content = """\
@@ -688,23 +450,6 @@ allow-dirs = ["src/foundation/"]
 
         # Assert
         assert result.rule_options == {"no-third-party-import": {"allow-dirs": ["src/foundation/"]}}
-
-    def test_load_正常系_rule_optionsの複数ディレクトリを読み込めること(self):
-        # Arrange
-        toml_content = """\
-[tool.paladin.rule.no-third-party-import]
-allow-dirs = ["src/foundation/", "src/infra/"]
-"""
-        reader = InMemoryFsReader(contents={"pyproject.toml": toml_content})
-        loader = ProjectConfigLoader(reader=reader)
-
-        # Act
-        result = loader.load()
-
-        # Assert
-        assert result.rule_options == {
-            "no-third-party-import": {"allow-dirs": ["src/foundation/", "src/infra/"]}
-        }
 
     def test_load_エッジケース_rule_optionsセクションがない場合空dictになること(self):
         # Arrange

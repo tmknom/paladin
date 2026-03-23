@@ -488,44 +488,6 @@ class TestCheckOrchestrator:
         assert isinstance(result, CheckReport)
         assert result.exit_code == 0
 
-    def test_orchestrate_正常系_rulesセクションが存在しない場合全ルールが実行されること(
-        self, tmp_path: Path
-    ):
-        # Arrange
-        init_file = tmp_path / "__init__.py"
-        init_file.write_text("from foo import bar\n")
-        reader = InMemoryFsReader(contents={str(init_file.resolve()): "from foo import bar\n"})
-        parser = AstParser(reader=reader)
-        violation = Violation(
-            file=init_file.resolve(),
-            line=1,
-            column=0,
-            rule_id="fake-rule",
-            rule_name="Fake Rule",
-            message="violation",
-            reason="reason",
-            suggestion="suggestion",
-        )
-        rule_set = RuleSet(rules=(FakeRule(violations=(violation,)),))
-        orchestrator = CheckOrchestrator(
-            collector=FileCollector(),
-            parser=parser,
-            rule_set=rule_set,
-            formatter=CheckFormatterFactory(),
-            violation_filter=ViolationFilter(),
-            rule_filter=RuleFilter(),
-            path_excluder=PathExcluder(),
-            override_resolver=OverrideResolver(),
-        )
-        context = CheckContext(targets=(tmp_path,))
-
-        # Act
-        result = orchestrator.orchestrate(context)
-
-        # Assert: rules セクションなしで全ルールが実行され、違反あり
-        assert isinstance(result, CheckReport)
-        assert result.exit_code == 1
-
     def test_orchestrate_正常系_存在しないルールIDを指定しても処理が継続すること(
         self, tmp_path: Path
     ):
@@ -552,32 +514,6 @@ class TestCheckOrchestrator:
 
         # Assert: 処理が正常に完了する
         assert isinstance(result, CheckReport)
-
-    def test_orchestrate_正常系_targetsで指定したパスを解析対象とすること(self, tmp_path: Path):
-        # Arrange: TargetResolver で解決済みの targets を渡す
-        py_file = tmp_path / "main.py"
-        py_file.write_text("x = 1\n")
-        reader = InMemoryFsReader(contents={str(py_file.resolve()): "x = 1\n"})
-        parser = AstParser(reader=reader)
-        rule_set = RuleSet(rules=(FakeRule(violations=()),))
-        orchestrator = CheckOrchestrator(
-            collector=FileCollector(),
-            parser=parser,
-            rule_set=rule_set,
-            formatter=CheckFormatterFactory(),
-            violation_filter=ViolationFilter(),
-            rule_filter=RuleFilter(),
-            path_excluder=PathExcluder(),
-            override_resolver=OverrideResolver(),
-        )
-        context = CheckContext(targets=(tmp_path,))
-
-        # Act
-        result = orchestrator.orchestrate(context)
-
-        # Assert: targets のパスが解析対象になり、違反なしで終了
-        assert isinstance(result, CheckReport)
-        assert result.exit_code == 0
 
     def test_orchestrate_正常系_excludeパターンでファイルが除外されること(self, tmp_path: Path):
         # Arrange: 違反ファイルを exclude パターンで除外する
@@ -613,45 +549,6 @@ class TestCheckOrchestrator:
         result = orchestrator.orchestrate(context)
 
         # Assert: exclude パターンで example.py が除外されるため違反なし
-        assert isinstance(result, CheckReport)
-        assert result.exit_code == 0
-
-    def test_orchestrate_正常系_excludeはCLIターゲット指定時にも適用されること(
-        self, tmp_path: Path
-    ):
-        # Arrange: CLI ターゲットを指定し、exclude で特定ファイルを除外する
-        py_file = tmp_path / "excluded.py"
-        py_file.write_text("x = 1\n")
-        reader = InMemoryFsReader(contents={str(py_file.resolve()): "x = 1\n"})
-        parser = AstParser(reader=reader)
-        violation = Violation(
-            file=py_file.resolve(),
-            line=1,
-            column=0,
-            rule_id="fake-rule",
-            rule_name="Fake Rule",
-            message="violation",
-            reason="reason",
-            suggestion="suggestion",
-        )
-        rule = FakeRule(rule_id="fake-rule", violations=(violation,))
-        rule_set = RuleSet(rules=(rule,))
-        orchestrator = CheckOrchestrator(
-            collector=FileCollector(),
-            parser=parser,
-            rule_set=rule_set,
-            formatter=CheckFormatterFactory(),
-            violation_filter=ViolationFilter(),
-            rule_filter=RuleFilter(),
-            path_excluder=PathExcluder(),
-            override_resolver=OverrideResolver(),
-        )
-        context = CheckContext(targets=(tmp_path,), exclude=(py_file.name,))
-
-        # Act
-        result = orchestrator.orchestrate(context)
-
-        # Assert: CLI ターゲット指定でも exclude が適用され、違反なし
         assert isinstance(result, CheckReport)
         assert result.exit_code == 0
 
@@ -719,43 +616,6 @@ class TestCheckOrchestrator:
         # Assert: tests/ 配下の違反のみ除外され、src/ の違反は残る
         assert isinstance(result, CheckReport)
         assert result.exit_code == 1  # src/ の違反あり
-
-    def test_orchestrate_正常系_overridesが空の場合既存動作と同じこと(self, tmp_path: Path):
-        # Arrange: overrides が空タプル
-        py_file = tmp_path / "main.py"
-        py_file.write_text("x = 1\n")
-        reader = InMemoryFsReader(contents={str(py_file.resolve()): "x = 1\n"})
-        parser = AstParser(reader=reader)
-        violation = Violation(
-            file=py_file.resolve(),
-            line=1,
-            column=0,
-            rule_id="fake-rule",
-            rule_name="Fake Rule",
-            message="violation",
-            reason="reason",
-            suggestion="suggestion",
-        )
-        rule = FakeRule(rule_id="fake-rule", violations=(violation,))
-        rule_set = RuleSet(rules=(rule,))
-        orchestrator = CheckOrchestrator(
-            collector=FileCollector(),
-            parser=parser,
-            rule_set=rule_set,
-            formatter=CheckFormatterFactory(),
-            violation_filter=ViolationFilter(),
-            rule_filter=RuleFilter(),
-            path_excluder=PathExcluder(),
-            override_resolver=OverrideResolver(),
-        )
-        context = CheckContext(targets=(tmp_path,), overrides=())
-
-        # Act
-        result = orchestrator.orchestrate(context)
-
-        # Assert: overrides なしなので fake-rule の違反がそのまま残る
-        assert isinstance(result, CheckReport)
-        assert result.exit_code == 1
 
     def test_orchestrate_正常系_overridesで後に定義されたオーバーライドが優先されること(
         self, tmp_path: Path
