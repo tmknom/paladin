@@ -805,3 +805,136 @@ class TestCheckOrchestrator:
         # Assert: override2 が後勝ちで fake-rule が有効のため、違反あり
         assert isinstance(result, CheckReport)
         assert result.exit_code == 1
+
+
+class TestCheckOrchestratorSelectRules:
+    """select_rules 機能に関する CheckOrchestrator のテスト"""
+
+    def test_orchestrate_正常系_select_rulesで指定ルールのみ実行されること(self, tmp_path: Path):
+        # Arrange: rule-a に違反あり、rule-b に違反なし。select_rules で rule-b のみ指定
+        py_file = tmp_path / "example.py"
+        py_file.write_text("x = 1\n")
+        reader = InMemoryFsReader(contents={str(py_file.resolve()): "x = 1\n"})
+        parser = AstParser(reader=reader)
+        violation = Violation(
+            file=py_file.resolve(),
+            line=1,
+            column=0,
+            rule_id="rule-a",
+            rule_name="Rule A",
+            message="violation",
+            reason="reason",
+            suggestion="suggestion",
+        )
+        rule_a = FakeRule(rule_id="rule-a", violations=(violation,))
+        rule_b = FakeRule(rule_id="rule-b", violations=())
+        rule_set = RuleSet(rules=(rule_a, rule_b))
+        orchestrator = CheckOrchestrator(
+            collector=FileCollector(),
+            parser=parser,
+            rule_set=rule_set,
+            formatter=CheckFormatterFactory(),
+            violation_filter=ViolationFilter(),
+            rule_filter=RuleFilter(),
+            path_excluder=PathExcluder(),
+            override_resolver=OverrideResolver(),
+        )
+        context = CheckContext(targets=(tmp_path,), select_rules=frozenset({"rule-b"}))
+
+        # Act
+        result = orchestrator.orchestrate(context)
+
+        # Assert: rule-a がスキップされるため違反なし
+        assert isinstance(result, CheckReport)
+        assert result.exit_code == 0
+
+    def test_orchestrate_正常系_select_rulesとrules_falseの組み合わせでAND条件が適用されること(
+        self, tmp_path: Path
+    ):
+        # Arrange: rule-a に違反あり。select_rules={"rule-a"} かつ rules={"rule-a": False}
+        py_file = tmp_path / "example.py"
+        py_file.write_text("x = 1\n")
+        reader = InMemoryFsReader(contents={str(py_file.resolve()): "x = 1\n"})
+        parser = AstParser(reader=reader)
+        violation = Violation(
+            file=py_file.resolve(),
+            line=1,
+            column=0,
+            rule_id="rule-a",
+            rule_name="Rule A",
+            message="violation",
+            reason="reason",
+            suggestion="suggestion",
+        )
+        rule_a = FakeRule(rule_id="rule-a", violations=(violation,))
+        rule_set = RuleSet(rules=(rule_a,))
+        orchestrator = CheckOrchestrator(
+            collector=FileCollector(),
+            parser=parser,
+            rule_set=rule_set,
+            formatter=CheckFormatterFactory(),
+            violation_filter=ViolationFilter(),
+            rule_filter=RuleFilter(),
+            path_excluder=PathExcluder(),
+            override_resolver=OverrideResolver(),
+        )
+        context = CheckContext(
+            targets=(tmp_path,),
+            select_rules=frozenset({"rule-a"}),
+            rules={"rule-a": False},
+        )
+
+        # Act
+        result = orchestrator.orchestrate(context)
+
+        # Assert: AND 条件で rule-a が rules:false により無効 → 違反なし
+        assert isinstance(result, CheckReport)
+        assert result.exit_code == 0
+
+    def test_orchestrate_正常系_select_rulesとoverridesの組み合わせが正しく動作すること(
+        self, tmp_path: Path
+    ):
+        # Arrange: rule-a に違反あり。select_rules={"rule-b"} → rule-a がスキップされる
+        # overrides は _resolve_per_file_disabled でも select_rules が考慮されることを検証
+        tests_dir = tmp_path / "tests"
+        tests_dir.mkdir()
+        test_file = tests_dir / "test_foo.py"
+        test_file.write_text("x = 1\n")
+        reader = InMemoryFsReader(contents={str(test_file.resolve()): "x = 1\n"})
+        parser = AstParser(reader=reader)
+        violation = Violation(
+            file=test_file.resolve(),
+            line=1,
+            column=0,
+            rule_id="rule-a",
+            rule_name="Rule A",
+            message="violation",
+            reason="reason",
+            suggestion="suggestion",
+        )
+        rule_a = FakeRule(rule_id="rule-a", violations=(violation,))
+        rule_b = FakeRule(rule_id="rule-b", violations=())
+        rule_set = RuleSet(rules=(rule_a, rule_b))
+        orchestrator = CheckOrchestrator(
+            collector=FileCollector(),
+            parser=parser,
+            rule_set=rule_set,
+            formatter=CheckFormatterFactory(),
+            violation_filter=ViolationFilter(),
+            rule_filter=RuleFilter(),
+            path_excluder=PathExcluder(),
+            override_resolver=OverrideResolver(),
+        )
+        override = OverrideEntry(files=("tests/**",), rules={"rule-a": True})
+        context = CheckContext(
+            targets=(tmp_path,),
+            select_rules=frozenset({"rule-b"}),
+            overrides=(override,),
+        )
+
+        # Act
+        result = orchestrator.orchestrate(context)
+
+        # Assert: select_rules により rule-a がスキップ → 違反なし
+        assert isinstance(result, CheckReport)
+        assert result.exit_code == 0

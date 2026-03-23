@@ -84,7 +84,7 @@ class CheckOrchestrator:
         target_files = self.path_excluder.exclude(target_files, context.exclude)
         source_files = self.parser.parse_all(target_files)
         base_disabled = self.rule_filter.resolve_disabled_rules(
-            context.rules, self.rule_set.rule_ids
+            context.rules, self.rule_set.rule_ids, context.select_rules
         )
         per_file_disabled = self._resolve_per_file_disabled(context, source_files, base_disabled)
         violations = self.rule_set.run(
@@ -120,7 +120,7 @@ class CheckOrchestrator:
                 context.overrides, sf.file_path, context.rules
             )
             file_disabled = self.rule_filter.resolve_disabled_rules(
-                merged_rules, self.rule_set.rule_ids
+                merged_rules, self.rule_set.rule_ids, context.select_rules
             )
             if file_disabled != base_disabled:
                 per_file_disabled[sf.file_path] = file_disabled

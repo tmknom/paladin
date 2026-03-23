@@ -62,3 +62,17 @@ class TestCheckContext:
 
         # Assert
         assert context.overrides == ()
+
+    def test_init_正常系_select_rulesを保持できること(self):
+        # Arrange & Act
+        context = CheckContext(targets=(Path("src/"),), select_rules=frozenset({"PAL001"}))
+
+        # Assert
+        assert context.select_rules == frozenset({"PAL001"})
+
+    def test_init_エッジケース_select_rulesのデフォルトが空frozensetであること(self):
+        # Arrange & Act
+        context = CheckContext(targets=(Path("src/"),))
+
+        # Assert
+        assert context.select_rules == frozenset()

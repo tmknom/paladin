@@ -69,6 +69,97 @@ class TestRuleFilter:
         # Assert
         assert result == frozenset({"no-relative-import", "require-all-export"})
 
+    def test_resolve_disabled_rules_正常系_select_rulesで指定されたルールのみ有効になること(self):
+        # Arrange
+        rules: dict[str, bool] = {}
+        known_rule_ids = frozenset({"rule-a", "rule-b"})
+        rule_filter = RuleFilter()
+
+        # Act
+        result = rule_filter.resolve_disabled_rules(
+            rules, known_rule_ids, select_rules=frozenset({"rule-a"})
+        )
+
+        # Assert: rule-b が disabled に含まれる
+        assert "rule-b" in result
+        assert "rule-a" not in result
+
+    def test_resolve_disabled_rules_正常系_select_rulesが空の場合既存動作と同じこと(self):
+        # Arrange
+        rules = {"rule-a": False}
+        known_rule_ids = frozenset({"rule-a", "rule-b"})
+        rule_filter = RuleFilter()
+
+        # Act
+        result = rule_filter.resolve_disabled_rules(rules, known_rule_ids, select_rules=frozenset())
+
+        # Assert: select_rules 未指定と同等。rules dict のみで disabled が解決される
+        assert result == frozenset({"rule-a"})
+
+    def test_resolve_disabled_rules_正常系_select_rulesとrules_falseの両方が適用されること(self):
+        # Arrange: rule-b は select_rules に含まれるが rules で False → disabled
+        rules = {"rule-b": False}
+        known_rule_ids = frozenset({"rule-a", "rule-b"})
+        rule_filter = RuleFilter()
+
+        # Act
+        result = rule_filter.resolve_disabled_rules(
+            rules, known_rule_ids, select_rules=frozenset({"rule-a", "rule-b"})
+        )
+
+        # Assert: AND 条件。rule-b が rules:false で disabled
+        assert "rule-b" in result
+        assert "rule-a" not in result
+
+    def test_resolve_disabled_rules_エッジケース_select_rulesに存在しないルールIDで警告を出力すること(
+        self, caplog: pytest.LogCaptureFixture
+    ):
+        # Arrange
+        rules: dict[str, bool] = {}
+        known_rule_ids = frozenset({"rule-a"})
+        rule_filter = RuleFilter()
+
+        # Act
+        with caplog.at_level("WARNING"):
+            rule_filter.resolve_disabled_rules(
+                rules, known_rule_ids, select_rules=frozenset({"unknown-rule"})
+            )
+
+        # Assert: 未知ルールID の警告が出力される
+        assert "unknown-rule" in caplog.text
+
+    def test_resolve_disabled_rules_エッジケース_select_rulesで全ルールを指定した場合disabledが空であること(
+        self,
+    ):
+        # Arrange
+        rules: dict[str, bool] = {}
+        known_rule_ids = frozenset({"rule-a", "rule-b"})
+        rule_filter = RuleFilter()
+
+        # Act
+        result = rule_filter.resolve_disabled_rules(
+            rules, known_rule_ids, select_rules=frozenset({"rule-a", "rule-b"})
+        )
+
+        # Assert: 全ルールが select_rules に含まれるため disabled は空
+        assert result == frozenset()
+
+    def test_resolve_disabled_rules_エッジケース_select_rulesに存在しないルールのみ指定した場合全ルールが無効になること(
+        self,
+    ):
+        # Arrange: select_rules に unknown のみ指定 → known_rule_ids の全ルールが disabled
+        rules: dict[str, bool] = {}
+        known_rule_ids = frozenset({"rule-a"})
+        rule_filter = RuleFilter()
+
+        # Act
+        result = rule_filter.resolve_disabled_rules(
+            rules, known_rule_ids, select_rules=frozenset({"unknown"})
+        )
+
+        # Assert: rule-a が disabled に含まれる
+        assert "rule-a" in result
+
     def test_filter_正常系_disabled_rule_idsに該当するルールを除外すること(self):
         # Arrange
         rule_a = FakeRule(rule_id="rule-a")

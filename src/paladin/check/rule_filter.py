@@ -17,16 +17,35 @@ class RuleFilter:
         self,
         rules: dict[str, bool],
         known_rule_ids: frozenset[str],
+        select_rules: frozenset[str] = frozenset(),
     ) -> frozenset[str]:
         """設定ファイルの rules から無効ルール ID を解決する
 
         Args:
             rules: ルール ID をキー、有効/無効を値とする dict
             known_rule_ids: 既知のルール ID セット
+            select_rules: 適用を限定するルールID群（空の場合は全ルール適用）
 
         Returns:
             無効化されたルール ID の frozenset。未知のルール ID は警告して除外する
         """
+        disabled: set[str] = set()
+        disabled.update(self._resolve_select_disabled(select_rules, known_rule_ids))
+        disabled.update(self._resolve_rules_disabled(rules, known_rule_ids))
+        return frozenset(disabled)
+
+    def _resolve_select_disabled(
+        self, select_rules: frozenset[str], known_rule_ids: frozenset[str]
+    ) -> frozenset[str]:
+        if not select_rules:
+            return frozenset()
+        for rule_id in select_rules - known_rule_ids:
+            logger.warning("Unknown rule ID in --rule: %s", rule_id)
+        return known_rule_ids - select_rules
+
+    def _resolve_rules_disabled(
+        self, rules: dict[str, bool], known_rule_ids: frozenset[str]
+    ) -> frozenset[str]:
         disabled: set[str] = set()
         for rule_id, enabled in rules.items():
             if enabled:
