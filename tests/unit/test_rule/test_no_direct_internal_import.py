@@ -264,18 +264,6 @@ class TestNoDirectInternalImportRuleEdgeCases:
 
         assert len(result) == 0
 
-    def test_check_エッジケース_ファイル名がtestsの場合でも違反を検出すること(self):
-        # Arrange: file_path.parts の末尾が "tests"（拡張子なし）の場合
-        # file_path.parts に "tests" が含まれる（L180 を通過）が、
-        # dir_parts（ファイル名除く）には "tests" がなく tests_index < 0（L195 到達）
-        source = "from paladin.rule.types import SourceFile\n"
-        source_files = make_source_files((source, "src/paladin/check/tests"))
-        rule = _rule(("paladin",))
-
-        result = rule.check(source_files)
-
-        assert len(result) == 1
-
     def test_check_エッジケース_moduleがNoneのImportFromノードを無視すること(self):
         # Arrange: level=0, module=None の ImportFrom は通常の ast.parse では生成されない
         # ガード節（L259）のカバレッジを確保するため AST を直接構築する
@@ -335,34 +323,6 @@ class TestNoDirectInternalImportRuleTestFiles:
         result = rule.check(source_files)
 
         assert len(result) == 1
-
-    def test_check_正常系_絶対パスのテストファイルも対応パッケージを同一視すること(self):
-        # Arrange: 絶対パス tests/unit/test_transform/test_transformer.py
-        # test_transform → paladin.transform として同一視
-        source = "from paladin.transform.types import TransformedDatetime\n"
-        source_files = make_source_files(
-            (source, "/Users/owner/code/paladin/tests/unit/test_transform/test_transformer.py"),
-        )
-        rule = _rule(("paladin",))
-
-        result = rule.check(source_files)
-
-        assert len(result) == 0
-
-    def test_check_正常系_テストファイルが複数のroot_packagesに対して対応パッケージを同一視すること(
-        self,
-    ):
-        # Arrange: root_packages=("myapp", "tests") のとき
-        # tests/unit/test_view/test_provider.py → myapp.view も同一視
-        source = "from myapp.view.formatter import ViewFormatter\n"
-        source_files = make_source_files(
-            (source, "tests/unit/test_view/test_provider.py"),
-        )
-        rule = _rule(("myapp", "tests"))
-
-        result = rule.check(source_files)
-
-        assert len(result) == 0
 
 
 class TestNoDirectInternalImportRuleAbsolutePath:

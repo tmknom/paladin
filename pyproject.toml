@@ -64,7 +64,7 @@ allow-dirs = ["src/paladin/foundation/", "src/paladin/protocol/", "src/paladin/r
 max-test-lines = 1130
 
 [tool.paladin.rule.max-class-length]
-max-lines = 225
+max-lines = 215
 max-test-lines = 650
 
 [tool.ruff]

@@ -5,9 +5,9 @@
 
 import ast
 import sys
-from pathlib import Path
 
 from paladin.rule.import_statement import ImportStatement, ModulePath
+from paladin.rule.own_package_resolver import OwnPackageResolver
 from paladin.rule.package_resolver import PackageResolver
 from paladin.rule.types import RuleMeta, SourceFile, SourceFiles, Violation
 
@@ -23,6 +23,7 @@ class NoCrossPackageImportRule:
         """
         self._allow_dirs = tuple(d if d.endswith("/") else d + "/" for d in allow_dirs)
         self._resolver = PackageResolver()
+        self._own_package_resolver = OwnPackageResolver()
         self._root_packages: tuple[str, ...] = ()
         self._stdlib_modules: frozenset[str] = sys.stdlib_module_names
         self._meta = RuleMeta(
@@ -48,7 +49,9 @@ class NoCrossPackageImportRule:
         if self._is_entrypoint(source_file):
             return ()
 
-        own_packages = self._resolve_own_packages(source_file.file_path)
+        own_packages = self._own_package_resolver.resolve(
+            source_file.file_path, self._root_packages
+        )
         if not own_packages:
             return ()
         violations: list[Violation] = []
@@ -67,53 +70,6 @@ class NoCrossPackageImportRule:
             if isinstance(node, ast.FunctionDef) and node.name == "main":
                 return True
         return False
-
-    def _resolve_own_packages(self, file_path: Path) -> frozenset[str]:
-        """ファイルが属する「自パッケージ」のセットを返す
-
-        通常は resolve_package_key の結果のみ。
-        テストファイル（tests/ 配下の test_xxx/test_yyy.py）の場合は、
-        対応するプロダクションパッケージも同一視する。
-
-        例: tests/unit/test_view/test_provider.py
-              -> {"tests.unit", "paladin.view"}  # resolve_package_key + "test_" 除去で対応パッケージを算出
-        """
-        package_key = self._resolver.resolve_package_key(file_path)
-        own: set[str] = set()
-        if package_key is not None:
-            own.add(package_key)
-
-        # tests/ 配下かどうかを判定する
-        if "tests" not in file_path.parts:
-            return frozenset(own)
-
-        # tests/ 以降のパス部分から対応プロダクションパッケージを算出する
-        # tests/unit/test_view/test_provider.py
-        #   -> tests アンカー以降: ["unit", "test_view"]
-        #   -> "test_" を除いた最後のディレクトリ名: "view"
-        #   -> root_packages の先頭 + "view" = "paladin.view"
-        dir_parts = file_path.parts[:-1]
-        tests_index = -1
-        for i, p in enumerate(dir_parts):
-            if p == "tests":
-                tests_index = i
-
-        if tests_index < 0:
-            return frozenset(own)
-
-        after_tests = list(dir_parts[tests_index + 1 :])
-        # "test_" プレフィックスを持つディレクトリのみを順番に抽出して連結する
-        # tests/unit/test_foundation/test_error/ → ["foundation", "error"]
-        #   → "foundation.error" → "paladin.foundation.error"
-        test_dirs = [p[len("test_") :] for p in after_tests if p.startswith("test_")]
-        if not test_dirs:
-            return frozenset(own)
-
-        production_subpkg = ".".join(test_dirs)
-        for root_pkg in self._root_packages:
-            own.add(f"{root_pkg}.{production_subpkg}")
-
-        return frozenset(own)
 
     def _check_from_import(
         self,
