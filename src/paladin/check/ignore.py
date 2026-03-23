@@ -55,27 +55,11 @@ class FileIgnoreParser:
         docstring_quote = ""
 
         while i < len(lines):
-            line = lines[i]
-            stripped = line.strip()
+            stripped = lines[i].strip()
 
             # docstring 内をスキップ
             if in_docstring:
-                in_docstring = docstring_quote not in line
-                i += 1
-                continue
-
-            # 空行をスキップ
-            if stripped == "":
-                i += 1
-                continue
-
-            # shebang 行をスキップ
-            if self._SHEBANG_PATTERN.match(stripped):
-                i += 1
-                continue
-
-            # エンコーディング宣言をスキップ
-            if self._ENCODING_PATTERN.search(stripped):
+                in_docstring = docstring_quote not in lines[i]
                 i += 1
                 continue
 
@@ -91,8 +75,8 @@ class FileIgnoreParser:
             if directive is not None:
                 return directive
 
-            # 通常コメント行（# paladin: ではない）をスキップ
-            if stripped.startswith("#"):
+            # ヘッダースキップ対象行（空行・shebang・エンコーディング・通常コメント）
+            if self._is_header_skip_line(stripped):
                 i += 1
                 continue
 
@@ -104,6 +88,16 @@ class FileIgnoreParser:
             ignore_all=False,
             ignored_rules=frozenset(),
         )
+
+    def _is_header_skip_line(self, stripped: str) -> bool:
+        """ヘッダー領域でスキップすべき行かどうかを返す"""
+        if stripped == "":
+            return True
+        if self._SHEBANG_PATTERN.match(stripped):
+            return True
+        if self._ENCODING_PATTERN.search(stripped):
+            return True
+        return bool(stripped.startswith("#"))
 
     def _parse_directive(self, file_path: Path, stripped: str) -> FileIgnoreDirective | None:
         """行テキストから ignore-file ディレクティブを解析する。該当しない場合は None を返す"""

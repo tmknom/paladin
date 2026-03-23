@@ -8,9 +8,25 @@ _DEFAULT_MAX_LINES = 50
 _DEFAULT_MAX_TEST_LINES = 100
 
 
+def _calc_docstring_lines(node: ast.FunctionDef | ast.AsyncFunctionDef) -> int:
+    """関数/メソッドの docstring の行数を返す。docstring がない場合は 0 を返す"""
+    if not node.body:  # pragma: no cover
+        return 0
+    first = node.body[0]
+    if not isinstance(first, ast.Expr):
+        return 0
+    if not isinstance(first.value, ast.Constant) or not isinstance(first.value.value, str):
+        return 0
+    end: int = first.end_lineno  # type: ignore[assignment]
+    start: int = first.lineno  # type: ignore[assignment]
+    return end - start + 1
+
+
 def _calc_length(func_node: ast.FunctionDef | ast.AsyncFunctionDef) -> int:
-    """関数/メソッドの行数を返す（def 行からメソッド本体の最終行まで）"""
-    return func_node.end_lineno - func_node.lineno + 1  # type: ignore[operator]
+    """関数/メソッドの行数を返す（def 行からメソッド本体の最終行まで、docstring 除外）"""
+    assert func_node.end_lineno is not None
+    total = func_node.end_lineno - func_node.lineno + 1
+    return total - _calc_docstring_lines(func_node)
 
 
 class MaxMethodLengthRule:

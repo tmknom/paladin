@@ -8,9 +8,25 @@ _DEFAULT_MAX_LINES = 200
 _DEFAULT_MAX_TEST_LINES = 400
 
 
+def _calc_class_docstring_lines(class_node: ast.ClassDef) -> int:
+    """クラスの docstring の行数を返す。docstring がない場合は 0 を返す"""
+    if not class_node.body:  # pragma: no cover
+        return 0
+    first = class_node.body[0]
+    if not isinstance(first, ast.Expr):
+        return 0
+    if not isinstance(first.value, ast.Constant) or not isinstance(first.value.value, str):
+        return 0
+    end: int = first.end_lineno  # type: ignore[assignment]
+    start: int = first.lineno  # type: ignore[assignment]
+    return end - start + 1
+
+
 def _calc_class_length(class_node: ast.ClassDef) -> int:
-    """クラスの行数を返す（class 行からクラス本体の最終行まで）"""
-    return class_node.end_lineno - class_node.lineno + 1  # type: ignore[operator]
+    """クラスの行数を返す（class 行からクラス本体の最終行まで、docstring 除外）"""
+    assert class_node.end_lineno is not None
+    total = class_node.end_lineno - class_node.lineno + 1
+    return total - _calc_class_docstring_lines(class_node)
 
 
 class MaxClassLengthRule:
