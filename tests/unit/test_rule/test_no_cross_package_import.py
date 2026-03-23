@@ -1,16 +1,8 @@
-import ast
 from pathlib import Path
 
 from paladin.rule.no_cross_package_import import NoCrossPackageImportRule
-from paladin.rule.types import RuleMeta, SourceFile, SourceFiles
-
-
-def _make_source_file(source: str, filename: str = "src/myapp/view/handler.py") -> SourceFile:
-    return SourceFile(file_path=Path(filename), tree=ast.parse(source), source=source)
-
-
-def _make_source_files(*pairs: tuple[str, str]) -> SourceFiles:
-    return SourceFiles(files=tuple(_make_source_file(src, name) for src, name in pairs))
+from paladin.rule.types import RuleMeta, SourceFiles
+from tests.unit.test_rule.helpers import make_source_files
 
 
 def _rule_with_prepare(
@@ -48,7 +40,7 @@ class TestNoCrossPackageImportRuleAllowDirs:
 
     def test_check_正常系_allow_dirs未設定の場合は全ファイルで違反を検出すること(self):
         # Arrange
-        source_files = _make_source_files(
+        source_files = make_source_files(
             ("from myapp.check import OutputFormat\n", "src/myapp/view/handler.py"),
             ("x = 1\n", "src/myapp/check/__init__.py"),
             ("x = 1\n", "src/myapp/view/__init__.py"),
@@ -68,7 +60,7 @@ class TestNoCrossPackageImportRuleEntryPoint:
     def test_check_正常系_エントリーポイントファイルは違反を報告しないこと(self):
         # Arrange: トップレベルに def main() がある
         source = "from myapp.check import OutputFormat\n\ndef main():\n    pass\n"
-        source_files = _make_source_files(
+        source_files = make_source_files(
             (source, "src/myapp/main.py"),
             ("x = 1\n", "src/myapp/check/__init__.py"),
         )
@@ -85,7 +77,7 @@ class TestNoCrossPackageImportRuleEntryPoint:
     ):
         # Arrange: def helper() のみ（def main() はない）
         source = "from myapp.check import OutputFormat\n\ndef helper():\n    pass\n"
-        source_files = _make_source_files(
+        source_files = make_source_files(
             (source, "src/myapp/view/handler.py"),
             ("x = 1\n", "src/myapp/check/__init__.py"),
             ("x = 1\n", "src/myapp/view/__init__.py"),
@@ -104,7 +96,7 @@ class TestNoCrossPackageImportRuleViolation:
 
     def test_check_正常系_allow_dirs外のパッケージからのfrom_importで違反を返すこと(self):
         # Arrange: myapp.view が myapp.check をインポート（check は allow-dirs 外）
-        source_files = _make_source_files(
+        source_files = make_source_files(
             ("from myapp.check import OutputFormat\n", "src/myapp/view/handler.py"),
             ("x = 1\n", "src/myapp/check/__init__.py"),
             ("x = 1\n", "src/myapp/view/__init__.py"),
@@ -119,7 +111,7 @@ class TestNoCrossPackageImportRuleViolation:
 
     def test_check_正常系_allow_dirs外のパッケージからのplain_importで違反を返すこと(self):
         # Arrange: import myapp.check.context は allow-dirs 外
-        source_files = _make_source_files(
+        source_files = make_source_files(
             ("import myapp.check.context\n", "src/myapp/view/handler.py"),
             ("x = 1\n", "src/myapp/check/__init__.py"),
             ("x = 1\n", "src/myapp/view/__init__.py"),
@@ -134,7 +126,7 @@ class TestNoCrossPackageImportRuleViolation:
 
     def test_check_正常系_違反フィールド値が正しいこと_from_import(self):
         # Arrange
-        source_files = _make_source_files(
+        source_files = make_source_files(
             ("from myapp.check import OutputFormat\n", "src/myapp/view/handler.py"),
             ("x = 1\n", "src/myapp/check/__init__.py"),
             ("x = 1\n", "src/myapp/view/__init__.py"),
@@ -157,7 +149,7 @@ class TestNoCrossPackageImportRuleViolation:
 
     def test_check_正常系_違反フィールド値が正しいこと_plain_import(self):
         # Arrange
-        source_files = _make_source_files(
+        source_files = make_source_files(
             ("import myapp.check.context\n", "src/myapp/view/handler.py"),
             ("x = 1\n", "src/myapp/check/__init__.py"),
             ("x = 1\n", "src/myapp/view/__init__.py"),
@@ -178,7 +170,7 @@ class TestNoCrossPackageImportRuleViolation:
 
     def test_check_正常系_from_importで複数名をインポートした場合に名前ごとに違反を返すこと(self):
         # Arrange: from myapp.check import A, B で2件
-        source_files = _make_source_files(
+        source_files = make_source_files(
             ("from myapp.check import OutputFormat, CheckContext\n", "src/myapp/view/handler.py"),
             ("x = 1\n", "src/myapp/check/__init__.py"),
             ("x = 1\n", "src/myapp/view/__init__.py"),
@@ -197,7 +189,7 @@ class TestNoCrossPackageImportRuleExclusions:
 
     def test_check_正常系_同一パッケージ内のインポートは違反なしを返すこと(self):
         # Arrange: myapp.check.orchestrator から myapp.check.formatter へのインポート
-        source_files = _make_source_files(
+        source_files = make_source_files(
             (
                 "from myapp.check.formatter import CheckFormatterFactory\n",
                 "src/myapp/check/orchestrator.py",
@@ -214,7 +206,7 @@ class TestNoCrossPackageImportRuleExclusions:
 
     def test_check_正常系_相対インポートは違反なしを返すこと(self):
         # Arrange
-        source_files = _make_source_files(
+        source_files = make_source_files(
             ("from . import utils\n", "src/myapp/view/handler.py"),
             ("x = 1\n", "src/myapp/view/__init__.py"),
         )
@@ -228,7 +220,7 @@ class TestNoCrossPackageImportRuleExclusions:
 
     def test_check_正常系_標準ライブラリのインポートは違反なしを返すこと(self):
         # Arrange
-        source_files = _make_source_files(
+        source_files = make_source_files(
             ("import os\n", "src/myapp/view/handler.py"),
             ("x = 1\n", "src/myapp/view/__init__.py"),
         )
@@ -242,7 +234,7 @@ class TestNoCrossPackageImportRuleExclusions:
 
     def test_check_正常系_ルートパッケージに属さないインポートは違反なしを返すこと(self):
         # Arrange: requests はサードパーティ（ルートパッケージ外）
-        source_files = _make_source_files(
+        source_files = make_source_files(
             ("import requests\n", "src/myapp/view/handler.py"),
             ("x = 1\n", "src/myapp/view/__init__.py"),
         )
@@ -256,7 +248,7 @@ class TestNoCrossPackageImportRuleExclusions:
 
     def test_check_正常系_allow_dirsに含まれるパッケージからのインポートは違反なしを返すこと(self):
         # Arrange: myapp.rule は allow-dirs に含まれる
-        source_files = _make_source_files(
+        source_files = make_source_files(
             ("from myapp.rule import RuleMeta\n", "src/myapp/view/handler.py"),
             ("x = 1\n", "src/myapp/rule/__init__.py"),
             ("x = 1\n", "src/myapp/view/__init__.py"),
@@ -275,7 +267,7 @@ class TestNoCrossPackageImportRuleAllowDirNormalization:
 
     def test_check_正常系_末尾スラッシュなしのallow_dirsが正規化されて機能すること(self):
         # Arrange: 末尾スラッシュなしで指定
-        source_files = _make_source_files(
+        source_files = make_source_files(
             ("from myapp.rule import RuleMeta\n", "src/myapp/view/handler.py"),
             ("x = 1\n", "src/myapp/rule/__init__.py"),
             ("x = 1\n", "src/myapp/view/__init__.py"),
@@ -290,7 +282,7 @@ class TestNoCrossPackageImportRuleAllowDirNormalization:
 
     def test_check_正常系_複数のallow_dirsが機能すること(self):
         # Arrange: 2つの許可ディレクトリのうち1つに一致すれば許可
-        source_files = _make_source_files(
+        source_files = make_source_files(
             ("from myapp.rule import RuleMeta\n", "src/myapp/view/handler.py"),
             ("x = 1\n", "src/myapp/rule/__init__.py"),
             ("x = 1\n", "src/myapp/view/__init__.py"),
@@ -312,7 +304,7 @@ class TestNoCrossPackageImportRuleTestFileMapping:
     ):
         # Arrange: tests/unit/test_check/test_orchestrator.py から paladin.check.formatter をインポート
         # → テストファイルは paladin.check と同一視されるため違反なし
-        source_files = _make_source_files(
+        source_files = make_source_files(
             (
                 "from myapp.check.formatter import CheckFormatterFactory\n",
                 "tests/unit/test_check/test_orchestrator.py",
@@ -330,7 +322,7 @@ class TestNoCrossPackageImportRuleTestFileMapping:
     def test_check_正常系_テストファイルから異なるパッケージのインポートは違反を返すこと(self):
         # Arrange: tests/unit/test_check/test_orchestrator.py から myapp.view.formatter をインポート
         # → テストファイルは myapp.check と同一視されるが myapp.view は別パッケージのため違反
-        source_files = _make_source_files(
+        source_files = make_source_files(
             (
                 "from myapp.view.formatter import ViewFormatter\n",
                 "tests/unit/test_check/test_orchestrator.py",
@@ -352,7 +344,7 @@ class TestNoCrossPackageImportRuleEdgeCases:
 
     def test_check_エッジケース_空ファイルは空タプルを返すこと(self):
         # Arrange
-        source_files = _make_source_files(
+        source_files = make_source_files(
             ("", "src/myapp/view/handler.py"),
             ("x = 1\n", "src/myapp/view/__init__.py"),
         )
@@ -366,7 +358,7 @@ class TestNoCrossPackageImportRuleEdgeCases:
 
     def test_check_エッジケース_importなしのファイルは空タプルを返すこと(self):
         # Arrange
-        source_files = _make_source_files(
+        source_files = make_source_files(
             ("x = 1\n", "src/myapp/view/handler.py"),
             ("x = 1\n", "src/myapp/view/__init__.py"),
         )
@@ -380,7 +372,7 @@ class TestNoCrossPackageImportRuleEdgeCases:
 
     def test_check_エッジケース_1セグメントのimportは違反なしを返すこと(self):
         # Arrange: import myapp はパッケージキーの比較ができないため対象外
-        source_files = _make_source_files(
+        source_files = make_source_files(
             ("import myapp\n", "src/myapp/view/handler.py"),
             ("x = 1\n", "src/myapp/__init__.py"),
             ("x = 1\n", "src/myapp/view/__init__.py"),
@@ -396,7 +388,7 @@ class TestNoCrossPackageImportRuleEdgeCases:
     def test_check_エッジケース_ファイル名がtestsの場合は通常のパッケージキー判定を返すこと(self):
         # Arrange: file_path.parts に "tests"（ファイル名）が含まれるが dir_parts には含まれない
         # → _resolve_own_packages の tests_index < 0 分岐（102行目）を通過する
-        source_files = _make_source_files(
+        source_files = make_source_files(
             ("from myapp.check import OutputFormat\n", "src/myapp/view/tests"),
             ("x = 1\n", "src/myapp/check/__init__.py"),
             ("x = 1\n", "src/myapp/view/__init__.py"),
@@ -411,7 +403,7 @@ class TestNoCrossPackageImportRuleEdgeCases:
 
     def test_check_エッジケース_パッケージキーを解決できないファイルは空タプルを返すこと(self):
         # Arrange: 1セグメントのパス（src/ 直下のファイル）は package_key を解決できない
-        source_files = _make_source_files(
+        source_files = make_source_files(
             ("from myapp.check import OutputFormat\n", "handler.py"),
             ("x = 1\n", "src/myapp/check/__init__.py"),
         )

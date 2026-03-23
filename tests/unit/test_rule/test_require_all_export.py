@@ -3,10 +3,7 @@ from pathlib import Path
 
 from paladin.rule.require_all_export import RequireAllExportRule
 from paladin.rule.types import RuleMeta, SourceFile
-
-
-def _make_source_file(source: str, filename: str = "__init__.py") -> SourceFile:
-    return SourceFile(file_path=Path(filename), tree=ast.parse(source), source=source)
+from tests.unit.test_rule.helpers import make_source_file
 
 
 class TestRequireAllExportRuleCheck:
@@ -15,7 +12,7 @@ class TestRequireAllExportRuleCheck:
     def test_check_正常系_init_py以外のファイルは空タプルを返すこと(self):
         # Arrange
         rule = RequireAllExportRule()
-        source_file = _make_source_file("x = 1\n", "main.py")
+        source_file = make_source_file("x = 1\n", "main.py")
 
         # Act
         result = rule.check(source_file)
@@ -26,7 +23,7 @@ class TestRequireAllExportRuleCheck:
     def test_check_エッジケース_空のinit_pyは違反なしを返すこと(self):
         # Arrange
         rule = RequireAllExportRule()
-        source_file = _make_source_file("", "__init__.py")
+        source_file = make_source_file("", "__init__.py")
 
         # Act
         result = rule.check(source_file)
@@ -37,7 +34,7 @@ class TestRequireAllExportRuleCheck:
     def test_check_エッジケース_コメントのみのinit_pyは違反なしを返すこと(self):
         # Arrange
         rule = RequireAllExportRule()
-        source_file = _make_source_file("# namespace package\n", "__init__.py")
+        source_file = make_source_file("# namespace package\n", "__init__.py")
 
         # Act
         result = rule.check(source_file)
@@ -48,7 +45,7 @@ class TestRequireAllExportRuleCheck:
     def test_check_エッジケース_docstringのみのinit_pyは違反なしを返すこと(self):
         # Arrange
         rule = RequireAllExportRule()
-        source_file = _make_source_file('"""Package."""\n', "__init__.py")
+        source_file = make_source_file('"""Package."""\n', "__init__.py")
 
         # Act
         result = rule.check(source_file)
@@ -59,7 +56,7 @@ class TestRequireAllExportRuleCheck:
     def test_check_正常系_all未定義のinit_pyで違反を1件返すこと(self):
         # Arrange
         rule = RequireAllExportRule()
-        source_file = _make_source_file("from foo import bar\n", "__init__.py")
+        source_file = make_source_file("from foo import bar\n", "__init__.py")
 
         # Act
         result = rule.check(source_file)
@@ -70,7 +67,7 @@ class TestRequireAllExportRuleCheck:
     def test_check_正常系_違反のフィールド値が正しいこと(self):
         # Arrange
         rule = RequireAllExportRule()
-        source_file = _make_source_file("from foo import bar\n", "__init__.py")
+        source_file = make_source_file("from foo import bar\n", "__init__.py")
 
         # Act
         result = rule.check(source_file)
@@ -88,7 +85,7 @@ class TestRequireAllExportRuleCheck:
         # Arrange
         rule = RequireAllExportRule()
         source = '__all__ = ["Foo"]\nfrom foo import Foo\n'
-        source_file = _make_source_file(source, "__init__.py")
+        source_file = make_source_file(source, "__init__.py")
 
         # Act
         result = rule.check(source_file)
@@ -100,7 +97,7 @@ class TestRequireAllExportRuleCheck:
         # Arrange
         rule = RequireAllExportRule()
         source = '__all__ = ["Foo", "Bar"]\n'
-        source_file = _make_source_file(source, "__init__.py")
+        source_file = make_source_file(source, "__init__.py")
 
         # Act
         result = rule.check(source_file)
@@ -134,7 +131,7 @@ class TestRequireAllExportRuleCheck:
         # Arrange
         rule = RequireAllExportRule()
         source = "from .module import Foo, Bar\n"
-        source_file = _make_source_file(source, "__init__.py")
+        source_file = make_source_file(source, "__init__.py")
 
         # Act
         result = rule.check(source_file)
@@ -148,7 +145,7 @@ class TestRequireAllExportRuleCheck:
         # Arrange
         rule = RequireAllExportRule()
         source = "class MyClass:\n    pass\n\ndef my_func():\n    pass\n"
-        source_file = _make_source_file(source, "__init__.py")
+        source_file = make_source_file(source, "__init__.py")
 
         # Act
         result = rule.check(source_file)
@@ -162,7 +159,7 @@ class TestRequireAllExportRuleCheck:
         # Arrange
         rule = RequireAllExportRule()
         source = "from .module import _Private, Public\n"
-        source_file = _make_source_file(source, "__init__.py")
+        source_file = make_source_file(source, "__init__.py")
 
         # Act
         result = rule.check(source_file)

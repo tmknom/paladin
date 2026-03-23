@@ -5,14 +5,7 @@ from pathlib import Path
 
 from paladin.rule.no_unused_export import NoUnusedExportRule
 from paladin.rule.types import RuleMeta, SourceFile, SourceFiles
-
-
-def _make_source_file(source: str, filename: str = "example.py") -> SourceFile:
-    return SourceFile(file_path=Path(filename), tree=ast.parse(source), source=source)
-
-
-def _make_source_files(*files: tuple[str, str]) -> SourceFiles:
-    return SourceFiles(files=tuple(_make_source_file(src, name) for src, name in files))
+from tests.unit.test_rule.helpers import make_source_files
 
 
 def _rule(root_packages: tuple[str, ...] = ("paladin",)) -> NoUnusedExportRule:
@@ -60,7 +53,7 @@ class TestNoUnusedExportRulePrepare:
         # prepare() 後に check() でシンボルが検出されれば root_packages が設定されている
         init_source = '__all__ = ["Foo"]\n'
         stub_source = "x = 1\n"
-        source_files = _make_source_files(
+        source_files = make_source_files(
             (init_source, "src/paladin/check/__init__.py"),
             (stub_source, "src/paladin/module.py"),  # paladin を自動導出するため
         )
@@ -80,7 +73,7 @@ class TestNoUnusedExportRulePrepare:
     def test_check_エッジケース_root_packagesが空の場合は何も検出しないこと(self):
         # prepare() を呼ばずに check() を呼び出すと早期リターン
         init_source = '__all__ = ["Foo"]\n'
-        source_files = _make_source_files((init_source, "src/paladin/check/__init__.py"))
+        source_files = make_source_files((init_source, "src/paladin/check/__init__.py"))
         rule = NoUnusedExportRule()
 
         result = rule.check(source_files)
@@ -96,7 +89,7 @@ class TestNoUnusedExportRuleCheck:
     ):
         # Arrange: src/paladin/check/__init__.py に __all__ = ["Foo"]、別パッケージからの利用なし
         init_source = '__all__ = ["Foo"]\n'
-        source_files = _make_source_files((init_source, "src/paladin/check/__init__.py"))
+        source_files = make_source_files((init_source, "src/paladin/check/__init__.py"))
         rule = _rule(("paladin",))
 
         result = rule.check(source_files)
@@ -107,7 +100,7 @@ class TestNoUnusedExportRuleCheck:
     def test_check_正常系_init_py以外のファイルのallは対象外であること(self):
         # Arrange: src/paladin/check/module.py に __all__ = ["Foo"] があっても対象外
         source = '__all__ = ["Foo"]\n'
-        source_files = _make_source_files((source, "src/paladin/check/module.py"))
+        source_files = make_source_files((source, "src/paladin/check/module.py"))
         rule = _rule(("paladin",))
 
         result = rule.check(source_files)
@@ -117,7 +110,7 @@ class TestNoUnusedExportRuleCheck:
     def test_check_正常系_allが未定義の場合は空タプルを返すこと(self):
         # Arrange: __init__.py に __all__ がない
         source = "x = 1\n"
-        source_files = _make_source_files((source, "src/paladin/check/__init__.py"))
+        source_files = make_source_files((source, "src/paladin/check/__init__.py"))
         rule = _rule(("paladin",))
 
         result = rule.check(source_files)
@@ -133,7 +126,7 @@ class TestNoUnusedExportRuleCheck:
         # Arrange: paladin.check の CheckOrchestrator が cli.py（別パッケージ）で利用されている
         init_source = '__all__ = ["CheckOrchestrator"]\n'
         cli_source = "from paladin.check import CheckOrchestrator\n"
-        source_files = _make_source_files(
+        source_files = make_source_files(
             (init_source, "src/paladin/check/__init__.py"),
             (cli_source, "src/paladin/cli.py"),
         )
@@ -147,7 +140,7 @@ class TestNoUnusedExportRuleCheck:
         # Arrange: paladin.check.bar から paladin.check の Foo を利用しても違反
         init_source = '__all__ = ["Foo"]\n'
         bar_source = "from paladin.check import Foo\n"
-        source_files = _make_source_files(
+        source_files = make_source_files(
             (init_source, "src/paladin/check/__init__.py"),
             (bar_source, "src/paladin/check/bar.py"),
         )
@@ -161,7 +154,7 @@ class TestNoUnusedExportRuleCheck:
         # Arrange: Used は利用されているが Unused は利用されていない
         init_source = '__all__ = ["Used", "Unused"]\n'
         cli_source = "from paladin.check import Used\n"
-        source_files = _make_source_files(
+        source_files = make_source_files(
             (init_source, "src/paladin/check/__init__.py"),
             (cli_source, "src/paladin/cli.py"),
         )
@@ -177,7 +170,7 @@ class TestNoUnusedExportRuleCheck:
         # Arrange: tests/ 配下からの利用はカウントしない
         init_source = '__all__ = ["Foo"]\n'
         test_source = "from paladin.check import Foo\n"
-        source_files = _make_source_files(
+        source_files = make_source_files(
             (init_source, "src/paladin/check/__init__.py"),
             (test_source, "tests/unit/test_check/test_foo.py"),
         )
@@ -191,7 +184,7 @@ class TestNoUnusedExportRuleCheck:
         # Arrange: import paladin.check + paladin.check.CheckOrchestrator 形式
         init_source = '__all__ = ["CheckOrchestrator"]\n'
         usage_source = "import paladin.check\nx = paladin.check.CheckOrchestrator()\n"
-        source_files = _make_source_files(
+        source_files = make_source_files(
             (init_source, "src/paladin/check/__init__.py"),
             (usage_source, "src/paladin/cli.py"),
         )
@@ -205,7 +198,7 @@ class TestNoUnusedExportRuleCheck:
         # Arrange: import paladin.check のみで属性アクセスなし
         init_source = '__all__ = ["CheckOrchestrator"]\n'
         usage_source = "import paladin.check\n"
-        source_files = _make_source_files(
+        source_files = make_source_files(
             (init_source, "src/paladin/check/__init__.py"),
             (usage_source, "src/paladin/cli.py"),
         )
@@ -218,7 +211,7 @@ class TestNoUnusedExportRuleCheck:
     def test_check_正常系_init_pyにall以外の文がある場合もallを正しく抽出すること(self):
         # Arrange: import os が L87 の continue を通過し、__all__ は正しく抽出される
         init_source = 'import os\n__all__ = ["Foo"]\n'
-        source_files = _make_source_files((init_source, "src/paladin/check/__init__.py"))
+        source_files = make_source_files((init_source, "src/paladin/check/__init__.py"))
         rule = _rule(("paladin",))
 
         result = rule.check(source_files)
@@ -230,7 +223,7 @@ class TestNoUnusedExportRuleCheck:
         # Arrange: from . import something は relative import（level != 0）なので除外
         init_source = '__all__ = ["Foo"]\n'
         rel_import_source = "from . import something\n"
-        source_files = _make_source_files(
+        source_files = make_source_files(
             (init_source, "src/paladin/check/__init__.py"),
             (rel_import_source, "src/paladin/rule/bar.py"),
         )
@@ -244,7 +237,7 @@ class TestNoUnusedExportRuleCheck:
         # Arrange: from paladin.rule import X は all_exports のキー paladin.check と一致しない
         init_source = '__all__ = ["Foo"]\n'
         other_import_source = "from paladin.rule import X\n"
-        source_files = _make_source_files(
+        source_files = make_source_files(
             (init_source, "src/paladin/check/__init__.py"),
             (other_import_source, "src/paladin/cli.py"),
         )
@@ -260,7 +253,7 @@ class TestNoUnusedExportRuleCheck:
         # Arrange: import paladin.rule + paladin.rule.X は all_exports（paladin.check）に存在しない
         init_source = '__all__ = ["Foo"]\n'
         usage_source = "import paladin.rule\nx = paladin.rule.X\n"
-        source_files = _make_source_files(
+        source_files = make_source_files(
             (init_source, "src/paladin/check/__init__.py"),
             (usage_source, "src/paladin/cli.py"),
         )
@@ -274,7 +267,7 @@ class TestNoUnusedExportRuleCheck:
         # Arrange: paladin.check パッケージ内ファイルからの属性アクセスは除外
         init_source = '__all__ = ["Foo"]\n'
         same_pkg_source = "import paladin.check\nx = paladin.check.Foo\n"
-        source_files = _make_source_files(
+        source_files = make_source_files(
             (init_source, "src/paladin/check/__init__.py"),
             (same_pkg_source, "src/paladin/check/bar.py"),
         )
@@ -291,7 +284,7 @@ class TestNoUnusedExportRuleViolationFields:
     def test_check_正常系_違反のフィールド値が正しいこと(self):
         # Arrange: line 1 に __all__ が定義されている
         init_source = '__all__ = ["Foo"]\n'
-        source_files = _make_source_files((init_source, "src/paladin/check/__init__.py"))
+        source_files = make_source_files((init_source, "src/paladin/check/__init__.py"))
         rule = _rule(("paladin",))
 
         result = rule.check(source_files)
@@ -311,7 +304,7 @@ class TestNoUnusedExportRuleViolationFields:
         # Arrange: 2つの __init__.py にそれぞれ未使用シンボル
         init1_source = '__all__ = ["Foo"]\n'
         init2_source = '__all__ = ["Bar"]\n'
-        source_files = _make_source_files(
+        source_files = make_source_files(
             (init1_source, "src/paladin/check/__init__.py"),
             (init2_source, "src/paladin/rule/__init__.py"),
         )
@@ -328,7 +321,7 @@ class TestNoUnusedExportRuleEdgeCases:
     def test_check_エッジケース_多重代入ターゲットのAssignはスキップすること(self):
         # Arrange: a = b = 1 は len(node.targets) != 1 で continue される
         init_source = 'a = b = 1\n__all__ = ["Foo"]\n'
-        source_files = _make_source_files((init_source, "src/paladin/check/__init__.py"))
+        source_files = make_source_files((init_source, "src/paladin/check/__init__.py"))
         rule = _rule(("paladin",))
 
         result = rule.check(source_files)
@@ -340,7 +333,7 @@ class TestNoUnusedExportRuleEdgeCases:
         # Arrange: func().Foo は _reconstruct_module_name が None を返すため除外
         init_source = '__all__ = ["Foo"]\n'
         usage_source = "import paladin.check\nfunc().Foo\n"
-        source_files = _make_source_files(
+        source_files = make_source_files(
             (init_source, "src/paladin/check/__init__.py"),
             (usage_source, "src/paladin/cli.py"),
         )
@@ -353,7 +346,7 @@ class TestNoUnusedExportRuleEdgeCases:
     def test_check_エッジケース_allの要素に非定数が含まれる場合はスキップすること(self):
         # Arrange: __all__ = [variable] のように変数を含む場合は対象外
         init_source = "__all__ = [variable]\n"
-        source_files = _make_source_files((init_source, "src/paladin/check/__init__.py"))
+        source_files = make_source_files((init_source, "src/paladin/check/__init__.py"))
         rule = _rule(("paladin",))
 
         result = rule.check(source_files)
@@ -363,7 +356,7 @@ class TestNoUnusedExportRuleEdgeCases:
     def test_check_エッジケース_allの値がリスト以外の場合はスキップすること(self):
         # Arrange: __all__ = "Foo" のように値がリストでない場合はスキップ
         init_source = '__all__ = "Foo"\n'
-        source_files = _make_source_files((init_source, "src/paladin/check/__init__.py"))
+        source_files = make_source_files((init_source, "src/paladin/check/__init__.py"))
         rule = _rule(("paladin",))
 
         result = rule.check(source_files)
@@ -373,7 +366,7 @@ class TestNoUnusedExportRuleEdgeCases:
     def test_check_エッジケース_パス深さが不足するinit_pyはスキップされること(self):
         # Arrange: src/__init__.py のようにセグメント不足で resolve_exact_package_path が None を返す
         init_source = '__all__ = ["Foo"]\n'
-        source_files = _make_source_files((init_source, "src/__init__.py"))
+        source_files = make_source_files((init_source, "src/__init__.py"))
         rule = _rule(("paladin",))
 
         result = rule.check(source_files)
@@ -388,7 +381,7 @@ class TestNoUnusedExportRuleIntegration:
         # Arrange: prepare() で root_packages を自動導出してから check() で違反を検出
         init_source = '__all__ = ["Foo"]\n'
         stub_source = "x = 1\n"
-        source_files = _make_source_files(
+        source_files = make_source_files(
             (init_source, "src/paladin/check/__init__.py"),
             (stub_source, "src/paladin/stub.py"),
         )
@@ -404,7 +397,7 @@ class TestNoUnusedExportRuleIntegration:
         # Arrange: 絶対パス形式の SourceFile でもパッケージ解決が正常に機能する
         init_source = '__all__ = ["Foo"]\n'
         cli_source = "from paladin.check import Foo\n"
-        source_files = _make_source_files(
+        source_files = make_source_files(
             (init_source, "/Users/owner/code/paladin/src/paladin/check/__init__.py"),
             (cli_source, "/Users/owner/code/paladin/src/paladin/cli.py"),
         )
@@ -417,7 +410,7 @@ class TestNoUnusedExportRuleIntegration:
     def test_check_正常系_RuleSetを通じた場合に防御的に動作すること(self):
         # Arrange: NoUnusedExportRule は prepare() なしでも check() が安全に動作する
         init_source = '__all__ = ["Foo"]\n'
-        source_files = _make_source_files((init_source, "src/paladin/check/__init__.py"))
+        source_files = make_source_files((init_source, "src/paladin/check/__init__.py"))
         rule = NoUnusedExportRule()
         # prepare() を呼ばない（RuleSet.run() が _multi_file_rules に prepare() を呼ばない現状を再現）
 
@@ -432,7 +425,7 @@ class TestNoUnusedExportRuleIntegration:
         # Arrange: tests/unit/fakes/__init__.py の FakeRule がテストから利用されている
         fakes_init_source = '__all__ = ["FakeRule"]\n'
         test_source = "from tests.unit.fakes import FakeRule\n"
-        source_files = _make_source_files(
+        source_files = make_source_files(
             (fakes_init_source, "tests/unit/fakes/__init__.py"),
             (test_source, "tests/unit/test_check/test_foo.py"),
         )
@@ -448,7 +441,7 @@ class TestNoUnusedExportRuleIntegration:
         # Arrange: src/paladin/check/__init__.py の Foo がテストからのみ利用されている
         init_source = '__all__ = ["Foo"]\n'
         test_source = "from paladin.check import Foo\n"
-        source_files = _make_source_files(
+        source_files = make_source_files(
             (init_source, "src/paladin/check/__init__.py"),
             (test_source, "tests/unit/test_check/test_foo.py"),
         )
@@ -464,7 +457,7 @@ class TestNoUnusedExportRuleIntegration:
         # Arrange: テストから import paladin.check + paladin.check.Foo 形式での参照はカウントしない
         init_source = '__all__ = ["Foo"]\n'
         test_source = "import paladin.check\nx = paladin.check.Foo\n"
-        source_files = _make_source_files(
+        source_files = make_source_files(
             (init_source, "src/paladin/check/__init__.py"),
             (test_source, "tests/unit/test_check/test_foo.py"),
         )

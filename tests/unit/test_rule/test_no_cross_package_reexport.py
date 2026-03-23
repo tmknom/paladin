@@ -3,13 +3,7 @@ from pathlib import Path
 
 from paladin.rule.no_cross_package_reexport import NoCrossPackageReexportRule
 from paladin.rule.types import RuleMeta, SourceFile
-
-
-def _make_source_file(
-    source: str,
-    filename: str = "src/paladin/check/__init__.py",
-) -> SourceFile:
-    return SourceFile(file_path=Path(filename), tree=ast.parse(source), source=source)
+from tests.unit.test_rule.helpers import make_source_file
 
 
 class TestNoCrossPackageReexportRuleMeta:
@@ -39,7 +33,7 @@ class TestNoCrossPackageReexportRuleCheck:
         # Arrange
         rule = NoCrossPackageReexportRule()
         source = 'from paladin.rule import RuleMeta\n__all__ = ["RuleMeta"]\n'
-        source_file = _make_source_file(source, "src/paladin/check/module.py")
+        source_file = make_source_file(source, "src/paladin/check/module.py")
 
         # Act
         result = rule.check(source_file)
@@ -51,7 +45,7 @@ class TestNoCrossPackageReexportRuleCheck:
         # Arrange
         rule = NoCrossPackageReexportRule()
         source = 'from paladin.rule import RuleMeta\n__all__ = ["RuleMeta"]\n'
-        source_file = _make_source_file(source)
+        source_file = make_source_file(source, "src/paladin/check/__init__.py")
 
         # Act
         result = rule.check(source_file)
@@ -63,7 +57,7 @@ class TestNoCrossPackageReexportRuleCheck:
         # Arrange
         rule = NoCrossPackageReexportRule()
         source = 'from paladin.rule import RuleMeta\n__all__ = ["RuleMeta"]\n'
-        source_file = _make_source_file(source)
+        source_file = make_source_file(source, "src/paladin/check/__init__.py")
 
         # Act
         result = rule.check(source_file)
@@ -86,7 +80,7 @@ class TestNoCrossPackageReexportRuleCheck:
         # Arrange
         rule = NoCrossPackageReexportRule()
         source = 'from paladin.check.context import CheckContext\n__all__ = ["CheckContext"]\n'
-        source_file = _make_source_file(source)
+        source_file = make_source_file(source, "src/paladin/check/__init__.py")
 
         # Act
         result = rule.check(source_file)
@@ -98,7 +92,7 @@ class TestNoCrossPackageReexportRuleCheck:
         # Arrange
         rule = NoCrossPackageReexportRule()
         source = "from paladin.rule import RuleMeta\n"
-        source_file = _make_source_file(source)
+        source_file = make_source_file(source, "src/paladin/check/__init__.py")
 
         # Act
         result = rule.check(source_file)
@@ -113,7 +107,7 @@ class TestNoCrossPackageReexportRuleCheck:
             "from paladin.rule import RuleMeta, Violation, Violations\n"
             '__all__ = ["RuleMeta", "Violation", "Violations"]\n'
         )
-        source_file = _make_source_file(source)
+        source_file = make_source_file(source, "src/paladin/check/__init__.py")
 
         # Act
         result = rule.check(source_file)
@@ -131,7 +125,7 @@ class TestNoCrossPackageReexportRuleCheck:
             "from paladin.rule import RuleMeta\n"
             '__all__ = ["CheckContext", "RuleMeta"]\n'
         )
-        source_file = _make_source_file(source)
+        source_file = make_source_file(source, "src/paladin/check/__init__.py")
 
         # Act
         result = rule.check(source_file)
@@ -146,7 +140,7 @@ class TestNoCrossPackageReexportRuleCheck:
         # Arrange: LocalClass はファイル内定義のためインポートマッピングに存在しない
         rule = NoCrossPackageReexportRule()
         source = 'class LocalClass:\n    pass\n\n__all__ = ["LocalClass"]\n'
-        source_file = _make_source_file(source)
+        source_file = make_source_file(source, "src/paladin/check/__init__.py")
 
         # Act
         result = rule.check(source_file)
@@ -158,7 +152,7 @@ class TestNoCrossPackageReexportRuleCheck:
         # Arrange
         rule = NoCrossPackageReexportRule()
         source = 'from paladin.rule import RuleMeta as RM\n__all__ = ["RM"]\n'
-        source_file = _make_source_file(source)
+        source_file = make_source_file(source, "src/paladin/check/__init__.py")
 
         # Act
         result = rule.check(source_file)
@@ -171,7 +165,7 @@ class TestNoCrossPackageReexportRuleCheck:
         # Arrange
         rule = NoCrossPackageReexportRule()
         source = 'from .context import CheckContext\n__all__ = ["CheckContext"]\n'
-        source_file = _make_source_file(source)
+        source_file = make_source_file(source, "src/paladin/check/__init__.py")
 
         # Act
         result = rule.check(source_file)
@@ -183,7 +177,7 @@ class TestNoCrossPackageReexportRuleCheck:
         # Arrange
         rule = NoCrossPackageReexportRule()
         source = 'from paladin.rule.types import Violation\n__all__ = ["Violation"]\n'
-        source_file = _make_source_file(source)
+        source_file = make_source_file(source, "src/paladin/check/__init__.py")
 
         # Act
         result = rule.check(source_file)
@@ -198,7 +192,7 @@ class TestNoCrossPackageReexportRuleCheck:
         # Arrange: from os import path で __all__ = ["path"]（サブパッケージ内）
         rule = NoCrossPackageReexportRule()
         source = 'from os import path\n__all__ = ["path"]\n'
-        source_file = _make_source_file(source, "src/myapp/sub/__init__.py")
+        source_file = make_source_file(source, "src/myapp/sub/__init__.py")
 
         # Act
         result = rule.check(source_file)
@@ -212,7 +206,7 @@ class TestNoCrossPackageReexportRuleCheck:
         # Arrange: src/ なしのパス
         rule = NoCrossPackageReexportRule()
         source = 'from paladin.rule import RuleMeta\n__all__ = ["RuleMeta"]\n'
-        source_file = _make_source_file(source, "paladin/check/__init__.py")
+        source_file = make_source_file(source, "paladin/check/__init__.py")
 
         # Act
         result = rule.check(source_file)
@@ -226,7 +220,7 @@ class TestNoCrossPackageReexportRuleCheck:
         # Arrange: FileCollector が path.resolve() で生成する絶対パスを模擬
         rule = NoCrossPackageReexportRule()
         source = 'from paladin.rule import RuleMeta\n__all__ = ["RuleMeta"]\n'
-        source_file = _make_source_file(
+        source_file = make_source_file(
             source, "/Users/owner/code/paladin/src/paladin/check/__init__.py"
         )
 
@@ -241,7 +235,7 @@ class TestNoCrossPackageReexportRuleCheck:
         # Arrange: tests/unit/fakes/__init__.py で別パッケージのシンボルを再エクスポート
         rule = NoCrossPackageReexportRule()
         source = 'from paladin.rule import RuleMeta\n__all__ = ["RuleMeta"]\n'
-        source_file = _make_source_file(source, "tests/unit/fakes/__init__.py")
+        source_file = make_source_file(source, "tests/unit/fakes/__init__.py")
 
         # Act
         result = rule.check(source_file)
@@ -254,7 +248,7 @@ class TestNoCrossPackageReexportRuleCheck:
         # Arrange: 実際の誤検出ケース再現（FileCollector が絶対パスを生成する）
         rule = NoCrossPackageReexportRule()
         source = 'from paladin.rule import RuleMeta\n__all__ = ["RuleMeta"]\n'
-        source_file = _make_source_file(
+        source_file = make_source_file(
             source, "/Users/owner/code/paladin/tests/unit/fakes/__init__.py"
         )
 
@@ -270,7 +264,7 @@ class TestNoCrossPackageReexportRuleCheck:
         # これが今回のバグの直接的な再現ケース
         rule = NoCrossPackageReexportRule()
         source = 'from tests.unit.fakes.rule import FakeRule\n__all__ = ["FakeRule"]\n'
-        source_file = _make_source_file(
+        source_file = make_source_file(
             source, "/Users/owner/code/paladin/tests/unit/fakes/__init__.py"
         )
 
@@ -284,7 +278,7 @@ class TestNoCrossPackageReexportRuleCheck:
         # Arrange: src/paladin/__init__.py はセグメントが1つのみ → resolve_exact_package_path が None を返す
         rule = NoCrossPackageReexportRule()
         source = 'from os import path\n__all__ = ["path"]\n'
-        source_file = _make_source_file(source, "src/paladin/__init__.py")
+        source_file = make_source_file(source, "src/paladin/__init__.py")
 
         # Act
         result = rule.check(source_file)
@@ -362,7 +356,7 @@ class TestNoCrossPackageReexportRuleCheck:
         # Arrange: x = 1 と __all__ = ["RuleMeta"] が共存する場合
         rule = NoCrossPackageReexportRule()
         source = 'from paladin.rule import RuleMeta\nx = 1\n__all__ = ["RuleMeta"]\n'
-        source_file = _make_source_file(source)
+        source_file = make_source_file(source, "src/paladin/check/__init__.py")
 
         # Act
         result = rule.check(source_file)
@@ -374,7 +368,7 @@ class TestNoCrossPackageReexportRuleCheck:
         # Arrange: __init__.py だけのパス（ディレクトリなし）
         rule = NoCrossPackageReexportRule()
         source = 'from paladin.rule import RuleMeta\n__all__ = ["RuleMeta"]\n'
-        source_file = _make_source_file(source, "__init__.py")
+        source_file = make_source_file(source, "__init__.py")
 
         # Act
         result = rule.check(source_file)
@@ -386,7 +380,7 @@ class TestNoCrossPackageReexportRuleCheck:
         # Arrange: `import paladin.rule` は from X import Y でないためマッピングに含まれない
         rule = NoCrossPackageReexportRule()
         source = 'import paladin.rule\n__all__ = ["paladin"]\n'
-        source_file = _make_source_file(source)
+        source_file = make_source_file(source, "src/paladin/check/__init__.py")
 
         # Act
         result = rule.check(source_file)

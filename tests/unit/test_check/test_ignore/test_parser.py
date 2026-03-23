@@ -1,14 +1,10 @@
 """FileIgnoreParser / LineIgnoreParser のテスト"""
 
-import ast
 from pathlib import Path
 
 from paladin.check.ignore.parser import FileIgnoreParser, LineIgnoreParser
-from paladin.rule import SourceFile, SourceFiles
-
-
-def _make_source_file(source: str, filename: str = "example.py") -> SourceFile:
-    return SourceFile(file_path=Path(filename), tree=ast.parse(source), source=source)
+from paladin.rule import SourceFiles
+from tests.unit.test_check.test_ignore.helpers import make_source_file
 
 
 class TestFileIgnoreParserParse:
@@ -160,8 +156,8 @@ class TestFileIgnoreParserParseAll:
     def test_parse_all_正常系_複数ファイルのディレクティブをタプルで返すこと(self):
         # Arrange
         parser = FileIgnoreParser()
-        pf_with_directive = _make_source_file("# paladin: ignore-file\nimport os\n", "a.py")
-        pf_without_directive = _make_source_file("import os\n", "b.py")
+        pf_with_directive = make_source_file("# paladin: ignore-file\nimport os\n", "a.py")
+        pf_without_directive = make_source_file("import os\n", "b.py")
         source_files = SourceFiles(files=(pf_with_directive, pf_without_directive))
 
         # Act
@@ -323,8 +319,8 @@ class TestLineIgnoreParserParseAll:
     def test_parse_all_正常系_複数ファイルのディレクティブをタプルで返すこと(self):
         # Arrange
         parser = LineIgnoreParser()
-        pf_with_directive = _make_source_file("# paladin: ignore\nfrom foo import bar\n", "a.py")
-        pf_without_directive = _make_source_file("import os\n", "b.py")
+        pf_with_directive = make_source_file("# paladin: ignore\nfrom foo import bar\n", "a.py")
+        pf_without_directive = make_source_file("import os\n", "b.py")
         source_files = SourceFiles(files=(pf_with_directive, pf_without_directive))
 
         # Act

@@ -1,12 +1,8 @@
-import ast
 from pathlib import Path
 
 from paladin.rule.no_deep_nesting import NoDeepNestingRule
-from paladin.rule.types import RuleMeta, SourceFile
-
-
-def _make_source_file(source: str, filename: str = "example.py") -> SourceFile:
-    return SourceFile(file_path=Path(filename), tree=ast.parse(source), source=source)
+from paladin.rule.types import RuleMeta
+from tests.unit.test_rule.helpers import make_source_file
 
 
 class TestNoDeepNestingRuleMeta:
@@ -40,7 +36,7 @@ class TestNoDeepNestingRuleCheck:
             "            if True:\n"
             "                pass\n"
         )
-        source_file = _make_source_file(source)
+        source_file = make_source_file(source)
 
         # Act
         result = rule.check(source_file)
@@ -58,7 +54,7 @@ class TestNoDeepNestingRuleCheck:
             "            if True:\n"
             "                pass\n"
         )
-        source_file = _make_source_file(source)
+        source_file = make_source_file(source)
 
         # Act
         result = rule.check(source_file)
@@ -83,7 +79,7 @@ class TestNoDeepNestingRuleCheck:
             "                if True:\n"
             "                    pass\n"
         )
-        source_file = _make_source_file(source)
+        source_file = make_source_file(source)
 
         # Act
         result = rule.check(source_file)
@@ -96,7 +92,7 @@ class TestNoDeepNestingRuleCheck:
         # Arrange
         rule = NoDeepNestingRule()
         source = "def foo():\n    if True:\n        if True:\n            pass\n"
-        source_file = _make_source_file(source)
+        source_file = make_source_file(source)
 
         # Act
         result = rule.check(source_file)
@@ -116,7 +112,7 @@ class TestNoDeepNestingRuleCheck:
             "            for z in []:\n"
             "                pass\n"
         )
-        source_file = _make_source_file(source)
+        source_file = make_source_file(source)
 
         # Act
         result = rule.check(source_file)
@@ -134,7 +130,7 @@ class TestNoDeepNestingRuleCheck:
             "            while True:\n"
             "                pass\n"
         )
-        source_file = _make_source_file(source)
+        source_file = make_source_file(source)
 
         # Act
         result = rule.check(source_file)
@@ -152,7 +148,7 @@ class TestNoDeepNestingRuleCheck:
             "            with open('c') as c:\n"
             "                pass\n"
         )
-        source_file = _make_source_file(source)
+        source_file = make_source_file(source)
 
         # Act
         result = rule.check(source_file)
@@ -176,7 +172,7 @@ class TestNoDeepNestingRuleCheck:
             "    except Exception:\n"
             "        pass\n"
         )
-        source_file = _make_source_file(source)
+        source_file = make_source_file(source)
 
         # Act
         result = rule.check(source_file)
@@ -194,7 +190,7 @@ class TestNoDeepNestingRuleCheck:
             "            while True:\n"
             "                pass\n"
         )
-        source_file = _make_source_file(source)
+        source_file = make_source_file(source)
 
         # Act
         result = rule.check(source_file)
@@ -212,7 +208,7 @@ class TestNoDeepNestingRuleCheck:
             "            async for z in []:\n"
             "                pass\n"
         )
-        source_file = _make_source_file(source)
+        source_file = make_source_file(source)
 
         # Act
         result = rule.check(source_file)
@@ -230,7 +226,7 @@ class TestNoDeepNestingRuleCheck:
             "            async with open('c') as c:\n"
             "                pass\n"
         )
-        source_file = _make_source_file(source)
+        source_file = make_source_file(source)
 
         # Act
         result = rule.check(source_file)
@@ -251,7 +247,7 @@ class TestNoDeepNestingRuleCheck:
             "                if True:\n"
             "                    pass\n"
         )
-        source_file = _make_source_file(source)
+        source_file = make_source_file(source)
 
         # Act
         result = rule.check(source_file)
@@ -279,7 +275,7 @@ class TestNoDeepNestingRuleCheck:
             "                for z in []:\n"
             "                    pass\n"
         )
-        source_file = _make_source_file(source)
+        source_file = make_source_file(source)
 
         # Act
         result = rule.check(source_file)
@@ -303,7 +299,7 @@ class TestNoDeepNestingRuleCheck:
             "                        if True:\n"
             "                            pass\n"
         )
-        source_file = _make_source_file(source)
+        source_file = make_source_file(source)
 
         # Act
         result = rule.check(source_file)
@@ -324,7 +320,7 @@ class TestNoDeepNestingRuleCheck:
             "                if True:\n"
             "                    pass\n"
         )
-        source_file = _make_source_file(source)
+        source_file = make_source_file(source)
 
         # Act
         result = rule.check(source_file)
@@ -347,7 +343,7 @@ class TestNoDeepNestingRuleCheck:
             "                            if True:\n"
             "                                pass\n"
         )
-        source_file = _make_source_file(source)
+        source_file = make_source_file(source)
 
         # Act
         result = rule.check(source_file)
@@ -366,7 +362,7 @@ class TestNoDeepNestingRuleCheck:
             "        if True:\n"
             "            result = [x for x in [] if x > 0]\n"
         )
-        source_file = _make_source_file(source)
+        source_file = make_source_file(source)
 
         # Act
         result = rule.check(source_file)
@@ -379,7 +375,7 @@ class TestNoDeepNestingRuleCheck:
     def test_check_エッジケース_空のソースコードは空タプルを返すこと(self):
         # Arrange
         rule = NoDeepNestingRule()
-        source_file = _make_source_file("")
+        source_file = make_source_file("")
 
         # Act
         result = rule.check(source_file)
@@ -403,7 +399,7 @@ class TestNoDeepNestingRuleCheck:
             "                if True:\n"
             "                    pass\n"
         )
-        source_file = _make_source_file(source)
+        source_file = make_source_file(source)
 
         # Act
         result = rule.check(source_file)
@@ -427,7 +423,7 @@ class TestNoDeepNestingRuleCheck:
             "                if cond_b:\n"
             "                    pass\n"
         )
-        source_file = _make_source_file(source)
+        source_file = make_source_file(source)
 
         # Act
         result = rule.check(source_file)
@@ -449,7 +445,7 @@ class TestNoDeepNestingRuleCheck:
             "            if cond_b:\n"
             "                pass\n"
         )
-        source_file = _make_source_file(source)
+        source_file = make_source_file(source)
 
         # Act
         result = rule.check(source_file)
@@ -471,7 +467,7 @@ class TestNoDeepNestingRuleCheck:
             "    finally:\n"
             "        pass\n"
         )
-        source_file = _make_source_file(source)
+        source_file = make_source_file(source)
 
         # Act
         result = rule.check(source_file)
@@ -494,7 +490,7 @@ class TestNoDeepNestingRuleCheck:
             "                    if True:\n"
             "                        pass\n"
         )
-        source_file = _make_source_file(source)
+        source_file = make_source_file(source)
 
         # Act
         result = rule.check(source_file)
@@ -520,7 +516,7 @@ class TestNoDeepNestingRuleCheck:
             "    except Exception:\n"
             "        pass\n"
         )
-        source_file = _make_source_file(source)
+        source_file = make_source_file(source)
 
         # Act
         result = rule.check(source_file)
@@ -540,7 +536,7 @@ class TestNoDeepNestingRuleCheck:
             "                case 1:\n"
             "                    pass\n"
         )
-        source_file = _make_source_file(source)
+        source_file = make_source_file(source)
 
         # Act
         result = rule.check(source_file)
@@ -565,7 +561,7 @@ class TestNoDeepNestingRuleCheck:
             "    except* ValueError as eg:\n"
             "        pass\n"
         )
-        source_file = _make_source_file(source)
+        source_file = make_source_file(source)
 
         # Act
         result = rule.check(source_file)
@@ -590,7 +586,7 @@ class TestNoDeepNestingRuleCheck:
             "    except* ValueError as eg:\n"
             "        pass\n"
         )
-        source_file = _make_source_file(source)
+        source_file = make_source_file(source)
 
         # Act
         result = rule.check(source_file)
@@ -615,7 +611,7 @@ class TestNoDeepNestingRuleCheck:
             "    except* ValueError as eg:\n"
             "        pass\n"
         )
-        source_file = _make_source_file(source)
+        source_file = make_source_file(source)
 
         # Act
         result = rule.check(source_file)
@@ -639,7 +635,7 @@ class TestNoDeepNestingRuleCheck:
             "        elif cond_c:\n"
             "            do_c()\n"
         )
-        source_file = _make_source_file(source)
+        source_file = make_source_file(source)
 
         # Act
         result = rule.check(source_file)
@@ -660,7 +656,7 @@ class TestNoDeepNestingRuleCheck:
             "            if cond_c:\n"
             "                pass\n"
         )
-        source_file = _make_source_file(source)
+        source_file = make_source_file(source)
 
         # Act
         result = rule.check(source_file)
