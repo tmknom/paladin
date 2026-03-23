@@ -1,12 +1,8 @@
-import ast
 from pathlib import Path
 
 from paladin.rule.no_mock_usage import NoMockUsageRule
-from paladin.rule.types import RuleMeta, SourceFile
-
-
-def _make_source_file(source: str, filename: str = "example.py") -> SourceFile:
-    return SourceFile(file_path=Path(filename), tree=ast.parse(source), source=source)
+from paladin.rule.types import RuleMeta
+from tests.unit.test_rule.helpers import make_source_file
 
 
 class TestNoMockUsageRuleMeta:
@@ -36,7 +32,7 @@ class TestNoMockUsageRuleCheck:
         # Arrange
         rule = NoMockUsageRule()
         source = "from unittest.mock import Mock\n"
-        source_file = _make_source_file(source)
+        source_file = make_source_file(source)
 
         # Act
         result = rule.check(source_file)
@@ -51,7 +47,7 @@ class TestNoMockUsageRuleCheck:
         # Arrange
         rule = NoMockUsageRule()
         source = "from unittest.mock import MagicMock\n"
-        source_file = _make_source_file(source)
+        source_file = make_source_file(source)
 
         # Act
         result = rule.check(source_file)
@@ -64,7 +60,7 @@ class TestNoMockUsageRuleCheck:
         # Arrange
         rule = NoMockUsageRule()
         source = "import unittest.mock\n"
-        source_file = _make_source_file(source)
+        source_file = make_source_file(source)
 
         # Act
         result = rule.check(source_file)
@@ -77,7 +73,7 @@ class TestNoMockUsageRuleCheck:
         # Arrange
         rule = NoMockUsageRule()
         source = "from unittest.mock import Mock, MagicMock\n"
-        source_file = _make_source_file(source)
+        source_file = make_source_file(source)
 
         # Act
         result = rule.check(source_file)
@@ -89,7 +85,7 @@ class TestNoMockUsageRuleCheck:
         # Arrange
         rule = NoMockUsageRule()
         source = "from unittest.mock import patch\n"
-        source_file = _make_source_file(source)
+        source_file = make_source_file(source)
 
         # Act
         result = rule.check(source_file)
@@ -101,7 +97,7 @@ class TestNoMockUsageRuleCheck:
         # Arrange
         rule = NoMockUsageRule()
         source = "from unittest.mock import patch, Mock\n"
-        source_file = _make_source_file(source)
+        source_file = make_source_file(source)
 
         # Act
         result = rule.check(source_file)
@@ -114,7 +110,7 @@ class TestNoMockUsageRuleCheck:
         # Arrange
         rule = NoMockUsageRule()
         source = "from unittest.mock import Mock\n"
-        source_file = _make_source_file(source)
+        source_file = make_source_file(source)
 
         # Act
         result = rule.check(source_file)
@@ -133,7 +129,7 @@ class TestNoMockUsageRuleCheck:
     def test_check_エッジケース_空のソースコードは空タプルを返すこと(self):
         # Arrange
         rule = NoMockUsageRule()
-        source_file = _make_source_file("")
+        source_file = make_source_file("")
 
         # Act
         result = rule.check(source_file)
@@ -145,7 +141,7 @@ class TestNoMockUsageRuleCheck:
         # Arrange
         rule = NoMockUsageRule()
         source = "import os\n"
-        source_file = _make_source_file(source)
+        source_file = make_source_file(source)
 
         # Act
         result = rule.check(source_file)
@@ -157,7 +153,7 @@ class TestNoMockUsageRuleCheck:
         # Arrange
         rule = NoMockUsageRule()
         source = "def test_foo():\n    from unittest.mock import Mock\n"
-        source_file = _make_source_file(source)
+        source_file = make_source_file(source)
 
         # Act
         result = rule.check(source_file)

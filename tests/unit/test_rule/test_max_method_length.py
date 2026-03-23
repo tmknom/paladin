@@ -1,16 +1,8 @@
-import ast
 from pathlib import Path
 
 from paladin.rule.max_method_length import MaxMethodLengthRule
-from paladin.rule.types import RuleMeta, SourceFile
-
-
-def _make_source_file(source: str, filename: str = "example.py") -> SourceFile:
-    return SourceFile(file_path=Path(filename), tree=ast.parse(source), source=source)
-
-
-def _make_test_source_file(source: str, filename: str = "tests/test_example.py") -> SourceFile:
-    return SourceFile(file_path=Path(filename), tree=ast.parse(source), source=source)
+from paladin.rule.types import RuleMeta
+from tests.unit.test_rule.helpers import make_source_file, make_test_source_file
 
 
 def _make_func(num_lines: int, name: str = "foo") -> str:
@@ -71,7 +63,7 @@ class TestMaxMethodLengthRuleCheck:
         # Arrange: デフォルト上限50行に対して51行の関数
         rule = MaxMethodLengthRule()
         source = _make_func(51)
-        source_file = _make_source_file(source)
+        source_file = make_source_file(source)
 
         # Act
         result = rule.check(source_file)
@@ -83,7 +75,7 @@ class TestMaxMethodLengthRuleCheck:
         # Arrange
         rule = MaxMethodLengthRule()
         source = _make_func(51, name="long_func")
-        source_file = _make_source_file(source)
+        source_file = make_source_file(source)
 
         # Act
         result = rule.check(source_file)
@@ -102,7 +94,7 @@ class TestMaxMethodLengthRuleCheck:
         # Arrange: 49行の関数
         rule = MaxMethodLengthRule()
         source = _make_func(49)
-        source_file = _make_source_file(source)
+        source_file = make_source_file(source)
 
         # Act
         result = rule.check(source_file)
@@ -114,7 +106,7 @@ class TestMaxMethodLengthRuleCheck:
         # Arrange: ちょうど50行の関数
         rule = MaxMethodLengthRule()
         source = _make_func(50)
-        source_file = _make_source_file(source)
+        source_file = make_source_file(source)
 
         # Act
         result = rule.check(source_file)
@@ -136,7 +128,7 @@ class TestMaxMethodLengthRuleCheck:
             lines.append(f"        x_{i} = {i}")
         lines.append("        pass")
         source = "\n".join(lines) + "\n"
-        source_file = _make_source_file(source)
+        source_file = make_source_file(source)
 
         # Act
         result = rule.check(source_file)
@@ -155,7 +147,7 @@ class TestMaxMethodLengthRuleCheck:
             lines.append(f"    x_{i} = {i}")
         lines.append("    pass")
         source = "\n".join(lines) + "\n"
-        source_file = _make_source_file(source)
+        source_file = make_source_file(source)
 
         # Act
         result = rule.check(source_file)
@@ -170,7 +162,7 @@ class TestMaxMethodLengthRuleCheck:
         # Arrange: テストファイルのデフォルト上限100行に対して101行の関数
         rule = MaxMethodLengthRule()
         source = _make_func(101)
-        source_file = _make_test_source_file(source)
+        source_file = make_test_source_file(source)
 
         # Act
         result = rule.check(source_file)
@@ -184,7 +176,7 @@ class TestMaxMethodLengthRuleCheck:
         # Arrange: プロダクション上限50行超えだがテスト上限100行以内の51行
         rule = MaxMethodLengthRule()
         source = _make_func(51)
-        source_file = _make_test_source_file(source)
+        source_file = make_test_source_file(source)
 
         # Act
         result = rule.check(source_file)
@@ -206,7 +198,7 @@ class TestMaxMethodLengthRuleCheck:
         lines.append("        pass")
         lines.append("    pass")
         source = "\n".join(lines) + "\n"
-        source_file = _make_source_file(source)
+        source_file = make_source_file(source)
 
         # Act
         result = rule.check(source_file)
@@ -223,7 +215,7 @@ class TestMaxMethodLengthRuleCheck:
         # Arrange: max_lines=10 で11行の関数
         rule = MaxMethodLengthRule(max_lines=10)
         source = _make_func(11)
-        source_file = _make_source_file(source)
+        source_file = make_source_file(source)
 
         # Act
         result = rule.check(source_file)
@@ -236,7 +228,7 @@ class TestMaxMethodLengthRuleCheck:
         # Arrange: max_test_lines=20 でテストファイルに21行の関数
         rule = MaxMethodLengthRule(max_test_lines=20)
         source = _make_func(21)
-        source_file = _make_test_source_file(source)
+        source_file = make_test_source_file(source)
 
         # Act
         result = rule.check(source_file)
@@ -250,7 +242,7 @@ class TestMaxMethodLengthRuleCheck:
     def test_check_エッジケース_空のソースコードは空タプルを返すこと(self):
         # Arrange
         rule = MaxMethodLengthRule()
-        source_file = _make_source_file("")
+        source_file = make_source_file("")
 
         # Act
         result = rule.check(source_file)
@@ -268,7 +260,7 @@ class TestMaxMethodLengthRuleCheck:
             lines.append(f"            x_{i} = {i}")
         lines.append("            pass")
         source = "\n".join(lines) + "\n"
-        source_file = _make_source_file(source)
+        source_file = make_source_file(source)
 
         # Act
         result = rule.check(source_file)
@@ -288,7 +280,7 @@ class TestMaxMethodLengthRuleCheck:
             lines.append(f"            x_{i} = {i}")
         lines.append("            pass")
         source = "\n".join(lines) + "\n"
-        source_file = _make_source_file(source)
+        source_file = make_source_file(source)
 
         # Act
         result = rule.check(source_file)
@@ -307,7 +299,7 @@ class TestMaxMethodLengthRuleCheck:
                 lines.append(f"    x_{i} = {i}")
             lines.append("    pass")
         source = "\n".join(lines) + "\n"
-        source_file = _make_source_file(source)
+        source_file = make_source_file(source)
 
         # Act
         result = rule.check(source_file)
@@ -321,7 +313,7 @@ class TestMaxMethodLengthRuleCheck:
         # Arrange: 物理55行・docstring5行 → 実効50行（上限ちょうど）
         rule = MaxMethodLengthRule()
         source = _make_func_with_docstring(num_lines=55, docstring_lines=5)
-        source_file = _make_source_file(source)
+        source_file = make_source_file(source)
 
         # Act
         result = rule.check(source_file)
@@ -333,7 +325,7 @@ class TestMaxMethodLengthRuleCheck:
         # Arrange: 物理61行・docstring10行 → 実効51行（上限50を超過）
         rule = MaxMethodLengthRule()
         source = _make_func_with_docstring(num_lines=61, docstring_lines=10)
-        source_file = _make_source_file(source)
+        source_file = make_source_file(source)
 
         # Act
         result = rule.check(source_file)
@@ -345,7 +337,7 @@ class TestMaxMethodLengthRuleCheck:
         # Arrange: 物理51行・docstring1行 → 実効50行（上限ちょうど）
         rule = MaxMethodLengthRule()
         source = _make_func_with_docstring(num_lines=51, docstring_lines=1)
-        source_file = _make_source_file(source)
+        source_file = make_source_file(source)
 
         # Act
         result = rule.check(source_file)
@@ -357,7 +349,7 @@ class TestMaxMethodLengthRuleCheck:
         # Arrange: 物理61行・docstring10行 → 実効51行
         rule = MaxMethodLengthRule()
         source = _make_func_with_docstring(num_lines=61, docstring_lines=10, name="long_func")
-        source_file = _make_source_file(source)
+        source_file = make_source_file(source)
 
         # Act
         result = rule.check(source_file)
@@ -381,7 +373,7 @@ class TestMaxMethodLengthRuleCheck:
             lines.append(f"        x_{i} = {i}")
         lines.append("        pass")
         source = "\n".join(lines) + "\n"
-        source_file = _make_source_file(source)
+        source_file = make_source_file(source)
 
         # Act
         result = rule.check(source_file)
@@ -397,7 +389,7 @@ class TestMaxMethodLengthRuleCheck:
         for i in range(49):
             lines.append(f"    y_{i} = {i}")
         source = "\n".join(lines) + "\n"
-        source_file = _make_source_file(source)
+        source_file = make_source_file(source)
 
         # Act
         result = rule.check(source_file)
@@ -415,7 +407,7 @@ class TestMaxMethodLengthRuleCheck:
         for i in range(49):
             lines.append(f"    y_{i} = {i}")
         source = "\n".join(lines) + "\n"
-        source_file = _make_source_file(source)
+        source_file = make_source_file(source)
 
         # Act
         result = rule.check(source_file)

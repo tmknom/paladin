@@ -1,12 +1,8 @@
-import ast
 from pathlib import Path
 
 from paladin.rule.no_local_import import NoLocalImportRule
-from paladin.rule.types import RuleMeta, SourceFile
-
-
-def _make_source_file(source: str, filename: str = "example.py") -> SourceFile:
-    return SourceFile(file_path=Path(filename), tree=ast.parse(source), source=source)
+from paladin.rule.types import RuleMeta
+from tests.unit.test_rule.helpers import make_source_file
 
 
 class TestNoLocalImportRuleMeta:
@@ -36,7 +32,7 @@ class TestNoLocalImportRuleCheck:
         # Arrange
         rule = NoLocalImportRule()
         source = "def foo():\n    import os\n"
-        source_file = _make_source_file(source)
+        source_file = make_source_file(source)
 
         # Act
         result = rule.check(source_file)
@@ -48,7 +44,7 @@ class TestNoLocalImportRuleCheck:
         # Arrange
         rule = NoLocalImportRule()
         source = "def foo():\n    from os import path\n"
-        source_file = _make_source_file(source)
+        source_file = make_source_file(source)
 
         # Act
         result = rule.check(source_file)
@@ -60,7 +56,7 @@ class TestNoLocalImportRuleCheck:
         # Arrange
         rule = NoLocalImportRule()
         source = "def foo():\n    import os\n"
-        source_file = _make_source_file(source)
+        source_file = make_source_file(source)
 
         # Act
         result = rule.check(source_file)
@@ -78,7 +74,7 @@ class TestNoLocalImportRuleCheck:
         # Arrange
         rule = NoLocalImportRule()
         source = "class Foo:\n    import os\n"
-        source_file = _make_source_file(source)
+        source_file = make_source_file(source)
 
         # Act
         result = rule.check(source_file)
@@ -91,7 +87,7 @@ class TestNoLocalImportRuleCheck:
         # Arrange
         rule = NoLocalImportRule()
         source = "class Foo:\n    def bar(self):\n        import os\n"
-        source_file = _make_source_file(source)
+        source_file = make_source_file(source)
 
         # Act
         result = rule.check(source_file)
@@ -104,7 +100,7 @@ class TestNoLocalImportRuleCheck:
         # Arrange
         rule = NoLocalImportRule()
         source = "def outer():\n    def inner():\n        import os\n"
-        source_file = _make_source_file(source)
+        source_file = make_source_file(source)
 
         # Act
         result = rule.check(source_file)
@@ -117,7 +113,7 @@ class TestNoLocalImportRuleCheck:
         # Arrange
         rule = NoLocalImportRule()
         source = "async def foo():\n    import os\n"
-        source_file = _make_source_file(source)
+        source_file = make_source_file(source)
 
         # Act
         result = rule.check(source_file)
@@ -130,7 +126,7 @@ class TestNoLocalImportRuleCheck:
         # Arrange
         rule = NoLocalImportRule()
         source = "def foo():\n    import os\ndef bar():\n    from sys import argv\n"
-        source_file = _make_source_file(source)
+        source_file = make_source_file(source)
 
         # Act
         result = rule.check(source_file)
@@ -142,7 +138,7 @@ class TestNoLocalImportRuleCheck:
         # Arrange
         rule = NoLocalImportRule()
         source = "import os\nfrom sys import argv\n"
-        source_file = _make_source_file(source)
+        source_file = make_source_file(source)
 
         # Act
         result = rule.check(source_file)
@@ -159,7 +155,7 @@ class TestNoLocalImportRuleCheck:
             "if TYPE_CHECKING:\n"
             "    import os\n"
         )
-        source_file = _make_source_file(source)
+        source_file = make_source_file(source)
 
         # Act
         result = rule.check(source_file)
@@ -176,7 +172,7 @@ class TestNoLocalImportRuleCheck:
             "if typing.TYPE_CHECKING:\n"
             "    import os\n"
         )
-        source_file = _make_source_file(source)
+        source_file = make_source_file(source)
 
         # Act
         result = rule.check(source_file)
@@ -187,7 +183,7 @@ class TestNoLocalImportRuleCheck:
     def test_check_エッジケース_空のソースコードは空タプルを返すこと(self):
         # Arrange
         rule = NoLocalImportRule()
-        source_file = _make_source_file("")
+        source_file = make_source_file("")
 
         # Act
         result = rule.check(source_file)
@@ -199,7 +195,7 @@ class TestNoLocalImportRuleCheck:
         # Arrange
         rule = NoLocalImportRule()
         source = "def foo():\n    x = 1\n    return x\n"
-        source_file = _make_source_file(source)
+        source_file = make_source_file(source)
 
         # Act
         result = rule.check(source_file)

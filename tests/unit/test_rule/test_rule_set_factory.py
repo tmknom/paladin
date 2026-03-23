@@ -1,14 +1,7 @@
-import ast
-from pathlib import Path
-
 from paladin.rule.rule_set import RuleSet
 from paladin.rule.rule_set_factory import RuleSetFactory
-from paladin.rule.types import SourceFile, SourceFiles
-
-
-def _make_source_file_for_import(source: str, filename: str = "src/myapp/test.py") -> SourceFile:
-    """インポートテスト用の SourceFile を作る"""
-    return SourceFile(file_path=Path(filename), tree=ast.parse(source), source=source)
+from paladin.rule.types import SourceFiles
+from tests.unit.test_rule.helpers import make_source_file
 
 
 class TestRuleSetFactory:
@@ -290,7 +283,7 @@ class TestRuleSetFactory:
 
     def test_create_正常系_testsパッケージはデフォルトでroot_packagesに含まれること(self):
         # Arrange: RuleSet.run() が prepare() を呼び tests が自動でルートパッケージになる
-        source_file = _make_source_file_for_import("from tests.foo import bar\n")
+        source_file = make_source_file("from tests.foo import bar\n")
         source_files = SourceFiles(files=(source_file,))
         rule_set = RuleSetFactory().create()
 
@@ -303,9 +296,7 @@ class TestRuleSetFactory:
 
     def test_create_正常系_srcレイアウトのプロジェクトパッケージが自動導出されること(self):
         # Arrange: src/myapp/ 配下のファイルを渡すと myapp が root_packages に自動導出される
-        source_file = _make_source_file_for_import(
-            "from myapp.utils import helper\n", "src/myapp/test.py"
-        )
+        source_file = make_source_file("from myapp.utils import helper\n", "src/myapp/test.py")
         source_files = SourceFiles(files=(source_file,))
         rule_set = RuleSetFactory().create()
 

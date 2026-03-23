@@ -1,16 +1,8 @@
-import ast
 from pathlib import Path
 
 from paladin.rule.max_class_length import MaxClassLengthRule
-from paladin.rule.types import RuleMeta, SourceFile
-
-
-def _make_source_file(source: str, filename: str = "example.py") -> SourceFile:
-    return SourceFile(file_path=Path(filename), tree=ast.parse(source), source=source)
-
-
-def _make_test_source_file(source: str, filename: str = "tests/test_example.py") -> SourceFile:
-    return SourceFile(file_path=Path(filename), tree=ast.parse(source), source=source)
+from paladin.rule.types import RuleMeta
+from tests.unit.test_rule.helpers import make_source_file, make_test_source_file
 
 
 def _make_class(num_lines: int, name: str = "MyClass") -> str:
@@ -71,7 +63,7 @@ class TestMaxClassLengthRuleCheck:
         # Arrange: デフォルト上限200行に対して201行のクラス
         rule = MaxClassLengthRule()
         source = _make_class(201)
-        source_file = _make_source_file(source)
+        source_file = make_source_file(source)
 
         # Act
         result = rule.check(source_file)
@@ -83,7 +75,7 @@ class TestMaxClassLengthRuleCheck:
         # Arrange
         rule = MaxClassLengthRule()
         source = _make_class(201, name="LongClass")
-        source_file = _make_source_file(source)
+        source_file = make_source_file(source)
 
         # Act
         result = rule.check(source_file)
@@ -102,7 +94,7 @@ class TestMaxClassLengthRuleCheck:
         # Arrange: 199行のクラス
         rule = MaxClassLengthRule()
         source = _make_class(199)
-        source_file = _make_source_file(source)
+        source_file = make_source_file(source)
 
         # Act
         result = rule.check(source_file)
@@ -114,7 +106,7 @@ class TestMaxClassLengthRuleCheck:
         # Arrange: ちょうど200行のクラス
         rule = MaxClassLengthRule()
         source = _make_class(200)
-        source_file = _make_source_file(source)
+        source_file = make_source_file(source)
 
         # Act
         result = rule.check(source_file)
@@ -128,7 +120,7 @@ class TestMaxClassLengthRuleCheck:
         # Arrange: テストファイルのデフォルト上限400行に対して401行のクラス
         rule = MaxClassLengthRule()
         source = _make_class(401)
-        source_file = _make_test_source_file(source)
+        source_file = make_test_source_file(source)
 
         # Act
         result = rule.check(source_file)
@@ -142,7 +134,7 @@ class TestMaxClassLengthRuleCheck:
         # Arrange: テストファイルで400行のクラス
         rule = MaxClassLengthRule()
         source = _make_class(400)
-        source_file = _make_test_source_file(source)
+        source_file = make_test_source_file(source)
 
         # Act
         result = rule.check(source_file)
@@ -154,7 +146,7 @@ class TestMaxClassLengthRuleCheck:
         # Arrange: プロダクション上限200行超えだがテスト上限400行以内の201行
         rule = MaxClassLengthRule()
         source = _make_class(201)
-        source_file = _make_test_source_file(source)
+        source_file = make_test_source_file(source)
 
         # Act
         result = rule.check(source_file)
@@ -175,7 +167,7 @@ class TestMaxClassLengthRuleCheck:
         lines.append("        pass")
         lines.append("    pass")
         source = "\n".join(lines) + "\n"
-        source_file = _make_source_file(source)
+        source_file = make_source_file(source)
 
         # Act
         result = rule.check(source_file)
@@ -199,7 +191,7 @@ class TestMaxClassLengthRuleCheck:
             lines.append(f"    y_{i} = {i}")
         lines.append("    pass")
         source = "\n".join(lines) + "\n"
-        source_file = _make_source_file(source)
+        source_file = make_source_file(source)
 
         # Act
         result = rule.check(source_file)
@@ -217,7 +209,7 @@ class TestMaxClassLengthRuleCheck:
             lines.append(f"        x_{i} = {i}")
         lines.append("        pass")
         source = "\n".join(lines) + "\n"
-        source_file = _make_source_file(source)
+        source_file = make_source_file(source)
 
         # Act
         result = rule.check(source_file)
@@ -236,7 +228,7 @@ class TestMaxClassLengthRuleCheck:
             lines.append(f"            x_{i} = {i}")
         lines.append("            pass")
         source = "\n".join(lines) + "\n"
-        source_file = _make_source_file(source)
+        source_file = make_source_file(source)
 
         # Act
         result = rule.check(source_file)
@@ -251,7 +243,7 @@ class TestMaxClassLengthRuleCheck:
         # Arrange: max_lines=10 で11行のクラス
         rule = MaxClassLengthRule(max_lines=10)
         source = _make_class(11)
-        source_file = _make_source_file(source)
+        source_file = make_source_file(source)
 
         # Act
         result = rule.check(source_file)
@@ -264,7 +256,7 @@ class TestMaxClassLengthRuleCheck:
         # Arrange: max_test_lines=20 でテストファイルに21行のクラス
         rule = MaxClassLengthRule(max_test_lines=20)
         source = _make_class(21)
-        source_file = _make_test_source_file(source)
+        source_file = make_test_source_file(source)
 
         # Act
         result = rule.check(source_file)
@@ -276,7 +268,7 @@ class TestMaxClassLengthRuleCheck:
     def test_check_エッジケース_空のソースコードは空タプルを返すこと(self):
         # Arrange
         rule = MaxClassLengthRule()
-        source_file = _make_source_file("")
+        source_file = make_source_file("")
 
         # Act
         result = rule.check(source_file)
@@ -288,7 +280,7 @@ class TestMaxClassLengthRuleCheck:
         # Arrange
         rule = MaxClassLengthRule()
         source = "x = 1\ny = 2\n"
-        source_file = _make_source_file(source)
+        source_file = make_source_file(source)
 
         # Act
         result = rule.check(source_file)
@@ -300,7 +292,7 @@ class TestMaxClassLengthRuleCheck:
         # Arrange
         rule = MaxClassLengthRule()
         source = _make_class(201)
-        source_file = _make_source_file(source)
+        source_file = make_source_file(source)
 
         # Act
         result = rule.check(source_file)
@@ -321,7 +313,7 @@ class TestMaxClassLengthRuleCheck:
                 lines.append(f"    x_{i} = {i}")
             lines.append("    pass")
         source = "\n".join(lines) + "\n"
-        source_file = _make_source_file(source)
+        source_file = make_source_file(source)
 
         # Act
         result = rule.check(source_file)
@@ -335,7 +327,7 @@ class TestMaxClassLengthRuleCheck:
         # Arrange: 物理205行・docstring5行 → 実効200行（上限ちょうど）
         rule = MaxClassLengthRule()
         source = _make_class_with_docstring(num_lines=205, docstring_lines=5)
-        source_file = _make_source_file(source)
+        source_file = make_source_file(source)
 
         # Act
         result = rule.check(source_file)
@@ -347,7 +339,7 @@ class TestMaxClassLengthRuleCheck:
         # Arrange: 物理211行・docstring10行 → 実効201行（上限200を超過）
         rule = MaxClassLengthRule()
         source = _make_class_with_docstring(num_lines=211, docstring_lines=10)
-        source_file = _make_source_file(source)
+        source_file = make_source_file(source)
 
         # Act
         result = rule.check(source_file)
@@ -363,7 +355,7 @@ class TestMaxClassLengthRuleCheck:
         for i in range(199):
             lines.append(f"    y_{i} = {i}")
         source = "\n".join(lines) + "\n"
-        source_file = _make_source_file(source)
+        source_file = make_source_file(source)
 
         # Act
         result = rule.check(source_file)
@@ -381,7 +373,7 @@ class TestMaxClassLengthRuleCheck:
         for i in range(199):
             lines.append(f"    y_{i} = {i}")
         source = "\n".join(lines) + "\n"
-        source_file = _make_source_file(source)
+        source_file = make_source_file(source)
 
         # Act
         result = rule.check(source_file)

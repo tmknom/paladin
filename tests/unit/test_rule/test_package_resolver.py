@@ -1,18 +1,10 @@
 """PackageResolver のユニットテスト"""
 
-import ast
 from pathlib import Path
 
 from paladin.rule.package_resolver import PackageResolver
-from paladin.rule.types import SourceFile, SourceFiles
-
-
-def _make_source_file(source: str, filename: str) -> SourceFile:
-    return SourceFile(file_path=Path(filename), tree=ast.parse(source), source=source)
-
-
-def _make_source_files(*pairs: tuple[str, str]) -> SourceFiles:
-    return SourceFiles(files=tuple(_make_source_file(src, name) for src, name in pairs))
+from paladin.rule.types import SourceFiles
+from tests.unit.test_rule.helpers import make_source_file, make_source_files
 
 
 class TestPackageResolverResolvePackageKey:
@@ -124,7 +116,7 @@ class TestPackageResolverResolveRootPackages:
 
     def test_正常系_srcレイアウトからルートパッケージを導出すること(self):
         resolver = PackageResolver()
-        source_files = _make_source_files(
+        source_files = make_source_files(
             ("x = 1\n", "src/paladin/module.py"),
         )
         result = resolver.resolve_root_packages(source_files)
@@ -132,7 +124,7 @@ class TestPackageResolverResolveRootPackages:
 
     def test_正常系_testsは常に含まれること(self):
         resolver = PackageResolver()
-        source_files = _make_source_files(
+        source_files = make_source_files(
             ("x = 1\n", "src/paladin/module.py"),
         )
         result = resolver.resolve_root_packages(source_files)
@@ -140,7 +132,7 @@ class TestPackageResolverResolveRootPackages:
 
     def test_正常系_複数のsrcパッケージを導出すること(self):
         resolver = PackageResolver()
-        source_files = _make_source_files(
+        source_files = make_source_files(
             ("x = 1\n", "src/paladin/module.py"),
             ("y = 1\n", "src/mylib/core.py"),
         )
@@ -157,7 +149,7 @@ class TestPackageResolverResolveRootPackages:
     def test_正常系_testsアンカーのファイルはルートパッケージに追加しないこと(self):
         resolver = PackageResolver()
         # 相対パスの tests/ ファイル: FS フォールバックは CWD 基準となる
-        source_files = _make_source_files(
+        source_files = make_source_files(
             ("x = 1\n", "tests/unit/test_something.py"),
         )
         result = resolver.resolve_root_packages(source_files)
@@ -171,7 +163,7 @@ class TestPackageResolverResolveRootPackages:
         # 実際のプロジェクトルートを使って FS フォールバックが発動することを確認
         project_root = Path(__file__).parents[3]  # paladin/
         tests_file = project_root / "tests" / "unit" / "test_something.py"
-        source_files = SourceFiles(files=(_make_source_file("x = 1\n", str(tests_file)),))
+        source_files = SourceFiles(files=(make_source_file("x = 1\n", str(tests_file)),))
         result = resolver.resolve_root_packages(source_files)
         # FS フォールバックで paladin が src/ 配下から補完される
         assert "paladin" in result
@@ -180,7 +172,7 @@ class TestPackageResolverResolveRootPackages:
     def test_正常系_srcアンカーのみのパスは無視されること(self):
         resolver = PackageResolver()
         # src/ の直下にファイルがある場合（src アンカー後のセグメントが空）
-        source_files = _make_source_files(
+        source_files = make_source_files(
             ("x = 1\n", "src/module.py"),
         )
         result = resolver.resolve_root_packages(source_files)
@@ -189,7 +181,7 @@ class TestPackageResolverResolveRootPackages:
 
     def test_正常系_絶対パスでもルートパッケージを導出すること(self):
         resolver = PackageResolver()
-        source_files = _make_source_files(
+        source_files = make_source_files(
             ("x = 1\n", "/Users/owner/code/paladin/src/paladin/module.py"),
         )
         result = resolver.resolve_root_packages(source_files)
@@ -198,7 +190,7 @@ class TestPackageResolverResolveRootPackages:
 
     def test_正常系_重複するパッケージは1件のみ返すこと(self):
         resolver = PackageResolver()
-        source_files = _make_source_files(
+        source_files = make_source_files(
             ("x = 1\n", "src/paladin/module.py"),
             ("y = 1\n", "src/paladin/check/foo.py"),
         )

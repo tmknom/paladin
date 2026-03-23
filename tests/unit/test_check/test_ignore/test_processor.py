@@ -1,14 +1,10 @@
 """IgnoreProcessor のテスト"""
 
-import ast
 from pathlib import Path
 
 from paladin.check.ignore import IgnoreProcessor
-from paladin.rule import PerFileIgnoreEntry, SourceFile, SourceFiles, Violation, Violations
-
-
-def _make_source_file(source: str, filename: str = "example.py") -> SourceFile:
-    return SourceFile(file_path=Path(filename), tree=ast.parse(source), source=source)
+from paladin.rule import PerFileIgnoreEntry, SourceFiles, Violation, Violations
+from tests.unit.test_check.test_ignore.helpers import make_source_file
 
 
 def _make_violation(
@@ -33,7 +29,7 @@ class TestIgnoreProcessor:
 
     def test_apply_正常系_ディレクティブなしで全違反が保持されること(self):
         # Arrange
-        source_file = _make_source_file("x = 1\n")
+        source_file = make_source_file("x = 1\n")
         source_files = SourceFiles(files=(source_file,))
         violation = _make_violation(Path("example.py"), "rule-a")
         violations = Violations(items=(violation,))
@@ -48,7 +44,7 @@ class TestIgnoreProcessor:
     def test_apply_正常系_コメント由来ignore_fileで違反が除外されること(self):
         # Arrange
         source = "# paladin: ignore-file\nx = 1\n"
-        source_file = _make_source_file(source)
+        source_file = make_source_file(source)
         source_files = SourceFiles(files=(source_file,))
         violation = _make_violation(Path("example.py"), "rule-a")
         violations = Violations(items=(violation,))
@@ -62,7 +58,7 @@ class TestIgnoreProcessor:
 
     def test_apply_正常系_設定ファイルper_file_ignoresで違反が除外されること(self):
         # Arrange
-        source_file = _make_source_file("x = 1\n")
+        source_file = make_source_file("x = 1\n")
         source_files = SourceFiles(files=(source_file,))
         violation = _make_violation(Path("example.py"), "rule-a")
         violations = Violations(items=(violation,))
@@ -84,7 +80,7 @@ class TestIgnoreProcessor:
     def test_apply_正常系_行単位ignoreで違反が除外されること(self):
         # Arrange
         source = "# paladin: ignore\nx = 1\n"
-        source_file = _make_source_file(source)
+        source_file = make_source_file(source)
         source_files = SourceFiles(files=(source_file,))
         violation = _make_violation(Path("example.py"), "rule-a", line=2)
         violations = Violations(items=(violation,))
@@ -98,7 +94,7 @@ class TestIgnoreProcessor:
 
     def test_apply_正常系_ignore_rulesで違反が除外されること(self):
         # Arrange
-        source_file = _make_source_file("x = 1\n")
+        source_file = make_source_file("x = 1\n")
         source_files = SourceFiles(files=(source_file,))
         violation = _make_violation(Path("example.py"), "rule-a")
         violations = Violations(items=(violation,))

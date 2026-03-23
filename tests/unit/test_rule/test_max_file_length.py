@@ -1,16 +1,8 @@
-import ast
 from pathlib import Path
 
 from paladin.rule.max_file_length import MaxFileLengthRule, calc_file_length
-from paladin.rule.types import RuleMeta, SourceFile
-
-
-def _make_source_file(source: str, filename: str = "example.py") -> SourceFile:
-    return SourceFile(file_path=Path(filename), tree=ast.parse(source), source=source)
-
-
-def _make_test_source_file(source: str, filename: str = "tests/test_example.py") -> SourceFile:
-    return SourceFile(file_path=Path(filename), tree=ast.parse(source), source=source)
+from paladin.rule.types import RuleMeta
+from tests.unit.test_rule.helpers import make_source_file, make_test_source_file
 
 
 def _make_source(num_lines: int) -> str:
@@ -44,7 +36,7 @@ class TestMaxFileLengthRuleCheck:
         # Arrange: デフォルト上限300行に対して301行のファイル
         rule = MaxFileLengthRule()
         source = _make_source(301)
-        source_file = _make_source_file(source)
+        source_file = make_source_file(source)
 
         # Act
         result = rule.check(source_file)
@@ -56,7 +48,7 @@ class TestMaxFileLengthRuleCheck:
         # Arrange: 299行のファイル
         rule = MaxFileLengthRule()
         source = _make_source(299)
-        source_file = _make_source_file(source)
+        source_file = make_source_file(source)
 
         # Act
         result = rule.check(source_file)
@@ -68,7 +60,7 @@ class TestMaxFileLengthRuleCheck:
         # Arrange: ちょうど300行のファイル
         rule = MaxFileLengthRule()
         source = _make_source(300)
-        source_file = _make_source_file(source)
+        source_file = make_source_file(source)
 
         # Act
         result = rule.check(source_file)
@@ -80,7 +72,7 @@ class TestMaxFileLengthRuleCheck:
         # Arrange
         rule = MaxFileLengthRule()
         source = _make_source(301)
-        source_file = _make_source_file(source, "example.py")
+        source_file = make_source_file(source, "example.py")
 
         # Act
         result = rule.check(source_file)
@@ -100,7 +92,7 @@ class TestMaxFileLengthRuleCheck:
         # Arrange: テストファイルのデフォルト上限500行に対して501行のファイル
         rule = MaxFileLengthRule()
         source = _make_source(501)
-        source_file = _make_test_source_file(source)
+        source_file = make_test_source_file(source)
 
         # Act
         result = rule.check(source_file)
@@ -114,7 +106,7 @@ class TestMaxFileLengthRuleCheck:
         # Arrange: テストファイルで500行のファイル
         rule = MaxFileLengthRule()
         source = _make_source(500)
-        source_file = _make_test_source_file(source)
+        source_file = make_test_source_file(source)
 
         # Act
         result = rule.check(source_file)
@@ -126,7 +118,7 @@ class TestMaxFileLengthRuleCheck:
         # Arrange: プロダクション上限300行超えだがテスト上限500行以内の301行
         rule = MaxFileLengthRule()
         source = _make_source(301)
-        source_file = _make_test_source_file(source)
+        source_file = make_test_source_file(source)
 
         # Act
         result = rule.check(source_file)
@@ -140,7 +132,7 @@ class TestMaxFileLengthRuleCheck:
         # Arrange: max_lines=10 で11行のファイル
         rule = MaxFileLengthRule(max_lines=10)
         source = _make_source(11)
-        source_file = _make_source_file(source)
+        source_file = make_source_file(source)
 
         # Act
         result = rule.check(source_file)
@@ -153,7 +145,7 @@ class TestMaxFileLengthRuleCheck:
         # Arrange: max_test_lines=20 でテストファイルに21行のファイル
         rule = MaxFileLengthRule(max_test_lines=20)
         source = _make_source(21)
-        source_file = _make_test_source_file(source)
+        source_file = make_test_source_file(source)
 
         # Act
         result = rule.check(source_file)
@@ -165,7 +157,7 @@ class TestMaxFileLengthRuleCheck:
     def test_check_エッジケース_空のソースコードは空タプルを返すこと(self):
         # Arrange
         rule = MaxFileLengthRule()
-        source_file = _make_source_file("")
+        source_file = make_source_file("")
 
         # Act
         result = rule.check(source_file)
@@ -177,7 +169,7 @@ class TestMaxFileLengthRuleCheck:
         # Arrange
         rule = MaxFileLengthRule()
         source = _make_source(301)
-        source_file = _make_source_file(source)
+        source_file = make_source_file(source)
 
         # Act
         result = rule.check(source_file)
@@ -192,7 +184,7 @@ class TestMaxFileLengthRuleCheck:
         # Arrange: 301行のファイル
         rule = MaxFileLengthRule()
         source = _make_source(301)
-        source_file = _make_source_file(source)
+        source_file = make_source_file(source)
 
         # Act
         result = rule.check(source_file)

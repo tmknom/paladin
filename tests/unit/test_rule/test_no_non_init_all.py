@@ -3,10 +3,7 @@ from pathlib import Path
 
 from paladin.rule.no_non_init_all import NoNonInitAllRule
 from paladin.rule.types import RuleMeta, SourceFile
-
-
-def _make_source_file(source: str, filename: str = "module.py") -> SourceFile:
-    return SourceFile(file_path=Path(filename), tree=ast.parse(source), source=source)
+from tests.unit.test_rule.helpers import make_source_file
 
 
 class TestNoNonInitAllRuleMeta:
@@ -35,7 +32,7 @@ class TestNoNonInitAllRuleCheck:
     def test_check_正常系_init_pyの場合は空タプルを返すこと(self):
         # Arrange
         rule = NoNonInitAllRule()
-        source_file = _make_source_file('__all__ = ["Foo"]\n', "__init__.py")
+        source_file = make_source_file('__all__ = ["Foo"]\n', "__init__.py")
 
         # Act
         result = rule.check(source_file)
@@ -46,7 +43,7 @@ class TestNoNonInitAllRuleCheck:
     def test_check_正常系_all定義のある非init_pyで違反を1件返すこと(self):
         # Arrange
         rule = NoNonInitAllRule()
-        source_file = _make_source_file('__all__ = ["Foo"]\n', "module.py")
+        source_file = make_source_file('__all__ = ["Foo"]\n', "module.py")
 
         # Act
         result = rule.check(source_file)
@@ -58,7 +55,7 @@ class TestNoNonInitAllRuleCheck:
         # Arrange
         rule = NoNonInitAllRule()
         source = '__all__ = ["Foo"]\n'
-        source_file = _make_source_file(source, "module.py")
+        source_file = make_source_file(source, "module.py")
 
         # Act
         result = rule.check(source_file)
@@ -99,7 +96,7 @@ class TestNoNonInitAllRuleCheck:
     def test_check_エッジケース_空のソースコードは空タプルを返すこと(self):
         # Arrange
         rule = NoNonInitAllRule()
-        source_file = _make_source_file("", "module.py")
+        source_file = make_source_file("", "module.py")
 
         # Act
         result = rule.check(source_file)
@@ -110,7 +107,7 @@ class TestNoNonInitAllRuleCheck:
     def test_check_エッジケース_all定義のない非init_pyは空タプルを返すこと(self):
         # Arrange
         rule = NoNonInitAllRule()
-        source_file = _make_source_file("x = 1\n", "module.py")
+        source_file = make_source_file("x = 1\n", "module.py")
 
         # Act
         result = rule.check(source_file)
@@ -122,7 +119,7 @@ class TestNoNonInitAllRuleCheck:
         # Arrange
         rule = NoNonInitAllRule()
         source = 'def foo():\n    __all__ = ["bar"]\n'
-        source_file = _make_source_file(source, "module.py")
+        source_file = make_source_file(source, "module.py")
 
         # Act
         result = rule.check(source_file)

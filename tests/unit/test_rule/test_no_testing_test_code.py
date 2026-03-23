@@ -1,18 +1,8 @@
 """NoTestingTestCodeRule のテスト"""
 
-import ast
-from pathlib import Path
-
 from paladin.rule.no_testing_test_code import NoTestingTestCodeRule
-from paladin.rule.types import RuleMeta, SourceFile, SourceFiles
-
-
-def _make_source_file(source: str, filename: str = "tests/unit/test_foo.py") -> SourceFile:
-    return SourceFile(file_path=Path(filename), tree=ast.parse(source), source=source)
-
-
-def _make_source_files(*files: tuple[str, str]) -> SourceFiles:
-    return SourceFiles(files=tuple(_make_source_file(src, name) for src, name in files))
+from paladin.rule.types import RuleMeta, SourceFiles
+from tests.unit.test_rule.helpers import make_source_files
 
 
 class TestNoTestingTestCodeRuleMeta:
@@ -45,7 +35,7 @@ class TestNoTestingTestCodeRuleClassBased:
             "    def test_read(self) -> None:\n"
             "        pass\n"
         )
-        source_files = _make_source_files((source, "tests/unit/test_fakes/test_fs.py"))
+        source_files = make_source_files((source, "tests/unit/test_fakes/test_fs.py"))
 
         # Act
         violations = NoTestingTestCodeRule().check(source_files)
@@ -64,7 +54,7 @@ class TestNoTestingTestCodeRuleClassBased:
             "    def test_orchestrate(self) -> None:\n"
             "        reader = InMemoryFsReader()\n"
         )
-        source_files = _make_source_files((source, "tests/unit/test_check/test_orchestrator.py"))
+        source_files = make_source_files((source, "tests/unit/test_check/test_orchestrator.py"))
 
         # Act
         violations = NoTestingTestCodeRule().check(source_files)
@@ -81,7 +71,7 @@ class TestNoTestingTestCodeRuleClassBased:
             "    def test_orchestrate(self) -> None:\n"
             "        pass\n"
         )
-        source_files = _make_source_files((source, "tests/unit/test_check/test_orchestrator.py"))
+        source_files = make_source_files((source, "tests/unit/test_check/test_orchestrator.py"))
 
         # Act
         violations = NoTestingTestCodeRule().check(source_files)
@@ -97,7 +87,7 @@ class TestNoTestingTestCodeRuleClassBased:
             "class TestInMemoryFsReader:\n"
             "    pass\n"
         )
-        source_files = _make_source_files((source, "src/paladin/some_module.py"))
+        source_files = make_source_files((source, "src/paladin/some_module.py"))
 
         # Act
         violations = NoTestingTestCodeRule().check(source_files)
@@ -119,7 +109,7 @@ class TestNoTestingTestCodeRuleFunctionBased:
             "def test_in_memory_fs_reader_returns_content() -> None:\n"
             "    pass\n"
         )
-        source_files = _make_source_files((source, "tests/unit/test_fakes/test_fs.py"))
+        source_files = make_source_files((source, "tests/unit/test_fakes/test_fs.py"))
 
         # Act
         violations = NoTestingTestCodeRule().check(source_files)
@@ -138,7 +128,7 @@ class TestNoTestingTestCodeRuleFunctionBased:
             "def test_orchestrate() -> None:\n"
             "    reader = InMemoryFsReader()\n"
         )
-        source_files = _make_source_files((source, "tests/unit/test_check/test_orchestrator.py"))
+        source_files = make_source_files((source, "tests/unit/test_check/test_orchestrator.py"))
 
         # Act
         violations = NoTestingTestCodeRule().check(source_files)
@@ -154,7 +144,7 @@ class TestNoTestingTestCodeRuleFunctionBased:
             "def test_in_memory_fs_reader() -> None:\n"
             "    pass\n"
         )
-        source_files = _make_source_files((source, "tests/unit/test_fakes/test_fs.py"))
+        source_files = make_source_files((source, "tests/unit/test_fakes/test_fs.py"))
 
         # Act
         violations = NoTestingTestCodeRule().check(source_files)
@@ -174,7 +164,7 @@ class TestNoTestingTestCodeRuleConftestExclusion:
             "class TestInMemoryFsReader:\n"
             "    pass\n"
         )
-        source_files = _make_source_files((source, "tests/unit/conftest.py"))
+        source_files = make_source_files((source, "tests/unit/conftest.py"))
 
         # Act
         violations = NoTestingTestCodeRule().check(source_files)
@@ -193,7 +183,7 @@ class TestNoTestingTestCodeRuleEdgeCases:
 
     def test_check_正常系_testsインポートなしのテストファイルで違反なし(self):
         source = "class TestFoo:\n    def test_something(self) -> None:\n        pass\n"
-        source_files = _make_source_files((source, "tests/unit/test_foo.py"))
+        source_files = make_source_files((source, "tests/unit/test_foo.py"))
         violations = NoTestingTestCodeRule().check(source_files)
         assert len(violations) == 0
 
@@ -205,7 +195,7 @@ class TestNoTestingTestCodeRuleEdgeCases:
             "class TestFakeReader:\n"
             "    pass\n"
         )
-        source_files = _make_source_files((source, "tests/unit/test_fakes/test_fs.py"))
+        source_files = make_source_files((source, "tests/unit/test_fakes/test_fs.py"))
 
         # Act
         violations = NoTestingTestCodeRule().check(source_files)
@@ -226,7 +216,7 @@ class TestNoTestingTestCodeRuleEdgeCases:
             "class TestFakeDatabase:\n"
             "    pass\n"
         )
-        source_files = _make_source_files((source, "tests/unit/test_fakes/test_all.py"))
+        source_files = make_source_files((source, "tests/unit/test_fakes/test_all.py"))
 
         # Act
         violations = NoTestingTestCodeRule().check(source_files)
@@ -245,7 +235,7 @@ class TestNoTestingTestCodeRuleEdgeCases:
             "def helper_function() -> None:\n"
             "    pass\n"
         )
-        source_files = _make_source_files((source, "tests/unit/test_fakes/test_fs.py"))
+        source_files = make_source_files((source, "tests/unit/test_fakes/test_fs.py"))
 
         # Act
         violations = NoTestingTestCodeRule().check(source_files)
@@ -260,7 +250,7 @@ class TestNoTestingTestCodeRuleEdgeCases:
             "class TestInMemoryFsReader:\n"
             "    pass\n"
         )
-        source_files = _make_source_files((source, "tests/unit/test_fakes/test_fs.py"))
+        source_files = make_source_files((source, "tests/unit/test_fakes/test_fs.py"))
         violations = NoTestingTestCodeRule().check(source_files)
 
         assert len(violations) == 1
