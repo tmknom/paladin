@@ -2,7 +2,8 @@
 
 from pathlib import Path
 
-from paladin.check.ignore import FileIgnoreDirective, LineIgnoreDirective, ViolationFilter
+from paladin.check.ignore.directive import FileIgnoreDirective, LineIgnoreDirective
+from paladin.check.ignore.filter import ViolationFilter
 from paladin.rule import Violation, Violations
 
 

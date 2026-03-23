@@ -8,14 +8,7 @@ from pathlib import Path
 from paladin.check.collector import FileCollector, PathExcluder
 from paladin.check.context import CheckContext
 from paladin.check.formatter import CheckFormatterFactory
-from paladin.check.ignore import (
-    ConfigIgnoreResolver,
-    FileIgnoreDirective,
-    FileIgnoreParser,
-    LineIgnoreDirective,
-    LineIgnoreParser,
-    ViolationFilter,
-)
+from paladin.check.ignore import IgnoreProcessor
 from paladin.check.override import OverrideResolver
 from paladin.check.parser import AstParser
 from paladin.check.result import CheckReport, CheckResult
@@ -33,7 +26,8 @@ class CheckOrchestrator:
         3. PathExcluder で context.exclude パターンを適用
         4. AstParser で各ファイルの AST を生成
         5. RuleSet でルールを適用し Violations を収集
-        6. CheckReportFormatter で CheckReport に変換して返す
+        6. IgnoreProcessor で ignore ディレクティブを適用し Violations をフィルタリング
+        7. CheckReportFormatter で CheckReport に変換して返す
 
     Returns:
         CheckReport: フォーマット済みレポート文字列と終了コードを含む実行結果
@@ -45,7 +39,7 @@ class CheckOrchestrator:
         parser: AstParser,
         rule_set: RuleSet,
         formatter: CheckFormatterFactory,
-        violation_filter: ViolationFilter,
+        ignore_processor: IgnoreProcessor,
         rule_filter: RuleFilter,
         path_excluder: PathExcluder,
         override_resolver: OverrideResolver,
@@ -57,7 +51,7 @@ class CheckOrchestrator:
             parser: ASTパーサー
             rule_set: ルール管理・実行
             formatter: レポートフォーマッター
-            violation_filter: ignore フィルター
+            ignore_processor: ignore ディレクティブ処理ファサード
             rule_filter: ルール有効/無効フィルター
             path_excluder: exclude パターンによるファイル除外
             override_resolver: ディレクトリ別オーバーライド解決
@@ -66,7 +60,7 @@ class CheckOrchestrator:
         self.parser = parser
         self.rule_set = rule_set
         self.formatter = formatter
-        self.violation_filter = violation_filter
+        self.ignore_processor = ignore_processor
         self.rule_filter = rule_filter
         self.path_excluder = path_excluder
         self.override_resolver = override_resolver
@@ -93,15 +87,8 @@ class CheckOrchestrator:
             disabled_rule_ids=base_disabled,
             per_file_disabled=per_file_disabled,
         )
-        file_paths = tuple(sf.file_path for sf in source_files)
-        config_directives = ConfigIgnoreResolver().resolve(context.per_file_ignores, file_paths)
-        comment_directives = FileIgnoreParser().parse_all(source_files)
-        merged_directives = FileIgnoreDirective.merge(config_directives, comment_directives)
-        line_directives: tuple[LineIgnoreDirective, ...] = LineIgnoreParser().parse_all(
-            source_files
-        )
-        violations = self.violation_filter.filter(
-            violations, merged_directives, line_directives, context.ignore_rules
+        violations = self.ignore_processor.apply(
+            violations, source_files, context.per_file_ignores, context.ignore_rules
         )
         result = CheckResult(
             target_files=target_files, source_files=source_files, violations=violations

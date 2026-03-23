@@ -6,16 +6,8 @@ Docs:
     - docs/design/ignore.md
 """
 
-from paladin.check.ignore.directive import FileIgnoreDirective, LineIgnoreDirective
-from paladin.check.ignore.filter import ViolationFilter
-from paladin.check.ignore.parser import FileIgnoreParser, LineIgnoreParser
-from paladin.check.ignore.resolver import ConfigIgnoreResolver
+from paladin.check.ignore.processor import IgnoreProcessor
 
 __all__ = [
-    "ConfigIgnoreResolver",
-    "FileIgnoreDirective",
-    "FileIgnoreParser",
-    "LineIgnoreDirective",
-    "LineIgnoreParser",
-    "ViolationFilter",
+    "IgnoreProcessor",
 ]

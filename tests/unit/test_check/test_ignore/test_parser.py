@@ -3,7 +3,7 @@
 import ast
 from pathlib import Path
 
-from paladin.check.ignore import FileIgnoreParser, LineIgnoreParser
+from paladin.check.ignore.parser import FileIgnoreParser, LineIgnoreParser
 from paladin.rule import SourceFile, SourceFiles
 
 
