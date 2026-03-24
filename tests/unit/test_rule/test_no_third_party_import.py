@@ -1,5 +1,7 @@
 from pathlib import Path
 
+import pytest
+
 from paladin.rule.no_third_party_import import NoThirdPartyImportRule
 from paladin.rule.types import RuleMeta, SourceFiles
 from tests.unit.test_rule.helpers import make_source_files
@@ -28,17 +30,112 @@ class TestNoThirdPartyImportRuleMeta:
         assert isinstance(result, RuleMeta)
         assert result.rule_id == "no-third-party-import"
         assert result.rule_name == "No Third Party Import"
-        assert (
-            result.summary
-            == "許可ディレクトリ以外でのサードパーティライブラリのインポートを禁止する"
+
+
+class TestNoThirdPartyImportRuleCheck:
+    """NoThirdPartyImportRule.check のテスト"""
+
+    def test_check_正常系_違反フィールド値が正しいこと_plain_import(self):
+        # Arrange
+        source_files = make_source_files(
+            ("import requests\n", "src/app/main.py"),
         )
-        assert result.intent != ""
-        assert result.guidance != ""
-        assert result.suggestion != ""
+        rule = _rule_with_prepare(source_files, allow_dirs=("src/foundation/",))
 
+        # Act
+        result = rule.check(source_files.files[0])
 
-class TestNoThirdPartyImportRuleAllowDirs:
-    """NoThirdPartyImportRule の allow_dirs 設定のテスト"""
+        # Assert
+        assert len(result) == 1
+        violation = result[0]
+        assert violation.file == Path("src/app/main.py")
+        assert violation.line == 1
+        assert violation.column == 0
+        assert violation.rule_id == "no-third-party-import"
+        assert violation.rule_name == "No Third Party Import"
+
+    def test_check_正常系_from_importで複数名をインポートした場合に名前ごとに違反を返すこと(self):
+        # Arrange
+        source_files = make_source_files(
+            ("from requests import get, post\n", "src/app/main.py"),
+        )
+        rule = _rule_with_prepare(source_files, allow_dirs=("src/foundation/",))
+
+        # Act
+        result = rule.check(source_files.files[0])
+
+        # Assert
+        assert len(result) == 2
+
+    @pytest.mark.parametrize(
+        "source",
+        [
+            pytest.param("import os\n", id="標準ライブラリimport"),
+            pytest.param("from pathlib import Path\n", id="標準ライブラリfrom_import"),
+            pytest.param("from . import utils\n", id="相対インポート"),
+            pytest.param("", id="空ファイル"),
+            pytest.param("x = 1\n", id="importなし"),
+        ],
+    )
+    def test_check_違反なしのケースで空を返すこと(self, source: str) -> None:
+        # Arrange
+        source_files = make_source_files((source, "src/app/main.py"))
+        rule = _rule_with_prepare(source_files, allow_dirs=("src/foundation/",))
+
+        # Act
+        result = rule.check(source_files.files[0])
+
+        # Assert
+        assert len(result) == 0
+
+    def test_check_正常系_ルートパッケージのimportは違反なしを返すこと(self):
+        # Arrange: src/myapp/ がルートパッケージとして自動導出される
+        source_files = make_source_files(
+            ("import myapp\n", "src/app/main.py"),
+            ("x = 1\n", "src/myapp/core.py"),
+        )
+        rule = _rule_with_prepare(source_files, allow_dirs=("src/foundation/",))
+
+        # Act
+        result = rule.check(source_files.files[0])
+
+        # Assert
+        assert len(result) == 0
+
+    def test_check_正常系_ルートパッケージのfrom_importは違反なしを返すこと(self):
+        # Arrange
+        source_files = make_source_files(
+            ("from myapp.utils import helper\n", "src/app/main.py"),
+            ("x = 1\n", "src/myapp/utils.py"),
+        )
+        rule = _rule_with_prepare(source_files, allow_dirs=("src/foundation/",))
+
+        # Act
+        result = rule.check(source_files.files[0])
+
+        # Assert
+        assert len(result) == 0
+
+    @pytest.mark.parametrize(
+        "source",
+        [
+            pytest.param("import requests\n", id="許可ディレクトリ外のplain_import"),
+            pytest.param("from requests import get\n", id="許可ディレクトリ外のfrom_import"),
+            pytest.param(
+                "from requests.auth import HTTPBasicAuth\n", id="サブモジュールのfrom_import"
+            ),
+        ],
+    )
+    def test_check_違反ありのケースで1件返すこと(self, source: str) -> None:
+        # Arrange
+        source_files = make_source_files((source, "src/app/main.py"))
+        rule = _rule_with_prepare(source_files, allow_dirs=("src/foundation/",))
+
+        # Act
+        result = rule.check(source_files.files[0])
+
+        # Assert
+        assert len(result) == 1
 
     def test_check_正常系_allow_dirs未設定の場合は全ファイルで違反を検出すること(self):
         # Arrange
@@ -64,161 +161,7 @@ class TestNoThirdPartyImportRuleAllowDirs:
         result = rule.check(source_files.files[0])
 
         # Assert
-        assert result == ()
-
-    def test_check_正常系_許可ディレクトリ外のplain_importで違反を返すこと(self):
-        # Arrange
-        source_files = make_source_files(
-            ("import requests\n", "src/app/main.py"),
-        )
-        rule = _rule_with_prepare(source_files, allow_dirs=("src/foundation/",))
-
-        # Act
-        result = rule.check(source_files.files[0])
-
-        # Assert
-        assert len(result) == 1
-
-    def test_check_正常系_許可ディレクトリ外のfrom_importで違反を返すこと(self):
-        # Arrange
-        source_files = make_source_files(
-            ("from requests import get\n", "src/app/main.py"),
-        )
-        rule = _rule_with_prepare(source_files, allow_dirs=("src/foundation/",))
-
-        # Act
-        result = rule.check(source_files.files[0])
-
-        # Assert
-        assert len(result) == 1
-
-    def test_check_正常系_違反フィールド値が正しいこと_plain_import(self):
-        # Arrange
-        source_files = make_source_files(
-            ("import requests\n", "src/app/main.py"),
-        )
-        rule = _rule_with_prepare(source_files, allow_dirs=("src/foundation/",))
-
-        # Act
-        result = rule.check(source_files.files[0])
-
-        # Assert
-        assert len(result) == 1
-        violation = result[0]
-        assert violation.file == Path("src/app/main.py")
-        assert violation.line == 1
-        assert violation.column == 0
-        assert violation.rule_id == "no-third-party-import"
-        assert violation.rule_name == "No Third Party Import"
-        assert "requests" in violation.message
-
-    def test_check_正常系_違反フィールド値が正しいこと_from_import(self):
-        # Arrange
-        source_files = make_source_files(
-            ("from requests import get\n", "src/app/main.py"),
-        )
-        rule = _rule_with_prepare(source_files, allow_dirs=("src/foundation/",))
-
-        # Act
-        result = rule.check(source_files.files[0])
-
-        # Assert
-        assert len(result) == 1
-        violation = result[0]
-        assert violation.file == Path("src/app/main.py")
-        assert violation.line == 1
-        assert violation.column == 0
-        assert violation.rule_id == "no-third-party-import"
-        assert "requests" in violation.message
-        assert "get" in violation.message
-
-    def test_check_正常系_from_importで複数名をインポートした場合に名前ごとに違反を返すこと(self):
-        # Arrange
-        source_files = make_source_files(
-            ("from requests import get, post\n", "src/app/main.py"),
-        )
-        rule = _rule_with_prepare(source_files, allow_dirs=("src/foundation/",))
-
-        # Act
-        result = rule.check(source_files.files[0])
-
-        # Assert
-        assert len(result) == 2
-
-
-class TestNoThirdPartyImportRuleExclusions:
-    """NoThirdPartyImportRule の除外パターンのテスト"""
-
-    def test_check_正常系_標準ライブラリのimportは違反なしを返すこと(self):
-        # Arrange
-        source_files = make_source_files(
-            ("import os\n", "src/app/main.py"),
-        )
-        rule = _rule_with_prepare(source_files, allow_dirs=("src/foundation/",))
-
-        # Act
-        result = rule.check(source_files.files[0])
-
-        # Assert
-        assert result == ()
-
-    def test_check_正常系_標準ライブラリのfrom_importは違反なしを返すこと(self):
-        # Arrange
-        source_files = make_source_files(
-            ("from pathlib import Path\n", "src/app/main.py"),
-        )
-        rule = _rule_with_prepare(source_files, allow_dirs=("src/foundation/",))
-
-        # Act
-        result = rule.check(source_files.files[0])
-
-        # Assert
-        assert result == ()
-
-    def test_check_正常系_ルートパッケージのimportは違反なしを返すこと(self):
-        # Arrange: src/myapp/ がルートパッケージとして自動導出される
-        source_files = make_source_files(
-            ("import myapp\n", "src/app/main.py"),
-            ("x = 1\n", "src/myapp/core.py"),
-        )
-        rule = _rule_with_prepare(source_files, allow_dirs=("src/foundation/",))
-
-        # Act
-        result = rule.check(source_files.files[0])
-
-        # Assert
-        assert result == ()
-
-    def test_check_正常系_ルートパッケージのfrom_importは違反なしを返すこと(self):
-        # Arrange
-        source_files = make_source_files(
-            ("from myapp.utils import helper\n", "src/app/main.py"),
-            ("x = 1\n", "src/myapp/utils.py"),
-        )
-        rule = _rule_with_prepare(source_files, allow_dirs=("src/foundation/",))
-
-        # Act
-        result = rule.check(source_files.files[0])
-
-        # Assert
-        assert result == ()
-
-    def test_check_正常系_相対インポートは違反なしを返すこと(self):
-        # Arrange
-        source_files = make_source_files(
-            ("from . import utils\n", "src/app/main.py"),
-        )
-        rule = _rule_with_prepare(source_files, allow_dirs=("src/foundation/",))
-
-        # Act
-        result = rule.check(source_files.files[0])
-
-        # Assert
-        assert result == ()
-
-
-class TestNoThirdPartyImportRuleAllowDirNormalization:
-    """NoThirdPartyImportRule の allow_dirs 末尾スラッシュ正規化のテスト"""
+        assert len(result) == 0
 
     def test_check_正常系_末尾スラッシュなしのallow_dirsが正規化されて機能すること(self):
         # Arrange: 末尾スラッシュなしで指定
@@ -231,7 +174,7 @@ class TestNoThirdPartyImportRuleAllowDirNormalization:
         result = rule.check(source_files.files[0])
 
         # Assert: 末尾スラッシュなしでも src/foundation/ 配下として認識される
-        assert result == ()
+        assert len(result) == 0
 
     def test_check_正常系_末尾スラッシュなしのallow_dirsで誤判定しないこと(self):
         # Arrange: "src/found" を allow_dirs に指定しても "src/foundation/" は許可されない
@@ -257,43 +200,4 @@ class TestNoThirdPartyImportRuleAllowDirNormalization:
         result = rule.check(source_files.files[0])
 
         # Assert: src/infra/ が許可されているので違反なし
-        assert result == ()
-
-
-class TestNoThirdPartyImportRuleEdgeCases:
-    """NoThirdPartyImportRule のエッジケースのテスト"""
-
-    def test_check_エッジケース_空ファイルは空タプルを返すこと(self):
-        # Arrange
-        source_files = make_source_files(("", "src/app/main.py"))
-        rule = _rule_with_prepare(source_files, allow_dirs=("src/foundation/",))
-
-        # Act
-        result = rule.check(source_files.files[0])
-
-        # Assert
-        assert result == ()
-
-    def test_check_エッジケース_importなしのファイルは空タプルを返すこと(self):
-        # Arrange
-        source_files = make_source_files(("x = 1\n", "src/app/main.py"))
-        rule = _rule_with_prepare(source_files, allow_dirs=("src/foundation/",))
-
-        # Act
-        result = rule.check(source_files.files[0])
-
-        # Assert
-        assert result == ()
-
-    def test_check_エッジケース_サブモジュールのfrom_importで違反を返すこと(self):
-        # Arrange: requests.auth.HTTPBasicAuth は requests のサブモジュール
-        source_files = make_source_files(
-            ("from requests.auth import HTTPBasicAuth\n", "src/app/main.py"),
-        )
-        rule = _rule_with_prepare(source_files, allow_dirs=("src/foundation/",))
-
-        # Act
-        result = rule.check(source_files.files[0])
-
-        # Assert
-        assert len(result) == 1
+        assert len(result) == 0

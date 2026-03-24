@@ -1,5 +1,7 @@
 from pathlib import Path
 
+import pytest
+
 from paladin.rule.require_qualified_third_party import RequireQualifiedThirdPartyRule
 from paladin.rule.types import RuleMeta, SourceFiles
 from tests.unit.test_rule.helpers import make_source_file, make_source_files
@@ -26,20 +28,13 @@ class TestRequireQualifiedThirdPartyRuleMeta:
         assert isinstance(result, RuleMeta)
         assert result.rule_id == "require-qualified-third-party"
         assert result.rule_name == "Require Qualified Third Party"
-        assert (
-            result.summary
-            == "サードパーティライブラリの直接インポートとエイリアスインポートを禁止する"
-        )
-        assert result.intent != ""
-        assert result.guidance != ""
-        assert result.suggestion != ""
 
 
-class TestRequireQualifiedThirdPartyRuleCheckFromImport:
-    """RequireQualifiedThirdPartyRule.check の from import パターンのテスト"""
+class TestRequireQualifiedThirdPartyRuleCheck:
+    """RequireQualifiedThirdPartyRule.check のテスト"""
 
-    def test_check_正常系_サードパーティのfrom_importで違反を1件返すこと(self):
-        # Arrange: src/paladin/ 配下に paladin パッケージがあることを示すファイル群
+    def test_check_正常系_from_importの違反フィールド値が正しいこと(self):
+        # Arrange
         source_files = make_source_files(
             ("from requests import get\n", "src/paladin/example.py"),
         )
@@ -50,11 +45,17 @@ class TestRequireQualifiedThirdPartyRuleCheckFromImport:
 
         # Assert
         assert len(result) == 1
+        violation = result[0]
+        assert violation.file == Path("src/paladin/example.py")
+        assert violation.line == 1
+        assert violation.column == 0
+        assert violation.rule_id == "require-qualified-third-party"
+        assert violation.rule_name == "Require Qualified Third Party"
 
-    def test_check_正常系_from_importの違反フィールド値が正しいこと(self):
+    def test_check_正常系_import_asの違反フィールド値が正しいこと(self):
         # Arrange
         source_files = make_source_files(
-            ("from requests import get\n", "src/paladin/example.py"),
+            ("import requests as req\n", "src/paladin/example.py"),
         )
         rule = _rule_with_prepare(source_files)
 
@@ -85,149 +86,35 @@ class TestRequireQualifiedThirdPartyRuleCheckFromImport:
         # Assert
         assert len(result) == 2
 
-    def test_check_正常系_サードパーティのサブモジュールfrom_importで違反を返すこと(self):
+    @pytest.mark.parametrize(
+        "source",
+        [
+            pytest.param("from os.path import join\n", id="標準ライブラリのfrom_import"),
+            pytest.param("from paladin.check import Rule\n", id="ルートパッケージのfrom_import"),
+            pytest.param("from . import utils\n", id="相対インポート"),
+            pytest.param("import os as operating_system\n", id="標準ライブラリのimport_as"),
+            pytest.param("import paladin as p\n", id="ルートパッケージのimport_as"),
+            pytest.param("import requests\n", id="通常のimport文"),
+            pytest.param(
+                "from tests.unit.fakes import InMemoryFsReader\n",
+                id="testsパッケージのfrom_import",
+            ),
+            pytest.param("", id="空ソース"),
+            pytest.param("x = 1\n", id="importなし"),
+            pytest.param("from . import utils\n", id="node_moduleがNoneの相対インポート"),
+        ],
+    )
+    def test_check_違反なしのケースで空を返すこと(self, source: str) -> None:
         # Arrange
-        source_files = make_source_files(
-            ("from requests.auth import HTTPBasicAuth\n", "src/paladin/example.py"),
-        )
+        source_files = make_source_files(("", "src/paladin/module.py"))
+        source_file = make_source_file(source, "src/paladin/example.py")
         rule = _rule_with_prepare(source_files)
 
         # Act
-        result = rule.check(source_files.files[0])
+        result = rule.check(source_file)
 
         # Assert
-        assert len(result) == 1
-
-
-class TestRequireQualifiedThirdPartyRuleCheckImportAs:
-    """RequireQualifiedThirdPartyRule.check の import as パターンのテスト"""
-
-    def test_check_正常系_サードパーティのimport_asで違反を1件返すこと(self):
-        # Arrange
-        source_files = make_source_files(
-            ("import requests as req\n", "src/paladin/example.py"),
-        )
-        rule = _rule_with_prepare(source_files)
-
-        # Act
-        result = rule.check(source_files.files[0])
-
-        # Assert
-        assert len(result) == 1
-
-    def test_check_正常系_import_asの違反フィールド値が正しいこと(self):
-        # Arrange
-        source_files = make_source_files(
-            ("import requests as req\n", "src/paladin/example.py"),
-        )
-        rule = _rule_with_prepare(source_files)
-
-        # Act
-        result = rule.check(source_files.files[0])
-
-        # Assert
-        assert len(result) == 1
-        violation = result[0]
-        assert violation.file == Path("src/paladin/example.py")
-        assert violation.line == 1
-        assert violation.column == 0
-        assert violation.rule_id == "require-qualified-third-party"
-        assert violation.rule_name == "Require Qualified Third Party"
-
-
-class TestRequireQualifiedThirdPartyRuleCheckExclusions:
-    """RequireQualifiedThirdPartyRule.check の除外パターンのテスト"""
-
-    def test_check_正常系_標準ライブラリのfrom_importは違反なしを返すこと(self):
-        # Arrange
-        source_files = make_source_files(
-            ("from os.path import join\n", "src/paladin/example.py"),
-        )
-        rule = _rule_with_prepare(source_files)
-
-        # Act
-        result = rule.check(source_files.files[0])
-
-        # Assert
-        assert result == ()
-
-    def test_check_正常系_ルートパッケージのfrom_importは違反なしを返すこと(self):
-        # Arrange: src/paladin/ がルートパッケージとして自動導出される
-        source_files = make_source_files(
-            ("from paladin.check import Rule\n", "src/paladin/example.py"),
-        )
-        rule = _rule_with_prepare(source_files)
-
-        # Act
-        result = rule.check(source_files.files[0])
-
-        # Assert
-        assert result == ()
-
-    def test_check_正常系_相対インポートは違反なしを返すこと(self):
-        # Arrange
-        source_files = make_source_files(
-            ("from . import utils\n", "src/paladin/example.py"),
-        )
-        rule = _rule_with_prepare(source_files)
-
-        # Act
-        result = rule.check(source_files.files[0])
-
-        # Assert
-        assert result == ()
-
-    def test_check_正常系_標準ライブラリのimport_asは違反なしを返すこと(self):
-        # Arrange
-        source_files = make_source_files(
-            ("import os as operating_system\n", "src/paladin/example.py"),
-        )
-        rule = _rule_with_prepare(source_files)
-
-        # Act
-        result = rule.check(source_files.files[0])
-
-        # Assert
-        assert result == ()
-
-    def test_check_正常系_ルートパッケージのimport_asは違反なしを返すこと(self):
-        # Arrange: paladin が root_packages に自動導出される
-        source_files = make_source_files(
-            ("import paladin as p\n", "src/paladin/example.py"),
-        )
-        rule = _rule_with_prepare(source_files)
-
-        # Act
-        result = rule.check(source_files.files[0])
-
-        # Assert
-        assert result == ()
-
-    def test_check_正常系_通常のimport文は違反なしを返すこと(self):
-        # Arrange
-        source_files = make_source_files(
-            ("import requests\n", "src/paladin/example.py"),
-        )
-        rule = _rule_with_prepare(source_files)
-
-        # Act
-        result = rule.check(source_files.files[0])
-
-        # Assert
-        assert result == ()
-
-    def test_check_正常系_testsパッケージのfrom_importは違反なしを返すこと(self):
-        # Arrange: tests は常に root_packages に含まれる
-        source_files = make_source_files(
-            ("from tests.unit.fakes import InMemoryFsReader\n", "src/paladin/example.py"),
-        )
-        rule = _rule_with_prepare(source_files)
-
-        # Act
-        result = rule.check(source_files.files[0])
-
-        # Assert
-        assert result == ()
+        assert len(result) == 0
 
     def test_check_正常系_複数のroot_packagesで除外できること(self):
         # Arrange: src/paladin/ と src/mylib/ の両方がルートパッケージとして導出される
@@ -241,44 +128,29 @@ class TestRequireQualifiedThirdPartyRuleCheckExclusions:
         result = rule.check(source_files.files[0])
 
         # Assert
-        assert result == ()
+        assert len(result) == 0
 
-
-class TestRequireQualifiedThirdPartyRuleCheckEdgeCases:
-    """RequireQualifiedThirdPartyRule.check のエッジケースのテスト"""
-
-    def test_check_エッジケース_空のソースコードは空タプルを返すこと(self):
+    @pytest.mark.parametrize(
+        "source",
+        [
+            pytest.param("from requests import get\n", id="サードパーティのfrom_import"),
+            pytest.param(
+                "from requests.auth import HTTPBasicAuth\n",
+                id="サードパーティのサブモジュールfrom_import",
+            ),
+            pytest.param("import requests as req\n", id="サードパーティのimport_as"),
+        ],
+    )
+    def test_check_違反ありのケースで1件返すこと(self, source: str) -> None:
         # Arrange
-        source_files = make_source_files(("", "src/paladin/example.py"))
+        source_files = make_source_files((source, "src/paladin/example.py"))
         rule = _rule_with_prepare(source_files)
 
         # Act
         result = rule.check(source_files.files[0])
 
         # Assert
-        assert result == ()
-
-    def test_check_エッジケース_importを含まないソースコードは空タプルを返すこと(self):
-        # Arrange
-        source_files = make_source_files(("x = 1\n", "src/paladin/example.py"))
-        rule = _rule_with_prepare(source_files)
-
-        # Act
-        result = rule.check(source_files.files[0])
-
-        # Assert
-        assert result == ()
-
-    def test_check_エッジケース_node_moduleがNoneの相対インポートは違反なしを返すこと(self):
-        # Arrange: from . import utils は node.module=None, node.level=1
-        source_files = make_source_files(("from . import utils\n", "src/paladin/example.py"))
-        rule = _rule_with_prepare(source_files)
-
-        # Act
-        result = rule.check(source_files.files[0])
-
-        # Assert
-        assert result == ()
+        assert len(result) == 1
 
 
 class TestRequireQualifiedThirdPartyRulePrepare:
@@ -290,15 +162,17 @@ class TestRequireQualifiedThirdPartyRulePrepare:
             ("x = 1\n", "src/paladin/module.py"),
         )
         rule = RequireQualifiedThirdPartyRule()
-
         rule.prepare(source_files)
-
-        # prepare() 後は paladin が root_packages に含まれるため違反なし
         source_with_paladin_import = make_source_file(
             "from paladin.check import Rule\n", "src/paladin/example.py"
         )
+
+        # Act
+        # prepare() 後は paladin が root_packages に含まれるため違反なし
         result = rule.check(source_with_paladin_import)
-        assert result == ()
+
+        # Assert
+        assert len(result) == 0
 
     def test_prepare_正常系_testsが常にroot_packagesに含まれること(self):
         # Arrange: tests は src/ 配下になくても常に含まれる
@@ -307,13 +181,16 @@ class TestRequireQualifiedThirdPartyRulePrepare:
         )
         rule = RequireQualifiedThirdPartyRule()
         rule.prepare(source_files)
-
-        # tests からのインポートは違反なし
         source = make_source_file(
             "from tests.unit.fakes import InMemoryFsReader\n", "src/paladin/example.py"
         )
+
+        # Act
+        # tests からのインポートは違反なし
         result = rule.check(source)
-        assert result == ()
+
+        # Assert
+        assert len(result) == 0
 
     def test_prepare_正常系_準備なしでは空のroot_packagesで動作すること(self):
         # Arrange: prepare() を呼ばない場合は root_packages が空

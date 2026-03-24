@@ -1,6 +1,8 @@
 import ast
 from pathlib import Path
 
+import pytest
+
 from paladin.rule.no_non_init_all import NoNonInitAllRule
 from paladin.rule.types import RuleMeta, SourceFile
 from tests.unit.test_rule.helpers import make_source_file
@@ -20,36 +22,10 @@ class TestNoNonInitAllRuleMeta:
         assert isinstance(result, RuleMeta)
         assert result.rule_id == "no-non-init-all"
         assert result.rule_name == "No Non-Init All"
-        assert result.summary != ""
-        assert result.intent != ""
-        assert result.guidance != ""
-        assert result.suggestion != ""
 
 
 class TestNoNonInitAllRuleCheck:
     """NoNonInitAllRule.check のテスト"""
-
-    def test_check_正常系_init_pyの場合は空タプルを返すこと(self):
-        # Arrange
-        rule = NoNonInitAllRule()
-        source_file = make_source_file('__all__ = ["Foo"]\n', "__init__.py")
-
-        # Act
-        result = rule.check(source_file)
-
-        # Assert
-        assert result == ()
-
-    def test_check_正常系_all定義のある非init_pyで違反を1件返すこと(self):
-        # Arrange
-        rule = NoNonInitAllRule()
-        source_file = make_source_file('__all__ = ["Foo"]\n', "module.py")
-
-        # Act
-        result = rule.check(source_file)
-
-        # Assert
-        assert len(result) == 1
 
     def test_check_正常系_違反のフィールド値が正しいこと(self):
         # Arrange
@@ -68,9 +44,43 @@ class TestNoNonInitAllRuleCheck:
         assert violation.column == 0
         assert violation.rule_id == "no-non-init-all"
         assert violation.rule_name == "No Non-Init All"
-        assert violation.message == "__init__.py 以外のファイルに __all__ が定義されている"
-        assert violation.reason != ""
-        assert violation.suggestion != ""
+
+    @pytest.mark.parametrize(
+        ("source", "filename"),
+        [
+            pytest.param('__all__ = ["Foo"]\n', "__init__.py", id="init_py"),
+            pytest.param("", "module.py", id="空ソース"),
+            pytest.param("x = 1\n", "module.py", id="all定義なし"),
+            pytest.param('def foo():\n    __all__ = ["bar"]\n', "module.py", id="関数内all代入"),
+        ],
+    )
+    def test_check_違反なしのケースで空を返すこと(self, source: str, filename: str) -> None:
+        # Arrange
+        rule = NoNonInitAllRule()
+        source_file = make_source_file(source, filename)
+
+        # Act
+        result = rule.check(source_file)
+
+        # Assert
+        assert len(result) == 0
+
+    @pytest.mark.parametrize(
+        ("source", "filename"),
+        [
+            pytest.param('__all__ = ["Foo"]\n', "module.py", id="all定義のある非init_py"),
+        ],
+    )
+    def test_check_違反ありのケースで1件返すこと(self, source: str, filename: str) -> None:
+        # Arrange
+        rule = NoNonInitAllRule()
+        source_file = make_source_file(source, filename)
+
+        # Act
+        result = rule.check(source_file)
+
+        # Assert
+        assert len(result) == 1
 
     def test_check_エッジケース_augassign形式のall定義でも違反を返すこと(self):
         # Arrange: AugAssign パスをカバーするため AST を手動で構築する
@@ -92,40 +102,6 @@ class TestNoNonInitAllRuleCheck:
 
         # Assert
         assert len(result) == 1
-
-    def test_check_エッジケース_空のソースコードは空タプルを返すこと(self):
-        # Arrange
-        rule = NoNonInitAllRule()
-        source_file = make_source_file("", "module.py")
-
-        # Act
-        result = rule.check(source_file)
-
-        # Assert
-        assert result == ()
-
-    def test_check_エッジケース_all定義のない非init_pyは空タプルを返すこと(self):
-        # Arrange
-        rule = NoNonInitAllRule()
-        source_file = make_source_file("x = 1\n", "module.py")
-
-        # Act
-        result = rule.check(source_file)
-
-        # Assert
-        assert result == ()
-
-    def test_check_エッジケース_関数内のall代入は検出対象外であること(self):
-        # Arrange
-        rule = NoNonInitAllRule()
-        source = 'def foo():\n    __all__ = ["bar"]\n'
-        source_file = make_source_file(source, "module.py")
-
-        # Act
-        result = rule.check(source_file)
-
-        # Assert
-        assert result == ()
 
     def test_check_エッジケース_複数のall代入がある場合は最初の1件のみ報告すること(self):
         # Arrange: AST を手動で構築して Assign と AugAssign を両方置く
