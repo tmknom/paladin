@@ -403,7 +403,7 @@ E2Eテストは `subprocess.run` で `paladin check <fixture-path>` を子プロ
 | ルール | 理由 |
 |-------|------|
 | `unittest.mock` / `pytest-mock` の `MagicMock` / `patch` を使わない | Protocol + Fake で型安全に分離できる。Mock は型チェックを回避する |
-| `@pytest.mark.parametrize` を使わない | 各テストメソッドが独立した意図を持ち、命名で識別できることを優先する |
+| `@pytest.mark.parametrize` は入力バリエーションの列挙に限定する | テストロジックが共通で入力のみ異なるケースでは `pytest.param(id=...)` で識別する。アサート分岐を含む複雑な parametrize は避ける |
 | テストクラスをネストしない | フラットな構造で十分。ネストは可読性を下げる |
 | テスト間で状態を共有しない（クラス変数・グローバル変数） | テストの実行順依存を防ぐ |
 | `conftest.py` にビジネスロジックを持ち込まない | `conftest.py` はフィクスチャの定義のみ |
