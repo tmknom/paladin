@@ -43,7 +43,7 @@ class NoCrossPackageReexportRule:
         if not all_exports.has_exports:
             return ()
 
-        import_mapping = self._collect_import_mapping(source_file)
+        import_mapping = NoCrossPackageReexportRule._collect_import_mapping(source_file)
 
         current_module = ModulePath(current_package)
         violations: list[Violation] = []
@@ -54,17 +54,19 @@ class NoCrossPackageReexportRule:
             if not import_module.is_subpackage_of(current_module):
                 source_package = import_module.package_key
                 violations.append(
-                    self._make_violation(
+                    NoCrossPackageReexportRule._make_violation(
                         source_file=source_file,
                         line=all_exports.lineno,
                         name=name,
                         source_package=source_package,
                         current_package=current_package,
+                        meta=self._meta,
                     )
                 )
         return tuple(violations)
 
-    def _collect_import_mapping(self, source_file: SourceFile) -> dict[str, str]:
+    @staticmethod
+    def _collect_import_mapping(source_file: SourceFile) -> dict[str, str]:
         """トップレベルの from X import Y 文を収集し {シンボル名: インポート元} を返す。
 
         - as エイリアスがある場合は asname をキーとする
@@ -78,16 +80,17 @@ class NoCrossPackageReexportRule:
                 mapping[imported.bound_name] = stmt.module_str
         return mapping
 
+    @staticmethod
     def _make_violation(
-        self,
         source_file: SourceFile,
         line: int,
         name: str,
         source_package: str,
         current_package: str,
+        meta: RuleMeta,
     ) -> Violation:
         """診断メッセージ仕様に従い Violation を生成する"""
-        return self._meta.create_violation_at(
+        return meta.create_violation_at(
             location=source_file.location(line),
             message=f"__all__ に別パッケージのシンボル `{name}` が含まれている（定義元: `{source_package}`）",
             reason=f"`{source_package}` で定義されたシンボルを `{current_package}` の公開 API として再エクスポートすると、パッケージ境界が曖昧になる",
