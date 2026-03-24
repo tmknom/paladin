@@ -1,8 +1,14 @@
+import ast
 from pathlib import Path
 
 import pytest
 
-from paladin.rule.max_method_length import MaxMethodLengthRule
+from paladin.rule.max_method_length import (
+    FunctionCollector,
+    FunctionScope,
+    MaxMethodLengthRule,
+    MethodLengthDetector,
+)
 from paladin.rule.types import RuleMeta
 from tests.unit.test_rule.helpers import make_source_file, make_test_source_file
 
@@ -348,3 +354,180 @@ class TestMaxMethodLengthRuleCheck:
 
         # Assert: docstring除外なし → 物理51行 > 上限50行 → 違反あり
         assert len(result) == 1
+
+
+class TestMethodLengthDetector:
+    """MethodLengthDetector.detect のテスト"""
+
+    def _make_scope(self, source: str) -> FunctionScope:
+        """ソースから最初の FunctionScope を返す"""
+        scopes = FunctionCollector.collect(ast.parse(source))
+        if not scopes:
+            raise ValueError("FunctionDef not found")
+        return scopes[0]
+
+    def test_detect_正常系_上限以内でNoneを返すこと(self):
+        # Arrange
+        source = "def foo(): pass"
+        scope = self._make_scope(source)
+        meta = MaxMethodLengthRule().meta
+        source_file = make_source_file(source)
+        limit = 10
+
+        # Act
+        result = MethodLengthDetector.detect(
+            scope, length=limit, limit=limit, meta=meta, source_file=source_file
+        )
+
+        # Assert
+        assert result is None
+
+    def test_detect_正常系_上限超過でViolationを返すこと(self):
+        # Arrange
+        source = "def foo(): pass"
+        scope = self._make_scope(source)
+        meta = MaxMethodLengthRule().meta
+        source_file = make_source_file(source)
+        limit = 10
+
+        # Act
+        result = MethodLengthDetector.detect(
+            scope, length=limit + 1, limit=limit, meta=meta, source_file=source_file
+        )
+
+        # Assert
+        assert result is not None
+
+    def test_detect_正常系_メソッドのViolationメッセージにクラス名_メソッド名が含まれること(self):
+        # Arrange
+        source = "class MyClass:\n    def method(self): pass"
+        scope = self._make_scope(source)
+        meta = MaxMethodLengthRule().meta
+        source_file = make_source_file(source)
+        limit = 10
+
+        # Act
+        result = MethodLengthDetector.detect(
+            scope, length=limit + 1, limit=limit, meta=meta, source_file=source_file
+        )
+
+        # Assert
+        assert result is not None
+        assert "MyClass.method" in result.message
+
+    def test_detect_正常系_関数のViolationメッセージに関数名のみが含まれること(self):
+        # Arrange
+        source = "def standalone(): pass"
+        scope = self._make_scope(source)
+        meta = MaxMethodLengthRule().meta
+        source_file = make_source_file(source)
+        limit = 10
+
+        # Act
+        result = MethodLengthDetector.detect(
+            scope, length=limit + 1, limit=limit, meta=meta, source_file=source_file
+        )
+
+        # Assert
+        assert result is not None
+        assert "standalone" in result.message
+        assert "." not in result.message.split("`")[1]  # func_label にドットが含まれないこと
+
+
+class TestFunctionCollector:
+    """FunctionCollector.collect のテスト"""
+
+    def test_collect_正常系_トップレベル関数を収集すること(self):
+        # Arrange
+        source = "def foo(): pass"
+        tree = ast.parse(source)
+
+        # Act
+        result = FunctionCollector.collect(tree)
+
+        # Assert
+        assert len(result) == 1
+        assert isinstance(result[0], FunctionScope)
+        assert result[0].node.name == "foo"
+        assert result[0].class_name is None
+
+    def test_collect_正常系_メソッドをクラス名付きで収集すること(self):
+        # Arrange
+        source = "class MyClass:\n    def method(self): pass"
+        tree = ast.parse(source)
+
+        # Act
+        result = FunctionCollector.collect(tree)
+
+        # Assert
+        assert len(result) == 1
+        assert result[0].node.name == "method"
+        assert result[0].class_name == "MyClass"
+
+    def test_collect_正常系_ネスト関数をclass_name_Noneで収集すること(self):
+        # Arrange
+        source = "def outer():\n    def inner(): pass"
+        tree = ast.parse(source)
+
+        # Act
+        result = FunctionCollector.collect(tree)
+
+        # Assert: outer (class_name=None) と inner (class_name=None) の2件
+        assert len(result) == 2
+        names = {scope.node.name for scope in result}
+        assert names == {"outer", "inner"}
+        for scope in result:
+            assert scope.class_name is None
+
+    def test_collect_正常系_ネストクラスのメソッドを収集すること(self):
+        # Arrange
+        source = "class Outer:\n    class Inner:\n        def method(self): pass"
+        tree = ast.parse(source)
+
+        # Act
+        result = FunctionCollector.collect(tree)
+
+        # Assert
+        assert len(result) == 1
+        assert result[0].node.name == "method"
+        assert result[0].class_name == "Inner"
+
+    def test_collect_正常系_関数内クラスのメソッドを収集すること(self):
+        # Arrange
+        source = "def outer():\n    class Local:\n        def method(self): pass"
+        tree = ast.parse(source)
+
+        # Act
+        result = FunctionCollector.collect(tree)
+
+        # Assert: outer (class_name=None) と Local.method (class_name="Local") の2件
+        assert len(result) == 2
+        outer_scope = next(s for s in result if s.node.name == "outer")
+        method_scope = next(s for s in result if s.node.name == "method")
+        assert outer_scope.class_name is None
+        assert method_scope.class_name == "Local"
+
+    def test_collect_正常系_async関数を収集すること(self):
+        # Arrange
+        source = "async def foo(): pass"
+        tree = ast.parse(source)
+
+        # Act
+        result = FunctionCollector.collect(tree)
+
+        # Assert
+        assert len(result) == 1
+        assert isinstance(result[0], FunctionScope)
+        assert result[0].node.name == "foo"
+        assert result[0].class_name is None
+
+    def test_collect_エッジケース_関数なしで空タプルを返すこと(self):
+        # Arrange
+        source = "x = 1"
+        tree = ast.parse(source)
+
+        # Act
+        result = FunctionCollector.collect(tree)
+
+        # Assert
+        assert result == ()
