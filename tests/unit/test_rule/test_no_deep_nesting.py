@@ -1,10 +1,296 @@
+import ast
 from pathlib import Path
 
 import pytest
 
-from paladin.rule.no_deep_nesting import NoDeepNestingRule
+from paladin.rule.no_deep_nesting import (
+    FunctionCollector,
+    FunctionScope,
+    NestingCalculator,
+    NestingDetector,
+    NoDeepNestingRule,
+)
 from paladin.rule.types import RuleMeta
 from tests.unit.test_rule.helpers import make_source_file
+
+
+class TestFunctionCollector:
+    """FunctionCollector.collect のテスト"""
+
+    def test_collect_正常系_トップレベル関数を収集すること(self):
+        # Arrange
+        source = "def foo():\n    pass\n"
+        tree = ast.parse(source)
+
+        # Act
+        result = FunctionCollector.collect(tree)
+
+        # Assert
+        assert len(result) == 1
+        assert result[0].node.name == "foo"
+        assert result[0].class_name is None
+
+    def test_collect_正常系_メソッドをクラス名付きで収集すること(self):
+        # Arrange
+        source = "class MyClass:\n    def method(self):\n        pass\n"
+        tree = ast.parse(source)
+
+        # Act
+        result = FunctionCollector.collect(tree)
+
+        # Assert
+        assert len(result) == 1
+        assert result[0].node.name == "method"
+        assert result[0].class_name == "MyClass"
+
+    def test_collect_正常系_ネスト関数を独立スコープとして収集すること(self):
+        # Arrange
+        source = "def outer():\n    def inner():\n        pass\n"
+        tree = ast.parse(source)
+
+        # Act
+        result = FunctionCollector.collect(tree)
+
+        # Assert
+        assert len(result) == 2
+        names = {s.node.name for s in result}
+        assert names == {"outer", "inner"}
+        inner_scope = next(s for s in result if s.node.name == "inner")
+        assert inner_scope.class_name is None
+
+    def test_collect_正常系_ネストクラス内のメソッドを収集すること(self):
+        # Arrange
+        source = "class Outer:\n    class Inner:\n        def method(self):\n            pass\n"
+        tree = ast.parse(source)
+
+        # Act
+        result = FunctionCollector.collect(tree)
+
+        # Assert
+        assert len(result) == 1
+        assert result[0].node.name == "method"
+        assert result[0].class_name == "Inner"
+
+    def test_collect_正常系_関数内クラスのメソッドを収集すること(self):
+        # Arrange
+        source = "def outer():\n    class Local:\n        def method(self):\n            pass\n"
+        tree = ast.parse(source)
+
+        # Act
+        result = FunctionCollector.collect(tree)
+
+        # Assert
+        assert len(result) == 2
+        names = {s.node.name for s in result}
+        assert names == {"outer", "method"}
+        method_scope = next(s for s in result if s.node.name == "method")
+        assert method_scope.class_name == "Local"
+
+    def test_collect_正常系_async関数を収集すること(self):
+        # Arrange
+        source = "async def foo():\n    pass\n"
+        tree = ast.parse(source)
+
+        # Act
+        result = FunctionCollector.collect(tree)
+
+        # Assert
+        assert len(result) == 1
+        assert result[0].node.name == "foo"
+        assert result[0].class_name is None
+
+    def test_collect_エッジケース_関数なしで空タプルを返すこと(self):
+        # Arrange
+        source = "x = 1\n"
+        tree = ast.parse(source)
+
+        # Act
+        result = FunctionCollector.collect(tree)
+
+        # Assert
+        assert result == ()
+
+
+class TestNestingCalculator:
+    """NestingCalculator.calc_max_depth のテスト"""
+
+    def _parse_func_body(self, source: str) -> list[ast.stmt]:
+        """関数の body を返す"""
+        tree = ast.parse(source)
+        func = tree.body[0]
+        assert isinstance(func, ast.FunctionDef)
+        return func.body
+
+    def test_calc_max_depth_正常系_ifネストの深度を返すこと(self):
+        # Arrange: if True: if True: if True: pass
+        source = (
+            "def f():\n    if True:\n        if True:\n            if True:\n                pass\n"
+        )
+        stmts = self._parse_func_body(source)
+
+        # Act
+        result = NestingCalculator.calc_max_depth(stmts)
+
+        # Assert
+        assert result == 3
+
+    def test_calc_max_depth_正常系_forループの深度を返すこと(self):
+        # Arrange: for x in []: for y in []: pass
+        source = "def f():\n    for x in []:\n        for y in []:\n            pass\n"
+        stmts = self._parse_func_body(source)
+
+        # Act
+        result = NestingCalculator.calc_max_depth(stmts)
+
+        # Assert
+        assert result == 2
+
+    def test_calc_max_depth_正常系_whileループの深度を返すこと(self):
+        # Arrange: while True: while True: pass
+        source = "def f():\n    while True:\n        while True:\n            pass\n"
+        stmts = self._parse_func_body(source)
+
+        # Act
+        result = NestingCalculator.calc_max_depth(stmts)
+
+        # Assert
+        assert result == 2
+
+    def test_calc_max_depth_正常系_with文の深度を返すこと(self):
+        # Arrange: with open('a'): with open('b'): pass
+        source = "def f():\n    with open('a'):\n        with open('b'):\n            pass\n"
+        stmts = self._parse_func_body(source)
+
+        # Act
+        result = NestingCalculator.calc_max_depth(stmts)
+
+        # Assert
+        assert result == 2
+
+    def test_calc_max_depth_正常系_try_exceptの深度を返すこと(self):
+        # Arrange: try: try: pass except: pass except: pass
+        source = (
+            "def f():\n"
+            "    try:\n"
+            "        try:\n"
+            "            pass\n"
+            "        except Exception:\n"
+            "            pass\n"
+            "    except Exception:\n"
+            "        pass\n"
+        )
+        stmts = self._parse_func_body(source)
+
+        # Act
+        result = NestingCalculator.calc_max_depth(stmts)
+
+        # Assert
+        assert result == 2
+
+    def test_calc_max_depth_正常系_ネスト関数を深度に含めないこと(self):
+        # Arrange: if True: def inner(): if True: if True: if True: pass
+        source = (
+            "def f():\n"
+            "    if True:\n"
+            "        def inner():\n"
+            "            if True:\n"
+            "                if True:\n"
+            "                    if True:\n"
+            "                        pass\n"
+        )
+        stmts = self._parse_func_body(source)
+
+        # Act
+        result = NestingCalculator.calc_max_depth(stmts)
+
+        # Assert
+        assert result == 1
+
+    def test_calc_max_depth_正常系_ネストクラスを深度に含めないこと(self):
+        # Arrange: if True: class Inner: def method(self): pass
+        source = (
+            "def f():\n"
+            "    if True:\n"
+            "        class Inner:\n"
+            "            def method(self):\n"
+            "                pass\n"
+        )
+        stmts = self._parse_func_body(source)
+
+        # Act
+        result = NestingCalculator.calc_max_depth(stmts)
+
+        # Assert
+        assert result == 1
+
+
+class TestNestingDetector:
+    """NestingDetector.detect のテスト"""
+
+    def _make_scope(self, source: str, class_name: str | None = None) -> FunctionScope:
+        """テスト用の FunctionScope を生成する"""
+        tree = ast.parse(source)
+        func = tree.body[0]
+        assert isinstance(func, (ast.FunctionDef, ast.AsyncFunctionDef))
+        return FunctionScope(node=func, class_name=class_name)
+
+    def test_detect_正常系_閾値未満でNoneを返すこと(self):
+        # Arrange
+        rule = NoDeepNestingRule()
+        source_file = make_source_file("def foo():\n    pass\n")
+        scope = self._make_scope("def foo():\n    pass\n")
+
+        # Act
+        result = NestingDetector.detect(
+            scope, depth=2, threshold=3, meta=rule.meta, source_file=source_file
+        )
+
+        # Assert
+        assert result is None
+
+    def test_detect_正常系_閾値以上でViolationを返すこと(self):
+        # Arrange
+        rule = NoDeepNestingRule()
+        source_file = make_source_file("def foo():\n    pass\n")
+        scope = self._make_scope("def foo():\n    pass\n")
+
+        # Act
+        result = NestingDetector.detect(
+            scope, depth=3, threshold=3, meta=rule.meta, source_file=source_file
+        )
+
+        # Assert
+        assert result is not None
+
+    def test_detect_正常系_メソッドのViolationメッセージにクラス名_メソッド名が含まれること(self):
+        # Arrange
+        rule = NoDeepNestingRule()
+        source_file = make_source_file("def method():\n    pass\n")
+        scope = self._make_scope("def method():\n    pass\n", class_name="MyClass")
+
+        # Act
+        result = NestingDetector.detect(
+            scope, depth=3, threshold=3, meta=rule.meta, source_file=source_file
+        )
+
+        # Assert
+        assert result is not None
+        assert "メソッド MyClass.method" in result.message
+
+    def test_detect_正常系_関数のViolationメッセージに関数名のみが含まれること(self):
+        # Arrange
+        rule = NoDeepNestingRule()
+        source_file = make_source_file("def foo():\n    pass\n")
+        scope = self._make_scope("def foo():\n    pass\n", class_name=None)
+
+        # Act
+        result = NestingDetector.detect(
+            scope, depth=3, threshold=3, meta=rule.meta, source_file=source_file
+        )
+
+        # Assert
+        assert result is not None
+        assert "関数 foo" in result.message
 
 
 class TestNoDeepNestingRuleMeta:
