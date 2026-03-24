@@ -3,8 +3,7 @@
 公開APIは `paladin.protocol` から import すること(`__all__` のみ互換性対象)。
 
 Docs:
-    - docs/specs/protocol/requirements.md
-    - docs/specs/protocol/design.md
+    - docs/internal/protocol.md
 """
 
 from paladin.protocol.fs import TextFileSystemReaderProtocol, TextFileSystemWriterProtocol

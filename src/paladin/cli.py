@@ -14,8 +14,7 @@ uv run コマンド経由での実行を想定している。
 なおエラー発生時は main 関数内の ErrorHandler が例外を補足し、エラーハンドリングを実行する。
 
 Docs:
-    - docs/specs/cli/requirements.md
-    - docs/specs/cli/design.md
+    - docs/internal/cli.md
 
 Usage:
     uv run paladin transform xxxx.md

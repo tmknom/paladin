@@ -3,8 +3,7 @@
 公開APIは `paladin.foundation.fs` から import すること(`__all__` のみ互換性対象)。
 
 Docs:
-    - docs/specs/foundation/fs/requirements.md
-    - docs/specs/foundation/fs/design.md
+    - docs/internal/fs.md
 """
 
 from paladin.foundation.fs.error import FileSystemError
