@@ -59,9 +59,11 @@ class NoCrossPackageImportRule:
             if stmt.is_relative:
                 continue
             if stmt.is_import_from and stmt.module is not None:
-                self._check_from_import(stmt, stmt.module, source_file, own_packages, violations)
+                violations.extend(
+                    self._check_from_import(stmt, stmt.module, source_file, own_packages)
+                )
             elif not stmt.is_import_from:
-                self._check_plain_import(stmt, source_file, own_packages, violations)
+                violations.extend(self._check_plain_import(stmt, source_file, own_packages))
         return tuple(violations)
 
     def _is_entrypoint(self, source_file: SourceFile) -> bool:
@@ -77,12 +79,12 @@ class NoCrossPackageImportRule:
         import_module: ModulePath,
         source_file: SourceFile,
         own_packages: frozenset[str],
-        violations: list[Violation],
-    ) -> None:
+    ) -> list[Violation]:
         """From X import Y パターンの違反を収集する"""
+        violations: list[Violation] = []
         module_str = str(import_module)
         if not self._is_cross_package_import(import_module, own_packages):
-            return
+            return violations
         for imported in stmt.names:
             violations.append(
                 self._meta.create_violation_at(
@@ -92,15 +94,16 @@ class NoCrossPackageImportRule:
                     suggestion=f"`{module_str}` の利用を許可ディレクトリ配下に移動するか、`allow-dirs` にそのパッケージを追加してください",
                 )
             )
+        return violations
 
     def _check_plain_import(
         self,
         stmt: ImportStatement,
         source_file: SourceFile,
         own_packages: frozenset[str],
-        violations: list[Violation],
-    ) -> None:
+    ) -> list[Violation]:
         """Import X パターンの違反を収集する"""
+        violations: list[Violation] = []
         for imported in stmt.names:
             import_module = ModulePath(imported.name)
             if not self._is_cross_package_import(import_module, own_packages):
@@ -113,6 +116,7 @@ class NoCrossPackageImportRule:
                     suggestion=f"`{imported.name}` の利用を許可ディレクトリ配下に移動するか、`allow-dirs` にそのパッケージを追加してください",
                 )
             )
+        return violations
 
     def _is_cross_package_import(
         self,
