@@ -6,11 +6,15 @@ _DEFAULT_MAX_LINES = 300
 _DEFAULT_MAX_TEST_LINES = 500
 
 
-def calc_file_length(source: str) -> int:
-    """ファイルの行数を返す"""
-    if not source:
-        return 0
-    return len(source.splitlines())
+class FileLengthCalculator:
+    """ファイルの行数を計算するクラス"""
+
+    @staticmethod
+    def calc(source: str) -> int:
+        """ファイルの行数を返す"""
+        if not source:
+            return 0
+        return len(source.splitlines())
 
 
 class MaxFileLengthRule:
@@ -39,7 +43,7 @@ class MaxFileLengthRule:
     def check(self, source_file: SourceFile) -> tuple[Violation, ...]:
         """単一ファイルに対する違反判定を行う"""
         limit = self._max_test_lines if source_file.is_test_file else self._max_lines
-        length = calc_file_length(source_file.source)
+        length = FileLengthCalculator.calc(source_file.source)
 
         if length <= limit:
             return ()

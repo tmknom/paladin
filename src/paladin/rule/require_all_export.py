@@ -34,11 +34,11 @@ class RequireAllExportRule:
         """単一ファイルに対する違反判定を行う"""
         if not source_file.is_init_py:
             return ()
-        if not self._has_substantial_code(source_file.tree):
+        if not RequireAllExportRule._has_substantial_code(source_file.tree):
             return ()
         if self._extractor.has_all_definition(source_file):
             return ()
-        symbols = self._collect_public_symbols(source_file)
+        symbols = RequireAllExportRule._collect_public_symbols(source_file)
         if symbols:
             symbols_str = ", ".join(f'"{s}"' for s in sorted(symbols))
             suggestion = f"`__all__ = [{symbols_str}]` のように公開シンボルを定義してください"
@@ -53,7 +53,8 @@ class RequireAllExportRule:
             ),
         )
 
-    def _has_substantial_code(self, tree: ast.Module) -> bool:
+    @staticmethod
+    def _has_substantial_code(tree: ast.Module) -> bool:
         """実質的なコード（コメント・docstring以外）が存在するか判定する"""
         for node in tree.body:
             if (
@@ -66,7 +67,8 @@ class RequireAllExportRule:
             return True
         return False
 
-    def _collect_public_symbols(self, source_file: SourceFile) -> list[str]:
+    @staticmethod
+    def _collect_public_symbols(source_file: SourceFile) -> list[str]:
         """トップレベルの公開シンボルを収集する
 
         from .xxx import Yyy の Yyy と、アンダースコア始まりでないトップレベル定義を返す。
@@ -75,7 +77,7 @@ class RequireAllExportRule:
         for stmt in source_file.top_level_imports:
             if not stmt.is_relative:
                 continue
-            symbols.extend(self._public_imported_names(stmt.names))
+            symbols.extend(RequireAllExportRule._public_imported_names(stmt.names))
         for node in source_file.tree.body:
             if isinstance(
                 node, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)
@@ -83,7 +85,8 @@ class RequireAllExportRule:
                 symbols.append(node.name)
         return symbols
 
-    def _public_imported_names(self, names: tuple[ImportedName, ...]) -> list[str]:
+    @staticmethod
+    def _public_imported_names(names: tuple[ImportedName, ...]) -> list[str]:
         """インポートされた名前のうち公開シンボル（_ 始まりでないもの）を返す"""
         return [
             imported.bound_name for imported in names if not imported.bound_name.startswith("_")

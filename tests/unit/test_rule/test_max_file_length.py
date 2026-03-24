@@ -2,7 +2,7 @@ from pathlib import Path
 
 import pytest
 
-from paladin.rule.max_file_length import MaxFileLengthRule, calc_file_length
+from paladin.rule.max_file_length import FileLengthCalculator, MaxFileLengthRule
 from paladin.rule.types import RuleMeta
 from tests.unit.test_rule.helpers import make_source_file, make_test_source_file
 
@@ -157,22 +157,22 @@ class TestMaxFileLengthRuleCheck:
         assert len(result) == 1
 
 
-class TestCalcFileLength:
-    """calc_file_length のテスト"""
+class TestFileLengthCalculator:
+    """FileLengthCalculator.calc のテスト"""
 
     def test_改行で終わるソースは行数を正しく返すこと(self):
         source = "a = 1\nb = 2\nc = 3\n"
-        assert calc_file_length(source) == 3
+        assert FileLengthCalculator.calc(source) == 3
 
     def test_改行なしで終わるソースは行数を正しく返すこと(self):
         source = "a = 1\nb = 2\nc = 3"
-        assert calc_file_length(source) == 3
+        assert FileLengthCalculator.calc(source) == 3
 
     def test_空文字列は0を返すこと(self):
-        assert calc_file_length("") == 0
+        assert FileLengthCalculator.calc("") == 0
 
     def test_改行のみは1を返すこと(self):
-        assert calc_file_length("\n") == 1
+        assert FileLengthCalculator.calc("\n") == 1
 
     def test_1行のソースは1を返すこと(self):
-        assert calc_file_length("x = 1\n") == 1
+        assert FileLengthCalculator.calc("x = 1\n") == 1

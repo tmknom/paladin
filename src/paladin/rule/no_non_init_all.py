@@ -34,12 +34,13 @@ class NoNonInitAllRule:
         all_exports = self._extractor.extract(source_file)
         if not all_exports.is_defined:
             return ()
-        return (self._make_violation(source_file, all_exports.lineno),)
+        return (NoNonInitAllRule._make_violation(self._meta, source_file, all_exports.lineno),)
 
-    def _make_violation(self, source_file: SourceFile, line: int) -> Violation:
-        return self._meta.create_violation_at(
+    @staticmethod
+    def _make_violation(meta: RuleMeta, source_file: SourceFile, line: int) -> Violation:
+        return meta.create_violation_at(
             location=source_file.location(line),
             message="__init__.py 以外のファイルに __all__ が定義されている",
-            reason=self._meta.intent,
-            suggestion=self._meta.suggestion,
+            reason=meta.intent,
+            suggestion=meta.suggestion,
         )
