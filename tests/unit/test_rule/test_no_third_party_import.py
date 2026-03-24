@@ -3,7 +3,7 @@ from pathlib import Path
 import pytest
 
 from paladin.rule.no_third_party_import import NoThirdPartyImportRule
-from paladin.rule.types import RuleMeta, SourceFiles
+from paladin.rule.types import RuleMeta, SourceFiles, Violation
 from tests.unit.test_rule.helpers import make_source_files
 
 
@@ -14,6 +14,68 @@ def _rule_with_prepare(
     rule = NoThirdPartyImportRule(allow_dirs=allow_dirs)
     rule.prepare(source_files)
     return rule
+
+
+class TestNoThirdPartyImportRuleHelpers:
+    """NoThirdPartyImportRule のヘルパーメソッドの直接テスト"""
+
+    def test_check_from_import_正常系_サードパーティのfrom_importで違反リストを返すこと(self):
+        # Arrange
+        source_files = make_source_files(("from requests import get\n", "src/app/main.py"))
+        rule = _rule_with_prepare(source_files)
+        source_file = source_files.files[0]
+        stmt = source_file.imports[0]
+
+        # Act
+        result = rule._check_from_import(stmt, source_file)  # type: ignore[reportPrivateUsage]
+
+        # Assert
+        assert isinstance(result, list)
+        assert len(result) == 1
+        assert isinstance(result[0], Violation)
+
+    def test_check_from_import_正常系_標準ライブラリのfrom_importで空リストを返すこと(self):
+        # Arrange
+        source_files = make_source_files(("from pathlib import Path\n", "src/app/main.py"))
+        rule = _rule_with_prepare(source_files)
+        source_file = source_files.files[0]
+        stmt = source_file.imports[0]
+
+        # Act
+        result = rule._check_from_import(stmt, source_file)  # type: ignore[reportPrivateUsage]
+
+        # Assert
+        assert isinstance(result, list)
+        assert len(result) == 0
+
+    def test_check_plain_import_正常系_サードパーティのplain_importで違反リストを返すこと(self):
+        # Arrange
+        source_files = make_source_files(("import requests\n", "src/app/main.py"))
+        rule = _rule_with_prepare(source_files)
+        source_file = source_files.files[0]
+        stmt = source_file.imports[0]
+
+        # Act
+        result = rule._check_plain_import(stmt, source_file)  # type: ignore[reportPrivateUsage]
+
+        # Assert
+        assert isinstance(result, list)
+        assert len(result) == 1
+        assert isinstance(result[0], Violation)
+
+    def test_check_plain_import_正常系_標準ライブラリのplain_importで空リストを返すこと(self):
+        # Arrange
+        source_files = make_source_files(("import os\n", "src/app/main.py"))
+        rule = _rule_with_prepare(source_files)
+        source_file = source_files.files[0]
+        stmt = source_file.imports[0]
+
+        # Act
+        result = rule._check_plain_import(stmt, source_file)  # type: ignore[reportPrivateUsage]
+
+        # Assert
+        assert isinstance(result, list)
+        assert len(result) == 0
 
 
 class TestNoThirdPartyImportRuleMeta:
