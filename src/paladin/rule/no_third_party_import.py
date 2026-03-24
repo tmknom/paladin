@@ -52,20 +52,20 @@ class NoThirdPartyImportRule:
             if stmt.is_relative:
                 continue
             if stmt.is_import_from:
-                self._check_from_import(stmt, violations, source_file)
+                violations.extend(self._check_from_import(stmt, source_file))
             else:
-                self._check_plain_import(stmt, violations, source_file)
+                violations.extend(self._check_plain_import(stmt, source_file))
         return tuple(violations)
 
     def _check_from_import(
         self,
         stmt: ImportStatement,
-        violations: list[Violation],
         source_file: SourceFile,
-    ) -> None:
+    ) -> list[Violation]:
+        violations: list[Violation] = []
         top = stmt.top_level_module
         if top is None or not self._is_third_party(top):
-            return
+            return violations
         module_str = stmt.module_str
         for imported in stmt.names:
             violations.append(
@@ -76,13 +76,14 @@ class NoThirdPartyImportRule:
                     suggestion=f"`{module_str}` の利用を許可ディレクトリ配下に移動するか、ラッパーモジュール経由でアクセスしてください",
                 )
             )
+        return violations
 
     def _check_plain_import(
         self,
         stmt: ImportStatement,
-        violations: list[Violation],
         source_file: SourceFile,
-    ) -> None:
+    ) -> list[Violation]:
+        violations: list[Violation] = []
         for imported in stmt.names:
             top = ModulePath(imported.name).top_level
             if not self._is_third_party(top):
@@ -95,6 +96,7 @@ class NoThirdPartyImportRule:
                     suggestion=f"`{imported.name}` の利用を許可ディレクトリ配下に移動するか、ラッパーモジュール経由でアクセスしてください",
                 )
             )
+        return violations
 
     def _is_allowed(self, file_path: Path) -> bool:
         """ファイルパスが allow_dirs のいずれかに前方一致するかを判定する"""

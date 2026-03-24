@@ -40,21 +40,21 @@ class RequireQualifiedThirdPartyRule:
         """単一ファイルに対する違反判定を行う"""
         violations: list[Violation] = []
         for imp in source_file.absolute_from_imports:
-            self._check_import_from(imp, violations, source_file)
+            violations.extend(self._check_import_from(imp, source_file))
         for stmt in source_file.imports:
             if not stmt.is_import_from:
-                self._check_import_as(stmt, violations, source_file)
+                violations.extend(self._check_import_as(stmt, source_file))
         return tuple(violations)
 
     def _check_import_from(
         self,
         imp: AbsoluteFromImport,
-        violations: list[Violation],
         source_file: SourceFile,
-    ) -> None:
+    ) -> list[Violation]:
+        violations: list[Violation] = []
         top = imp.top_level
         if self._is_excluded(top):
-            return
+            return violations
         module_str = imp.module_str
         for imported in imp.names:
             violations.append(
@@ -65,13 +65,14 @@ class RequireQualifiedThirdPartyRule:
                     suggestion=f"`from {module_str} import {imported.name}` を `import {module_str}` に書き換え、使用箇所の `{imported.name}` を `{module_str}.{imported.name}` に置換してください",
                 )
             )
+        return violations
 
     def _check_import_as(
         self,
         stmt: ImportStatement,
-        violations: list[Violation],
         source_file: SourceFile,
-    ) -> None:
+    ) -> list[Violation]:
+        violations: list[Violation] = []
         for imported in stmt.names:
             if not imported.has_alias:
                 continue
@@ -86,6 +87,7 @@ class RequireQualifiedThirdPartyRule:
                     suggestion=f"`import {imported.name} as {imported.asname}` を `import {imported.name}` に書き換え、使用箇所の `{imported.asname}` を `{imported.name}` に置換してください",
                 )
             )
+        return violations
 
     def _is_excluded(self, module_name: str) -> bool:
         """標準ライブラリまたはルートパッケージに該当するかを判定する"""
