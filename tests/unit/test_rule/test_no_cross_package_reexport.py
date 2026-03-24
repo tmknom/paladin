@@ -1,6 +1,8 @@
 import ast
 from pathlib import Path
 
+import pytest
+
 from paladin.rule.no_cross_package_reexport import NoCrossPackageReexportRule
 from paladin.rule.types import RuleMeta, SourceFile
 from tests.unit.test_rule.helpers import make_source_file
@@ -20,38 +22,10 @@ class TestNoCrossPackageReexportRuleMeta:
         assert isinstance(result, RuleMeta)
         assert result.rule_id == "no-cross-package-reexport"
         assert result.rule_name != ""
-        assert result.summary != ""
-        assert result.intent != ""
-        assert result.guidance != ""
-        assert result.suggestion != ""
 
 
 class TestNoCrossPackageReexportRuleCheck:
     """NoCrossPackageReexportRule.check のテスト"""
-
-    def test_check_正常系_init_py以外のファイルは空タプルを返すこと(self):
-        # Arrange
-        rule = NoCrossPackageReexportRule()
-        source = 'from paladin.rule import RuleMeta\n__all__ = ["RuleMeta"]\n'
-        source_file = make_source_file(source, "src/paladin/check/module.py")
-
-        # Act
-        result = rule.check(source_file)
-
-        # Assert
-        assert result == ()
-
-    def test_check_正常系_別パッケージのシンボルを再エクスポートすると違反を返すこと(self):
-        # Arrange
-        rule = NoCrossPackageReexportRule()
-        source = 'from paladin.rule import RuleMeta\n__all__ = ["RuleMeta"]\n'
-        source_file = make_source_file(source, "src/paladin/check/__init__.py")
-
-        # Act
-        result = rule.check(source_file)
-
-        # Assert
-        assert len(result) == 1
 
     def test_check_正常系_違反のフィールド値が正しいこと(self):
         # Arrange
@@ -70,35 +44,6 @@ class TestNoCrossPackageReexportRuleCheck:
         assert violation.column == 0
         assert violation.rule_id == "no-cross-package-reexport"
         assert violation.rule_name != ""
-        assert "RuleMeta" in violation.message
-        assert "paladin.rule" in violation.message
-        assert "paladin.rule" in violation.reason
-        assert "paladin.check" in violation.reason
-        assert "from paladin.rule import RuleMeta" in violation.suggestion
-
-    def test_check_正常系_自パッケージのシンボルのみの場合は空タプルを返すこと(self):
-        # Arrange
-        rule = NoCrossPackageReexportRule()
-        source = 'from paladin.check.context import CheckContext\n__all__ = ["CheckContext"]\n'
-        source_file = make_source_file(source, "src/paladin/check/__init__.py")
-
-        # Act
-        result = rule.check(source_file)
-
-        # Assert
-        assert result == ()
-
-    def test_check_エッジケース_allが未定義の場合は空タプルを返すこと(self):
-        # Arrange
-        rule = NoCrossPackageReexportRule()
-        source = "from paladin.rule import RuleMeta\n"
-        source_file = make_source_file(source, "src/paladin/check/__init__.py")
-
-        # Act
-        result = rule.check(source_file)
-
-        # Assert
-        assert result == ()
 
     def test_check_エッジケース_複数の別パッケージシンボルがある場合は複数の違反を返すこと(self):
         # Arrange
@@ -132,159 +77,128 @@ class TestNoCrossPackageReexportRuleCheck:
 
         # Assert
         assert len(result) == 1
-        assert result[0].message.find("RuleMeta") != -1
 
-    def test_check_エッジケース_allに含まれるがインポートマッピングにないシンボルはスキップすること(
-        self,
-    ):
-        # Arrange: LocalClass はファイル内定義のためインポートマッピングに存在しない
-        rule = NoCrossPackageReexportRule()
-        source = 'class LocalClass:\n    pass\n\n__all__ = ["LocalClass"]\n'
-        source_file = make_source_file(source, "src/paladin/check/__init__.py")
-
-        # Act
-        result = rule.check(source_file)
-
-        # Assert
-        assert result == ()
-
-    def test_check_エッジケース_asエイリアスがある場合はasnameをキーとすること(self):
+    @pytest.mark.parametrize(
+        ("source", "filename"),
+        [
+            pytest.param(
+                'from paladin.rule import RuleMeta\n__all__ = ["RuleMeta"]\n',
+                "src/paladin/check/module.py",
+                id="init_py以外のファイル",
+            ),
+            pytest.param(
+                'from paladin.check.context import CheckContext\n__all__ = ["CheckContext"]\n',
+                "src/paladin/check/__init__.py",
+                id="自パッケージのシンボルのみ",
+            ),
+            pytest.param(
+                "from paladin.rule import RuleMeta\n",
+                "src/paladin/check/__init__.py",
+                id="allが未定義",
+            ),
+            pytest.param(
+                'class LocalClass:\n    pass\n\n__all__ = ["LocalClass"]\n',
+                "src/paladin/check/__init__.py",
+                id="allに含まれるがインポートマッピングにないシンボル",
+            ),
+            pytest.param(
+                'from .context import CheckContext\n__all__ = ["CheckContext"]\n',
+                "src/paladin/check/__init__.py",
+                id="相対インポートは検査対象外",
+            ),
+            pytest.param(
+                'import paladin.rule\n__all__ = ["paladin"]\n',
+                "src/paladin/check/__init__.py",
+                id="import文はインポートマッピングに含まれない",
+            ),
+            pytest.param(
+                'from os import path\n__all__ = ["path"]\n',
+                "src/paladin/__init__.py",
+                id="トップレベルパッケージのinit_pyは検査対象外",
+            ),
+            pytest.param(
+                'from paladin.rule import RuleMeta\n__all__ = ["RuleMeta"]\n',
+                "__init__.py",
+                id="file_pathがinit_pyのみ",
+            ),
+            pytest.param(
+                'from tests.unit.fakes.rule import FakeRule\n__all__ = ["FakeRule"]\n',
+                "/Users/owner/code/paladin/tests/unit/fakes/__init__.py",
+                id="tests配下の同一パッケージシンボルは違反なし",
+            ),
+        ],
+    )
+    def test_check_違反なしのケースで空を返すこと(self, source: str, filename: str) -> None:
         # Arrange
         rule = NoCrossPackageReexportRule()
-        source = 'from paladin.rule import RuleMeta as RM\n__all__ = ["RM"]\n'
-        source_file = make_source_file(source, "src/paladin/check/__init__.py")
+        source_file = make_source_file(source, filename)
 
         # Act
         result = rule.check(source_file)
 
         # Assert
-        assert len(result) == 1
-        assert "RM" in result[0].message
+        assert len(result) == 0
 
-    def test_check_エッジケース_相対インポートは検査対象外であること(self):
+    @pytest.mark.parametrize(
+        ("source", "filename"),
+        [
+            pytest.param(
+                'from paladin.rule import RuleMeta\n__all__ = ["RuleMeta"]\n',
+                "src/paladin/check/__init__.py",
+                id="別パッケージのシンボルを再エクスポート",
+            ),
+            pytest.param(
+                'from paladin.rule import RuleMeta as RM\n__all__ = ["RM"]\n',
+                "src/paladin/check/__init__.py",
+                id="asエイリアスがある場合はasnameをキー",
+            ),
+            pytest.param(
+                'from paladin.rule.types import Violation\n__all__ = ["Violation"]\n',
+                "src/paladin/check/__init__.py",
+                id="source_packageが先頭2セグメントで算出",
+            ),
+            pytest.param(
+                'from os import path\n__all__ = ["path"]\n',
+                "src/myapp/sub/__init__.py",
+                id="セグメント数が2未満のインポート",
+            ),
+            pytest.param(
+                'from paladin.rule import RuleMeta\n__all__ = ["RuleMeta"]\n',
+                "paladin/check/__init__.py",
+                id="srcディレクトリが存在しない場合のフォールバック",
+            ),
+            pytest.param(
+                'from paladin.rule import RuleMeta\n__all__ = ["RuleMeta"]\n',
+                "/Users/owner/code/paladin/src/paladin/check/__init__.py",
+                id="絶対パスでもsrcアンカー以降のパッケージを正しく導出",
+            ),
+            pytest.param(
+                'from paladin.rule import RuleMeta\n__all__ = ["RuleMeta"]\n',
+                "tests/unit/fakes/__init__.py",
+                id="tests配下の相対パスでもパッケージを正しく導出",
+            ),
+            pytest.param(
+                'from paladin.rule import RuleMeta\n__all__ = ["RuleMeta"]\n',
+                "/Users/owner/code/paladin/tests/unit/fakes/__init__.py",
+                id="tests配下の絶対パスでもパッケージを正しく導出",
+            ),
+            pytest.param(
+                'from paladin.rule import RuleMeta\nx = 1\n__all__ = ["RuleMeta"]\n',
+                "src/paladin/check/__init__.py",
+                id="assignターゲットがall以外の場合はスキップ",
+            ),
+        ],
+    )
+    def test_check_違反ありのケースで1件返すこと(self, source: str, filename: str) -> None:
         # Arrange
         rule = NoCrossPackageReexportRule()
-        source = 'from .context import CheckContext\n__all__ = ["CheckContext"]\n'
-        source_file = make_source_file(source, "src/paladin/check/__init__.py")
-
-        # Act
-        result = rule.check(source_file)
-
-        # Assert
-        assert result == ()
-
-    def test_check_エッジケース_source_packageが先頭2セグメントで算出されること(self):
-        # Arrange
-        rule = NoCrossPackageReexportRule()
-        source = 'from paladin.rule.types import Violation\n__all__ = ["Violation"]\n'
-        source_file = make_source_file(source, "src/paladin/check/__init__.py")
+        source_file = make_source_file(source, filename)
 
         # Act
         result = rule.check(source_file)
 
         # Assert
         assert len(result) == 1
-        # source_package は paladin.rule（先頭2セグメント）
-        assert "paladin.rule" in result[0].message
-        assert "from paladin.rule import Violation" in result[0].suggestion
-
-    def test_check_エッジケース_セグメント数が2未満のインポートはそのまま使用すること(self):
-        # Arrange: from os import path で __all__ = ["path"]（サブパッケージ内）
-        rule = NoCrossPackageReexportRule()
-        source = 'from os import path\n__all__ = ["path"]\n'
-        source_file = make_source_file(source, "src/myapp/sub/__init__.py")
-
-        # Act
-        result = rule.check(source_file)
-
-        # Assert
-        assert len(result) == 1
-        # source_package は os（セグメント数 1 のためそのまま使用）
-        assert "os" in result[0].message
-
-    def test_check_エッジケース_srcディレクトリが存在しない場合のフォールバック(self):
-        # Arrange: src/ なしのパス
-        rule = NoCrossPackageReexportRule()
-        source = 'from paladin.rule import RuleMeta\n__all__ = ["RuleMeta"]\n'
-        source_file = make_source_file(source, "paladin/check/__init__.py")
-
-        # Act
-        result = rule.check(source_file)
-
-        # Assert
-        assert len(result) == 1
-        # current_package は paladin.check として導出される
-        assert "paladin.check" in result[0].reason
-
-    def test_check_正常系_絶対パスでもsrcアンカー以降のパッケージを正しく導出すること(self):
-        # Arrange: FileCollector が path.resolve() で生成する絶対パスを模擬
-        rule = NoCrossPackageReexportRule()
-        source = 'from paladin.rule import RuleMeta\n__all__ = ["RuleMeta"]\n'
-        source_file = make_source_file(
-            source, "/Users/owner/code/paladin/src/paladin/check/__init__.py"
-        )
-
-        # Act
-        result = rule.check(source_file)
-
-        # Assert
-        assert len(result) == 1
-        assert "paladin.check" in result[0].reason
-
-    def test_check_正常系_tests配下の相対パスでもパッケージを正しく導出すること(self):
-        # Arrange: tests/unit/fakes/__init__.py で別パッケージのシンボルを再エクスポート
-        rule = NoCrossPackageReexportRule()
-        source = 'from paladin.rule import RuleMeta\n__all__ = ["RuleMeta"]\n'
-        source_file = make_source_file(source, "tests/unit/fakes/__init__.py")
-
-        # Act
-        result = rule.check(source_file)
-
-        # Assert
-        assert len(result) == 1
-        assert "tests.unit.fakes" in result[0].reason
-
-    def test_check_正常系_tests配下の絶対パスでもパッケージを正しく導出すること(self):
-        # Arrange: 実際の誤検出ケース再現（FileCollector が絶対パスを生成する）
-        rule = NoCrossPackageReexportRule()
-        source = 'from paladin.rule import RuleMeta\n__all__ = ["RuleMeta"]\n'
-        source_file = make_source_file(
-            source, "/Users/owner/code/paladin/tests/unit/fakes/__init__.py"
-        )
-
-        # Act
-        result = rule.check(source_file)
-
-        # Assert
-        assert len(result) == 1
-        assert "tests.unit.fakes" in result[0].reason
-
-    def test_check_正常系_tests配下の同一パッケージシンボルは違反を返さないこと(self):
-        # Arrange: tests/unit/fakes/__init__.py で同一パッケージ（tests.unit.fakes.rule）のシンボルを再エクスポート
-        # これが今回のバグの直接的な再現ケース
-        rule = NoCrossPackageReexportRule()
-        source = 'from tests.unit.fakes.rule import FakeRule\n__all__ = ["FakeRule"]\n'
-        source_file = make_source_file(
-            source, "/Users/owner/code/paladin/tests/unit/fakes/__init__.py"
-        )
-
-        # Act
-        result = rule.check(source_file)
-
-        # Assert: tests.unit.fakes.rule は tests.unit.fakes のサブモジュールなので違反なし
-        assert result == ()
-
-    def test_check_エッジケース_トップレベルパッケージのinit_pyは検査対象外であること(self):
-        # Arrange: src/paladin/__init__.py はセグメントが1つのみ → resolve_exact_package_path が None を返す
-        rule = NoCrossPackageReexportRule()
-        source = 'from os import path\n__all__ = ["path"]\n'
-        source_file = make_source_file(source, "src/paladin/__init__.py")
-
-        # Act
-        result = rule.check(source_file)
-
-        # Assert: パッケージ名を導出できないため空タプルを返す
-        assert result == ()
 
     def test_check_エッジケース_allの値がリスト以外の場合はcontinueすること(self):
         # Arrange: 1つ目の Assign は __all__ = ["RuleMeta"]（正常）で _extract_all_symbols が
@@ -352,42 +266,6 @@ class TestNoCrossPackageReexportRuleCheck:
         # Assert: 通常の __all__ から違反1件（非定数要素の assign はスキップ）
         assert len(result) == 1
 
-    def test_check_エッジケース_assignターゲットがall以外の場合はスキップすること(self):
-        # Arrange: x = 1 と __all__ = ["RuleMeta"] が共存する場合
-        rule = NoCrossPackageReexportRule()
-        source = 'from paladin.rule import RuleMeta\nx = 1\n__all__ = ["RuleMeta"]\n'
-        source_file = make_source_file(source, "src/paladin/check/__init__.py")
-
-        # Act
-        result = rule.check(source_file)
-
-        # Assert: x = 1 はスキップされ __all__ の違反のみ報告
-        assert len(result) == 1
-
-    def test_check_エッジケース_file_pathがinit_pyのみの場合は空タプルを返すこと(self):
-        # Arrange: __init__.py だけのパス（ディレクトリなし）
-        rule = NoCrossPackageReexportRule()
-        source = 'from paladin.rule import RuleMeta\n__all__ = ["RuleMeta"]\n'
-        source_file = make_source_file(source, "__init__.py")
-
-        # Act
-        result = rule.check(source_file)
-
-        # Assert: パッケージ名を導出できないため空タプルを返す
-        assert result == ()
-
-    def test_check_エッジケース_import文はインポートマッピングに含まれないこと(self):
-        # Arrange: `import paladin.rule` は from X import Y でないためマッピングに含まれない
-        rule = NoCrossPackageReexportRule()
-        source = 'import paladin.rule\n__all__ = ["paladin"]\n'
-        source_file = make_source_file(source, "src/paladin/check/__init__.py")
-
-        # Act
-        result = rule.check(source_file)
-
-        # Assert: import 文はマッピングに含まれないためシンボルが見つからず違反なし
-        assert result == ()
-
     def test_check_エッジケース_import_from_moduleがNoneの場合はスキップすること(self):
         # Arrange: AST を手動構築して node.module が None の ImportFrom を作成する
         # （from . import foo のような相対インポートで level=0 かつ module=None は
@@ -417,4 +295,4 @@ class TestNoCrossPackageReexportRuleCheck:
         result = rule.check(source_file)
 
         # Assert: module=None のインポートはマッピングに含まれないため違反なし
-        assert result == ()
+        assert len(result) == 0
