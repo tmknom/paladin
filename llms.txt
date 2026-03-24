@@ -41,23 +41,17 @@ Identify and read task-related sections below:
 
 ### Application
 
-- [CLI requirement](docs/specs/cli/requirements.md): Requirements for the cli module - Use when modifying `src/paladin/cli.py` or understanding subcommand execution, global/subcommand-specific options, config priority, error handling, and exit codes
-- [CLI design](docs/specs/cli/design.md): Design for the cli module - Use when modifying `src/paladin/cli.py`, adding new subcommands, adding CLI options, or understanding component structure (app/main_callback/main), two-phase flow (callback→command), design decisions (no business logic, AppConfig in ctx.obj, top-level exception handling), guardrails, and design rationale
 - [Config requirement](docs/specs/config/requirements.md): Requirements for the config package - Use when modifying `src/paladin/config/` or understanding environment variable loading, path construction, and runtime config composition
 - [Config design](docs/specs/config/design.md): Design for the config package - Use when modifying `src/paladin/config/`, adding new config fields, or understanding component structure (EnvVarConfig / PathConfig / AppConfig), processing flow, design decisions (3-layer separation, pydantic-settings validation, PathConfig as internal component), and design rationale
-- [Protocol requirement](docs/specs/protocol/requirements.md): Requirements for the protocol package - Use when modifying `src/paladin/protocol/` or understanding shared Port definitions in Onion Architecture
-- [Protocol design](docs/specs/protocol/design.md): Design for the protocol package - Use when modifying `src/paladin/protocol/` or understanding TextFileSystemReaderProtocol/TextFileSystemWriterProtocol, read-write separation pattern, and structural subtyping
 
-### Foundation
+### Internal (Foundation / Protocol / CLI)
 
-- [Error requirement](docs/specs/foundation/error/requirements.md): Requirements for the error package - Use when modifying `src/paladin/foundation/error/` or understanding application-wide error handling standardization
-- [Error design](docs/specs/foundation/error/design.md): Design for the error package - Use when modifying `src/paladin/foundation/error/` or understanding ApplicationError, ErrorHandler, and centralized exception/logging strategy
-- [Filesystem requirement](docs/specs/foundation/fs/requirements.md): Requirements for the fs package - Use when modifying `src/paladin/foundation/fs/` or understanding Protocol-based file I/O abstraction and side-effect isolation
-- [Filesystem design](docs/specs/foundation/fs/design.md): Design for the fs package - Use when modifying `src/paladin/foundation/fs/` or understanding TextFileSystemReader, Port/Adapter pattern, and Fake-based test isolation
-- [Logging requirement](docs/specs/foundation/log/requirements.md): Requirements for the log package - Use when modifying `src/paladin/foundation/log/` or understanding centralized logging configuration and function tracing
-- [Logging design](docs/specs/foundation/log/design.md): Design for the log package - Use when modifying `src/paladin/foundation/log/` or understanding `@log` decorator, LogConfigurator, and cross-cutting concern implementation
-- [Base model requirement](docs/specs/foundation/model/requirements.md): Requirements for the model package - Use when modifying `src/paladin/foundation/model/` or understanding shared domain model constraints
-- [Base model design](docs/specs/foundation/model/design.md): Design for the model package - Use when modifying `src/paladin/foundation/model/` or understanding CoreModel, boundary validation pattern, and immutability/strict-validation defaults
+- [CLI design](docs/internal/cli.md): Design for the cli module - Use when modifying `src/paladin/cli.py`, adding new subcommands, adding CLI options, or understanding component structure (app/main_callback/main), two-phase flow (callback→command), design decisions (no business logic, AppConfig in ctx.obj, top-level exception handling), guardrails, and design rationale
+- [Protocol design](docs/internal/protocol.md): Design for the protocol package - Use when modifying `src/paladin/protocol/` or understanding TextFileSystemReaderProtocol/TextFileSystemWriterProtocol, Protocol placement rules, and structural subtyping
+- [Error design](docs/internal/error.md): Design for the error package - Use when modifying `src/paladin/foundation/error/` or understanding ApplicationError, ErrorHandler, and centralized exception/logging strategy
+- [Filesystem design](docs/internal/fs.md): Design for the fs package - Use when modifying `src/paladin/foundation/fs/` or understanding TextFileSystemReader, Port/Adapter pattern, and Fake-based test isolation
+- [Logging design](docs/internal/log.md): Design for the log package - Use when modifying `src/paladin/foundation/log/` or understanding `@log` decorator, LogConfigurator, and cross-cutting concern implementation
+- [Base model design](docs/internal/model.md): Design for the model package - Use when modifying `src/paladin/foundation/model/` or understanding CoreModel, boundary validation pattern, and immutability/strict-validation defaults
 
 ## Source Code
 
@@ -72,7 +66,7 @@ Identify and read task-related sections below:
 
 ### CLI
 
-- [CLI entry point](src/paladin/cli.py): Typer-based CLI that assembles Config, Context, and OrchestratorProvider then delegates to Orchestrator - Use when modifying `docs/specs/cli/`, adding new commands, understanding the application startup flow, or reviewing how Config/Context/Provider are wired together
+- [CLI entry point](src/paladin/cli.py): Typer-based CLI that assembles Config, Context, and OrchestratorProvider then delegates to Orchestrator - Use when modifying `docs/internal/cli.md`, adding new commands, understanding the application startup flow, or reviewing how Config/Context/Provider are wired together
 
 ### Config
 
@@ -80,14 +74,14 @@ Identify and read task-related sections below:
 
 ### Protocol
 
-- [protocol package](src/paladin/protocol/): Shared Port definitions with TextFileSystemReaderProtocol and TextFileSystemWriterProtocol - Use when modifying `docs/specs/protocol/`, adding new shared Protocols, or understanding Onion Architecture Port/Adapter boundaries
+- [protocol package](src/paladin/protocol/): Shared Port definitions with TextFileSystemReaderProtocol and TextFileSystemWriterProtocol - Use when modifying `docs/internal/protocol.md`, adding new shared Protocols, or understanding Onion Architecture Port/Adapter boundaries
 
 ### Foundation
 
-- [Filesystem abstraction](src/paladin/foundation/fs/): Protocol-based file I/O with TextFileSystemReader - Use when modifying `docs/specs/foundation/fs/`, adding new I/O operations, implementing Protocol adapters, or understanding the Port/Adapter pattern
-- [Error handling](src/paladin/foundation/error/): ApplicationError base class and ErrorHandler - Use when modifying `docs/specs/foundation/error/`, implementing custom errors, understanding exception flow, or modifying error logging
-- [Logging](src/paladin/foundation/log/): `@log` decorator (auto-records args and return values) and LogConfigurator - Use when modifying `docs/specs/foundation/log/`, adding logging to new components, understanding cross-cutting concern implementation, or configuring log output
-- [Base model](src/paladin/foundation/model/): CoreModel for external data mapping - Use when modifying `docs/specs/foundation/model/`, adding new data models for JSON/YAML input or understanding the boundary validation pattern
+- [Filesystem abstraction](src/paladin/foundation/fs/): Protocol-based file I/O with TextFileSystemReader - Use when modifying `docs/internal/fs.md`, adding new I/O operations, implementing Protocol adapters, or understanding the Port/Adapter pattern
+- [Error handling](src/paladin/foundation/error/): ApplicationError base class and ErrorHandler - Use when modifying `docs/internal/error.md`, implementing custom errors, understanding exception flow, or modifying error logging
+- [Logging](src/paladin/foundation/log/): `@log` decorator (auto-records args and return values) and LogConfigurator - Use when modifying `docs/internal/log.md`, adding logging to new components, understanding cross-cutting concern implementation, or configuring log output
+- [Base model](src/paladin/foundation/model/): CoreModel for external data mapping - Use when modifying `docs/internal/model.md`, adding new data models for JSON/YAML input or understanding the boundary validation pattern
 
 ## Coding Standards
 

@@ -3,8 +3,7 @@
 公開APIは `paladin.foundation.log` から import すること(`__all__` のみ互換性対象)。
 
 Docs:
-    - docs/specs/foundation/log/requirements.md
-    - docs/specs/foundation/log/design.md
+    - docs/internal/log.md
 """
 
 from paladin.foundation.log.configurator import LogConfigurator

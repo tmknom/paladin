@@ -112,27 +112,29 @@ docs/
 │   ├── README.md                 # 設計ドキュメント索引
 │   ├── architecture.md           # レイヤードアーキテクチャ・設計パターン
 │   ├── pyproject.md              # pyproject.toml 設定の根拠
-│   ├── specs.md                  # specs/ ドキュメントの設計方針
+│   ├── specs.md                  # specs/ / internal/ ドキュメントの設計方針
 │   └── workflow.md               # 技術スタック・開発コマンド・開発規律・開発フロー
+├── internal/                     # 基盤モジュール設計ドキュメント（統合形式）
+│   ├── README.md                 # 基盤モジュール索引
+│   ├── cli.md                    # CLI モジュール設計
+│   ├── error.md                  # エラーハンドリング設計
+│   ├── fs.md                     # ファイルシステム設計
+│   ├── log.md                    # ロギング設計
+│   ├── model.md                  # 基底モデル設計
+│   └── protocol.md               # protocol パッケージ設計
 ├── intro/                        # イントロダクション
 │   ├── README.md                 # ドキュメント索引
 │   ├── concept.md                # 基本方針
 │   ├── interface.md              # CLI インターフェイス
 │   ├── specifications.md         # 全体仕様
 │   └── structure.md              # プロジェクト構造（本ドキュメント）
-└── specs/                        # モジュール別仕様書
+└── specs/                        # Feature モジュール仕様書（requirements.md + design.md）
     ├── README.md                 # 仕様書索引
-    ├── cli/                      # CLI モジュール仕様
+    ├── check/                    # check パッケージ仕様
     ├── config/                   # config パッケージ仕様
-    ├── foundation/               # foundation パッケージ仕様
-    │   ├── error/                # エラーハンドリング仕様
-    │   ├── fs/                   # ファイルシステム仕様
-    │   ├── log/                  # ロギング仕様
-    │   └── model/                # 基底モデル仕様
-    ├── protocol/                 # protocol パッケージ仕様
-    └── transform/                # transform パッケージ仕様
-        ├── design.md             # 基本設計書
-        └── requirements.md       # 要件定義書
+    ├── list/                     # list パッケージ仕様
+    ├── transform/                # transform パッケージ仕様
+    └── view/                     # view パッケージ仕様
 ```
 
 ## 主要な設定ファイル

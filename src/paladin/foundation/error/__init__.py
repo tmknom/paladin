@@ -3,8 +3,7 @@
 公開APIは `paladin.foundation.error` から import すること(`__all__` のみ互換性対象)。
 
 Docs:
-    - docs/specs/foundation/error/requirements.md
-    - docs/specs/foundation/error/design.md
+    - docs/internal/error.md
 """
 
 from paladin.foundation.error.error import ApplicationError

@@ -3,8 +3,7 @@
 公開APIは `paladin.foundation.model` から import すること(`__all__` のみ互換性対象)。
 
 Docs:
-    - docs/specs/foundation/model/requirements.md
-    - docs/specs/foundation/model/design.md
+    - docs/internal/model.md
 """
 
 from paladin.foundation.model.base import CoreModel
