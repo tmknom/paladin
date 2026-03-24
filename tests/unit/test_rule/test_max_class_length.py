@@ -1,8 +1,14 @@
+import ast
 from pathlib import Path
 
 import pytest
 
-from paladin.rule.max_class_length import MaxClassLengthRule
+from paladin.rule.max_class_length import (
+    ClassCollector,
+    ClassLengthDetector,
+    ClassScope,
+    MaxClassLengthRule,
+)
 from paladin.rule.types import RuleMeta
 from tests.unit.test_rule.helpers import make_source_file, make_test_source_file
 
@@ -38,6 +44,119 @@ def _make_class_with_docstring(num_lines: int, docstring_lines: int, name: str =
         lines.append(f"    x_{i} = {i}")
     lines.append("    pass")
     return "\n".join(lines) + "\n"
+
+
+class TestClassCollector:
+    """ClassCollector.collect のテスト"""
+
+    def test_collect_正常系_トップレベルクラスを収集すること(self):
+        # Arrange
+        source = "class MyClass:\n    pass\n"
+        tree = ast.parse(source)
+
+        # Act
+        result = ClassCollector.collect(tree)
+
+        # Assert
+        assert len(result) == 1
+        assert isinstance(result[0], ClassScope)
+        assert result[0].node.name == "MyClass"
+
+    def test_collect_正常系_ネストクラスを収集すること(self):
+        # Arrange
+        source = "class Outer:\n    class Inner:\n        pass\n"
+        tree = ast.parse(source)
+
+        # Act
+        result = ClassCollector.collect(tree)
+
+        # Assert
+        names = {s.node.name for s in result}
+        assert names == {"Outer", "Inner"}
+
+    def test_collect_正常系_関数内クラスを収集すること(self):
+        # Arrange
+        source = "def func():\n    class Local:\n        pass\n"
+        tree = ast.parse(source)
+
+        # Act
+        result = ClassCollector.collect(tree)
+
+        # Assert
+        assert len(result) == 1
+        assert result[0].node.name == "Local"
+
+    def test_collect_エッジケース_クラスなしで空タプルを返すこと(self):
+        # Arrange
+        source = "x = 1\ny = 2\n"
+        tree = ast.parse(source)
+
+        # Act
+        result = ClassCollector.collect(tree)
+
+        # Assert
+        assert result == ()
+
+
+class TestClassLengthDetector:
+    """ClassLengthDetector.detect のテスト"""
+
+    def _make_scope(self, source: str) -> ClassScope:
+        """ソースからトップレベルの ClassScope を生成する"""
+        tree = ast.parse(source)
+        for node in tree.body:
+            if isinstance(node, ast.ClassDef):
+                return ClassScope(node=node)
+        raise ValueError("ClassDef not found")
+
+    def test_detect_正常系_上限以内でNoneを返すこと(self):
+        # Arrange
+        source = "class MyClass:\n    pass\n"
+        scope = self._make_scope(source)
+        meta = MaxClassLengthRule().meta
+        source_file = make_source_file(source)
+        limit = 10
+
+        # Act
+        result = ClassLengthDetector.detect(
+            scope, length=limit, limit=limit, meta=meta, source_file=source_file
+        )
+
+        # Assert
+        assert result is None
+
+    def test_detect_正常系_上限超過でViolationを返すこと(self):
+        # Arrange
+        source = "class MyClass:\n    pass\n"
+        scope = self._make_scope(source)
+        meta = MaxClassLengthRule().meta
+        source_file = make_source_file(source)
+        limit = 10
+
+        # Act
+        result = ClassLengthDetector.detect(
+            scope, length=limit + 1, limit=limit, meta=meta, source_file=source_file
+        )
+
+        # Assert
+        assert result is not None
+
+    def test_detect_正常系_Violationのメッセージにクラス名が含まれること(self):
+        # Arrange
+        source = "class TargetClass:\n    pass\n"
+        scope = self._make_scope(source)
+        meta = MaxClassLengthRule().meta
+        source_file = make_source_file(source)
+        limit = 10
+
+        # Act
+        result = ClassLengthDetector.detect(
+            scope, length=limit + 1, limit=limit, meta=meta, source_file=source_file
+        )
+
+        # Assert
+        assert result is not None
+        assert "TargetClass" in result.message
 
 
 class TestMaxClassLengthRuleMeta:
