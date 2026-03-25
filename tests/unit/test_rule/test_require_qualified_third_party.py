@@ -2,7 +2,10 @@ from pathlib import Path
 
 import pytest
 
-from paladin.rule.require_qualified_third_party import RequireQualifiedThirdPartyRule
+from paladin.rule.require_qualified_third_party import (
+    QualifiedThirdPartyDetector,
+    RequireQualifiedThirdPartyRule,
+)
 from paladin.rule.types import RuleMeta, SourceFiles
 from tests.unit.test_rule.helpers import make_source_file, make_source_files
 
@@ -51,40 +54,6 @@ class TestRequireQualifiedThirdPartyRuleCheck:
         assert violation.column == 0
         assert violation.rule_id == "require-qualified-third-party"
         assert violation.rule_name == "Require Qualified Third Party"
-
-    def test_check_正常系_import_asの違反フィールド値が正しいこと(self):
-        # Arrange
-        source_files = make_source_files(
-            ("import requests as req\n", "src/paladin/example.py"),
-        )
-        rule = _rule_with_prepare(source_files)
-
-        # Act
-        result = rule.check(source_files.files[0])
-
-        # Assert
-        assert len(result) == 1
-        violation = result[0]
-        assert violation.file == Path("src/paladin/example.py")
-        assert violation.line == 1
-        assert violation.column == 0
-        assert violation.rule_id == "require-qualified-third-party"
-        assert violation.rule_name == "Require Qualified Third Party"
-
-    def test_check_正常系_from_importで複数名をインポートした場合に名前ごとに個別の違反を返すこと(
-        self,
-    ):
-        # Arrange
-        source_files = make_source_files(
-            ("from requests import get, post\n", "src/paladin/example.py"),
-        )
-        rule = _rule_with_prepare(source_files)
-
-        # Act
-        result = rule.check(source_files.files[0])
-
-        # Assert
-        assert len(result) == 2
 
     @pytest.mark.parametrize(
         "source",
@@ -202,3 +171,28 @@ class TestRequireQualifiedThirdPartyRulePrepare:
 
         # Assert: requests はサードパーティなので違反
         assert len(result) == 1
+
+
+class TestQualifiedThirdPartyDetector:
+    """QualifiedThirdPartyDetector のテスト"""
+
+    def test_detect_from_import_正常系_複数名で複数Violationを返すこと(self):
+        source = "from requests import get, post\n"
+        source_files = make_source_files((source, "src/paladin/example.py"))
+        rule = _rule_with_prepare(source_files)
+        source_file = source_files.files[0]
+        imp = source_file.absolute_from_imports[0]
+        result = QualifiedThirdPartyDetector.detect_from_import(imp, source_file, rule.meta)
+        assert len(result) == 2
+        assert result[0].rule_id == "require-qualified-third-party"
+
+    def test_detect_import_as_正常系_Violationを返すこと(self):
+        source = "import requests as req\n"
+        source_files = make_source_files((source, "src/paladin/example.py"))
+        rule = _rule_with_prepare(source_files)
+        source_file = source_files.files[0]
+        stmt = source_file.imports[0]
+        result = QualifiedThirdPartyDetector.detect_import_as(
+            stmt, "requests", "req", source_file, rule.meta
+        )
+        assert result.rule_id == "require-qualified-third-party"

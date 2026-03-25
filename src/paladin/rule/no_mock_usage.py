@@ -12,6 +12,46 @@ _REASON = (
 )
 
 
+class MockUsageDetector:
+    """unittest.mock の Mock / MagicMock インポートを検出する"""
+
+    @staticmethod
+    def detect_from_import(
+        source_file: SourceFile,
+        stmt: ImportStatement,
+        imported: ImportedName,
+        meta: RuleMeta,
+    ) -> Violation | None:
+        """From unittest.mock import Mock/MagicMock パターンを検出する"""
+        if stmt.module_str != "unittest.mock":
+            return None
+        if imported.name not in _FORBIDDEN_NAMES:
+            return None
+        return meta.create_violation_at(
+            location=source_file.location_from(stmt),
+            message=f"{imported.name} のインポートは禁止されています",
+            reason=_REASON,
+            suggestion=meta.suggestion,
+        )
+
+    @staticmethod
+    def detect_plain_import(
+        source_file: SourceFile,
+        stmt: ImportStatement,
+        imported: ImportedName,
+        meta: RuleMeta,
+    ) -> Violation | None:
+        """Import unittest.mock パターンを検出する"""
+        if imported.name != "unittest.mock":
+            return None
+        return meta.create_violation_at(
+            location=source_file.location_from(stmt),
+            message="unittest.mock のインポートは禁止されています",
+            reason=_REASON,
+            suggestion=meta.suggestion,
+        )
+
+
 class NoMockUsageRule:
     """unittest.mock の Mock / MagicMock インポートを AST で検出するルール"""
 
@@ -37,49 +77,13 @@ class NoMockUsageRule:
         for stmt in source_file.imports:
             if stmt.is_import_from:
                 detected = (
-                    NoMockUsageRule._detect_from_import(source_file, stmt, imported, self._meta)
+                    MockUsageDetector.detect_from_import(source_file, stmt, imported, self._meta)
                     for imported in stmt.names
                 )
             else:
                 detected = (
-                    NoMockUsageRule._detect_plain_import(source_file, stmt, imported, self._meta)
+                    MockUsageDetector.detect_plain_import(source_file, stmt, imported, self._meta)
                     for imported in stmt.names
                 )
             violations.extend(v for v in detected if v is not None)
         return tuple(violations)
-
-    @staticmethod
-    def _detect_from_import(
-        source_file: SourceFile,
-        stmt: ImportStatement,
-        imported: ImportedName,
-        meta: RuleMeta,
-    ) -> Violation | None:
-        """From unittest.mock import Mock/MagicMock パターンを検出する"""
-        if stmt.module_str != "unittest.mock":
-            return None
-        if imported.name not in _FORBIDDEN_NAMES:
-            return None
-        return meta.create_violation_at(
-            location=source_file.location_from(stmt),
-            message=f"{imported.name} のインポートは禁止されています",
-            reason=_REASON,
-            suggestion=meta.suggestion,
-        )
-
-    @staticmethod
-    def _detect_plain_import(
-        source_file: SourceFile,
-        stmt: ImportStatement,
-        imported: ImportedName,
-        meta: RuleMeta,
-    ) -> Violation | None:
-        """Import unittest.mock パターンを検出する"""
-        if imported.name != "unittest.mock":
-            return None
-        return meta.create_violation_at(
-            location=source_file.location_from(stmt),
-            message="unittest.mock のインポートは禁止されています",
-            reason=_REASON,
-            suggestion=meta.suggestion,
-        )

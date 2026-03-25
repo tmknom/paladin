@@ -53,8 +53,8 @@ from paladin.rule.no_deep_nesting import NoDeepNestingRule  # NG
 | 類型 | 説明 | 該当ルール |
 |------|------|-----------|
 | **早期リターン型** | 条件チェック後に `()` か `(violation,)` を直接返す | `max_file_length`, `no_non_init_all`, `require_all_export` |
-| **ローカルリスト蓄積型** | `check()` 内で `violations: list` を宣言し、ループ内で append/extend | `no_relative_import`, `no_mock_usage`, `no_cross_package_reexport`, `require_qualified_third_party`, `no_third_party_import`, `no_cross_package_import`, `no_unused_export`, `no_direct_internal_import`, `no_testing_test_code` |
-| **責務別クラス orchestrator 型** | Collector / Calculator / Detector の責務別クラスを呼び出す薄い orchestrator | `max_class_length`, `max_method_length`, `no_deep_nesting`, `no_local_import` |
+| **ローカルリスト蓄積型** | `check()` 内で `violations: list` を宣言し、Detector クラスへ委譲しながら蓄積する | `no_relative_import`, `no_mock_usage`, `no_cross_package_reexport`, `require_qualified_third_party`, `no_third_party_import`, `no_cross_package_import` |
+| **責務別クラス orchestrator 型** | Collector / Calculator / Detector の責務別クラスを呼び出す薄い orchestrator | `max_class_length`, `max_method_length`, `no_deep_nesting`, `no_local_import`, `no_testing_test_code`, `no_direct_internal_import`, `no_unused_export` |
 
 各類型の選択基準:
 
@@ -72,7 +72,18 @@ from paladin.rule.no_deep_nesting import NoDeepNestingRule  # NG
 | `max_class_length.py` | `ClassScope`, `ClassCollector`, `ClassLengthCalculator`, `ClassLengthDetector` | クラス列挙・行数算出・閾値判定 |
 | `max_method_length.py` | `FunctionScope`, `FunctionCollector`, `MethodLengthCalculator`, `MethodLengthDetector` | 関数列挙・行数算出・閾値判定 |
 | `no_local_import.py` | `LocalImport`, `LocalImportCollector`, `LocalImportDetector` | ローカルインポート収集・違反生成 |
-| `max_file_length.py` | `FileLengthCalculator` | ファイル行数算出 |
+| `max_file_length.py` | `FileLengthCalculator`, `FileLengthDetector` | ファイル行数算出・閾値判定 |
+| `no_mock_usage.py` | `MockUsageDetector` | モックインポートの違反生成 |
+| `no_third_party_import.py` | `ThirdPartyChecker`, `ThirdPartyImportDetector` | サードパーティ判定・違反生成 |
+| `require_qualified_third_party.py` | `QualifiedThirdPartyDetector` | 修飾インポート違反の生成 |
+| `no_cross_package_import.py` | `EntrypointChecker`, `CrossPackageImportChecker`, `CrossPackageImportDetector` | エントリポイント判定・クロスパッケージ判定・違反生成 |
+| `no_cross_package_reexport.py` | `ImportMappingCollector`, `CrossPackageReexportDetector` | インポートマッピング収集・違反生成 |
+| `no_relative_import.py` | `RelativeImportDetector` | 相対インポート違反の生成 |
+| `no_non_init_all.py` | `NonInitAllDetector` | __init__.py 外 __all__ 違反の生成 |
+| `require_all_export.py` | `PublicSymbolCollector`, `AllExportDetector` | 公開シンボル収集・違反生成 |
+| `no_testing_test_code.py` | `TestImportCollector`, `TestTargetDetector` | テストインポート収集・テスト対象検出 |
+| `no_direct_internal_import.py` | `SrcRootResolver`, `SubpackageChecker`, `PackageExportCollector`, `InternalImportDetector` | src ルート推定・サブパッケージ確認・エクスポート収集・違反生成 |
+| `no_unused_export.py` | `ExportCollector`, `UsageCollector`, `UnusedExportDetector` | エクスポート収集・利用収集・未使用判定 |
 
 ルール実装ファイル内のモジュールレベル関数（`_` プレフィックス）は廃止済み。ヘルパーロジックは責務別クラスの `@staticmethod` か、Rule クラス自身の `@staticmethod` / インスタンスメソッドとして配置されている。
 
@@ -181,11 +192,10 @@ class NoDeepNestingRule:
 | `Violation` | 違反確定後の `_make_violation()` 系 | `NoNonInitAllRule._make_violation()` |
 | `list[Violation]` | 1要素から複数違反が展開されうるヘルパー | `NoCrossPackageImportRule._check_from_import()` |
 | `int` / `bool` / `tuple[T, ...]` | Calculator / Collector の補助データ返却 | `FileLengthCalculator.calc()` |
-| void（引数変異） | `NoUnusedExportRule._process_node()` のみ | 例外的に残存 |
 
 設計規範:
 
-- 新規ルールでは void スタイルを使わない
+- void スタイル（引数変異）は使わない
 - `Violation | None` を基本とし、1要素から複数違反が展開される場合は `list[Violation]` を使う
 
 ### 可変状態と副作用の分離

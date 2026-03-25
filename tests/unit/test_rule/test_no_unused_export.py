@@ -5,7 +5,14 @@ from pathlib import Path
 
 import pytest
 
-from paladin.rule.no_unused_export import NoUnusedExportRule
+from paladin.rule.all_exports_extractor import AllExportsExtractor
+from paladin.rule.no_unused_export import (
+    ExportCollector,
+    NoUnusedExportRule,
+    UnusedExportDetector,
+    UsageCollector,
+)
+from paladin.rule.package_resolver import PackageResolver
 from paladin.rule.types import RuleMeta, SourceFile, SourceFiles
 from tests.unit.test_rule.helpers import make_source_files
 
@@ -58,27 +65,6 @@ class TestNoUnusedExportRuleCheck:
     # A カテゴリ: フィールド値テスト・個別テスト
     # -------------------------------------------------------------------------
 
-    def test_check_正常系_違反のフィールド値が正しいこと(self):
-        # Arrange: line 1 に __all__ が定義されている
-        init_source = '__all__ = ["Foo"]\n'
-        source_files = make_source_files((init_source, "src/paladin/check/__init__.py"))
-        rule = _rule(("paladin",))
-
-        # Act
-        result = rule.check(source_files)
-
-        # Assert
-        assert len(result) == 1
-        violation = result[0]
-        assert violation.file == Path("src/paladin/check/__init__.py")
-        assert violation.line == 1
-        assert violation.column == 0
-        assert violation.rule_id == "no-unused-export"
-        assert violation.rule_name != ""
-        assert "Foo" in violation.message
-        assert violation.reason != ""
-        assert "Foo" in violation.suggestion
-
     def test_check_正常系_複数シンボルのうち利用されていないもののみ違反を検出すること(self):
         # Arrange: Used は利用されているが Unused は利用されていない
         init_source = '__all__ = ["Used", "Unused"]\n'
@@ -96,32 +82,6 @@ class TestNoUnusedExportRuleCheck:
         assert len(result) == 1
         assert result[0].message is not None
         assert "Unused" in result[0].message
-
-    def test_check_エッジケース_多重代入ターゲットのAssignはスキップすること(self):
-        # Arrange: a = b = 1 は len(node.targets) != 1 で continue される
-        init_source = 'a = b = 1\n__all__ = ["Foo"]\n'
-        source_files = make_source_files((init_source, "src/paladin/check/__init__.py"))
-        rule = _rule(("paladin",))
-
-        # Act
-        result = rule.check(source_files)
-
-        # Assert
-        assert len(result) == 1
-        assert "Foo" in result[0].message
-
-    def test_check_正常系_init_pyにall以外の文がある場合もallを正しく抽出すること(self):
-        # Arrange: import os が L87 の continue を通過し、__all__ は正しく抽出される
-        init_source = 'import os\n__all__ = ["Foo"]\n'
-        source_files = make_source_files((init_source, "src/paladin/check/__init__.py"))
-        rule = _rule(("paladin",))
-
-        # Act
-        result = rule.check(source_files)
-
-        # Assert
-        assert len(result) == 1
-        assert "Foo" in result[0].message
 
     # -------------------------------------------------------------------------
     # prepare テスト: 個別維持
@@ -240,33 +200,8 @@ class TestNoUnusedExportRuleCheck:
         "sources_and_files",
         [
             pytest.param(
-                [('__all__ = ["Foo"]\n', "src/paladin/check/module.py")],
-                id="init_py以外は対象外",
-            ),
-            pytest.param(
-                [("x = 1\n", "src/paladin/check/__init__.py")],
-                id="allが未定義",
-            ),
-            pytest.param(
                 None,
                 id="空のSourceFiles",
-            ),
-            pytest.param(
-                [
-                    ('__all__ = ["CheckOrchestrator"]\n', "src/paladin/check/__init__.py"),
-                    ("from paladin.check import CheckOrchestrator\n", "src/paladin/cli.py"),
-                ],
-                id="別パッケージからfrom_import利用あり",
-            ),
-            pytest.param(
-                [
-                    ('__all__ = ["CheckOrchestrator"]\n', "src/paladin/check/__init__.py"),
-                    (
-                        "import paladin.check\nx = paladin.check.CheckOrchestrator()\n",
-                        "src/paladin/cli.py",
-                    ),
-                ],
-                id="属性アクセスで利用あり",
             ),
             pytest.param(
                 [("__all__ = [variable]\n", "src/paladin/check/__init__.py")],
@@ -329,10 +264,6 @@ class TestNoUnusedExportRuleCheck:
         "sources_and_files",
         [
             pytest.param(
-                [('__all__ = ["Foo"]\n', "src/paladin/check/__init__.py")],
-                id="allのシンボルが別パッケージから利用されていない",
-            ),
-            pytest.param(
                 [
                     ('__all__ = ["Foo"]\n', "src/paladin/check/__init__.py"),
                     ("from paladin.check import Foo\n", "src/paladin/check/bar.py"),
@@ -394,13 +325,6 @@ class TestNoUnusedExportRuleCheck:
             pytest.param(
                 [
                     ('__all__ = ["Foo"]\n', "src/paladin/check/__init__.py"),
-                    ("from paladin.check import Foo\n", "tests/unit/test_check/test_foo.py"),
-                ],
-                id="プロダクションallシンボルがテストからのみ利用されていれば違反",
-            ),
-            pytest.param(
-                [
-                    ('__all__ = ["Foo"]\n', "src/paladin/check/__init__.py"),
                     (
                         "import paladin.check\nx = paladin.check.Foo\n",
                         "tests/unit/test_check/test_foo.py",
@@ -422,3 +346,160 @@ class TestNoUnusedExportRuleCheck:
 
         # Assert
         assert len(result) == 1
+
+
+class TestExportCollector:
+    """ExportCollector のテスト"""
+
+    def test_collect_正常系_init_pyのallシンボルを収集すること(self):
+        # Arrange
+        init_source = '__all__ = ["Foo", "Bar"]\n'
+        source_files = make_source_files((init_source, "src/paladin/check/__init__.py"))
+        resolver = PackageResolver()
+        extractor = AllExportsExtractor()
+
+        # Act
+        result = ExportCollector.collect(source_files, resolver, extractor)
+
+        # Assert
+        assert "paladin.check" in result
+        file_path, symbols = result["paladin.check"]
+        assert file_path == Path("src/paladin/check/__init__.py")
+        assert "Foo" in symbols
+        assert "Bar" in symbols
+
+    def test_collect_正常系_allが未定義のinit_pyはスキップすること(self):
+        # Arrange
+        init_source = "x = 1\n"
+        source_files = make_source_files((init_source, "src/paladin/check/__init__.py"))
+        resolver = PackageResolver()
+        extractor = AllExportsExtractor()
+
+        # Act
+        result = ExportCollector.collect(source_files, resolver, extractor)
+
+        # Assert
+        assert result == {}
+
+    def test_collect_正常系_init_py以外はスキップすること(self):
+        # Arrange
+        source_files = make_source_files(('__all__ = ["Foo"]\n', "src/paladin/check/module.py"))
+        resolver = PackageResolver()
+        extractor = AllExportsExtractor()
+
+        # Act
+        result = ExportCollector.collect(source_files, resolver, extractor)
+
+        # Assert
+        assert result == {}
+
+
+class TestUsageCollector:
+    """UsageCollector のテスト"""
+
+    def test_collect_正常系_from_importでシンボルを収集すること(self):
+        # Arrange
+        init_source = '__all__ = ["Foo"]\n'
+        cli_source = "from paladin.check import Foo\n"
+        source_files = make_source_files(
+            (init_source, "src/paladin/check/__init__.py"),
+            (cli_source, "src/paladin/cli.py"),
+        )
+        resolver = PackageResolver()
+        extractor = AllExportsExtractor()
+        all_exports = ExportCollector.collect(source_files, resolver, extractor)
+
+        # Act
+        result = UsageCollector.collect(source_files, all_exports, resolver)
+
+        # Assert
+        assert "paladin.check" in result
+        assert "Foo" in result["paladin.check"]
+
+    def test_collect_正常系_属性アクセスでシンボルを収集すること(self):
+        # Arrange
+        init_source = '__all__ = ["Foo"]\n'
+        cli_source = "import paladin.check\nx = paladin.check.Foo\n"
+        source_files = make_source_files(
+            (init_source, "src/paladin/check/__init__.py"),
+            (cli_source, "src/paladin/cli.py"),
+        )
+        resolver = PackageResolver()
+        extractor = AllExportsExtractor()
+        all_exports = ExportCollector.collect(source_files, resolver, extractor)
+
+        # Act
+        result = UsageCollector.collect(source_files, all_exports, resolver)
+
+        # Assert
+        assert "paladin.check" in result
+        assert "Foo" in result["paladin.check"]
+
+    def test_collect_正常系_テストファイルからのプロダクションallはスキップすること(self):
+        # Arrange
+        init_source = '__all__ = ["Foo"]\n'
+        test_source = "from paladin.check import Foo\n"
+        source_files = make_source_files(
+            (init_source, "src/paladin/check/__init__.py"),
+            (test_source, "tests/unit/test_check/test_foo.py"),
+        )
+        resolver = PackageResolver()
+        extractor = AllExportsExtractor()
+        all_exports = ExportCollector.collect(source_files, resolver, extractor)
+
+        # Act
+        result = UsageCollector.collect(source_files, all_exports, resolver)
+
+        # Assert: テストからのプロダクションallは利用としてカウントしない
+        assert result.get("paladin.check", set()) == set()
+
+
+class TestUnusedExportDetector:
+    """UnusedExportDetector のテスト"""
+
+    def test_detect_正常系_未使用シンボルのViolationを返すこと(self):
+        # Arrange
+        rule = NoUnusedExportRule()
+        file_path = Path("src/paladin/check/__init__.py")
+        symbols = {"Foo": 1, "Bar": 2}
+        used_symbols: set[str] = set()
+
+        # Act
+        result = UnusedExportDetector.detect(file_path, symbols, used_symbols, rule.meta)
+
+        # Assert
+        assert len(result) == 2
+        names = {v.message for v in result}
+        assert any("Foo" in m for m in names)
+        assert any("Bar" in m for m in names)
+
+    def test_detect_正常系_使用済みシンボルは違反を返さないこと(self):
+        # Arrange
+        rule = NoUnusedExportRule()
+        file_path = Path("src/paladin/check/__init__.py")
+        symbols = {"Foo": 1}
+        used_symbols = {"Foo"}
+
+        # Act
+        result = UnusedExportDetector.detect(file_path, symbols, used_symbols, rule.meta)
+
+        # Assert
+        assert len(result) == 0
+
+    def test_detect_正常系_Violationのフィールド値が正しいこと(self):
+        # Arrange
+        rule = NoUnusedExportRule()
+        file_path = Path("src/paladin/check/__init__.py")
+        symbols = {"Foo": 3}
+        used_symbols: set[str] = set()
+
+        # Act
+        result = UnusedExportDetector.detect(file_path, symbols, used_symbols, rule.meta)
+
+        # Assert
+        assert len(result) == 1
+        v = result[0]
+        assert v.rule_id == "no-unused-export"
+        assert v.line == 3
+        assert "Foo" in v.message
+        assert "Foo" in v.suggestion

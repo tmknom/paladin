@@ -3,7 +3,11 @@ from pathlib import Path
 
 import pytest
 
-from paladin.rule.no_cross_package_reexport import NoCrossPackageReexportRule
+from paladin.rule.no_cross_package_reexport import (
+    CrossPackageReexportDetector,
+    ImportMappingCollector,
+    NoCrossPackageReexportRule,
+)
 from paladin.rule.types import RuleMeta, SourceFile
 from tests.unit.test_rule.helpers import make_source_file
 
@@ -26,24 +30,6 @@ class TestNoCrossPackageReexportRuleMeta:
 
 class TestNoCrossPackageReexportRuleCheck:
     """NoCrossPackageReexportRule.check のテスト"""
-
-    def test_check_正常系_違反のフィールド値が正しいこと(self):
-        # Arrange
-        rule = NoCrossPackageReexportRule()
-        source = 'from paladin.rule import RuleMeta\n__all__ = ["RuleMeta"]\n'
-        source_file = make_source_file(source, "src/paladin/check/__init__.py")
-
-        # Act
-        result = rule.check(source_file)
-
-        # Assert
-        assert len(result) == 1
-        violation = result[0]
-        assert violation.file == Path("src/paladin/check/__init__.py")
-        assert violation.line == 2
-        assert violation.column == 0
-        assert violation.rule_id == "no-cross-package-reexport"
-        assert violation.rule_name != ""
 
     def test_check_エッジケース_複数の別パッケージシンボルがある場合は複数の違反を返すこと(self):
         # Arrange
@@ -296,3 +282,38 @@ class TestNoCrossPackageReexportRuleCheck:
 
         # Assert: module=None のインポートはマッピングに含まれないため違反なし
         assert len(result) == 0
+
+
+class TestImportMappingCollector:
+    """ImportMappingCollector のテスト"""
+
+    def test_collect_正常系_from_importのマッピングを返すこと(self):
+        source = 'from paladin.rule import RuleMeta\n__all__ = ["RuleMeta"]\n'
+        source_file = make_source_file(source, "src/paladin/check/__init__.py")
+        result = ImportMappingCollector.collect(source_file)
+        assert result == {"RuleMeta": "paladin.rule"}
+
+    def test_collect_正常系_相対インポートはスキップすること(self):
+        source = 'from .formatter import Formatter\n__all__ = ["Formatter"]\n'
+        source_file = make_source_file(source, "src/paladin/check/__init__.py")
+        result = ImportMappingCollector.collect(source_file)
+        assert result == {}
+
+
+class TestCrossPackageReexportDetector:
+    """CrossPackageReexportDetector のテスト"""
+
+    def test_detect_正常系_Violationを返すこと(self):
+        source = 'from paladin.rule import RuleMeta\n__all__ = ["RuleMeta"]\n'
+        source_file = make_source_file(source, "src/paladin/check/__init__.py")
+        rule = NoCrossPackageReexportRule()
+        result = CrossPackageReexportDetector.detect(
+            source_file=source_file,
+            line=2,
+            name="RuleMeta",
+            source_package="paladin.rule",
+            current_package="paladin.check",
+            meta=rule.meta,
+        )
+        assert result.rule_id == "no-cross-package-reexport"
+        assert "RuleMeta" in result.message

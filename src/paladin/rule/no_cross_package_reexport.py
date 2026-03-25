@@ -9,6 +9,46 @@ from paladin.rule.package_resolver import PackageResolver
 from paladin.rule.types import RuleMeta, SourceFile, Violation
 
 
+class ImportMappingCollector:
+    """トップレベルのインポートマッピングを収集する"""
+
+    @staticmethod
+    def collect(source_file: SourceFile) -> dict[str, str]:
+        """トップレベルの from X import Y 文を収集し {シンボル名: インポート元} を返す。
+
+        - as エイリアスがある場合は asname をキーとする
+        - 相対インポート（level >= 1）はスキップする
+        """
+        mapping: dict[str, str] = {}
+        for stmt in source_file.top_level_imports:
+            if not stmt.is_absolute_from_import:
+                continue
+            for imported in stmt.names:
+                mapping[imported.bound_name] = stmt.module_str
+        return mapping
+
+
+class CrossPackageReexportDetector:
+    """クロスパッケージ再エクスポートの Violation を生成する"""
+
+    @staticmethod
+    def detect(
+        source_file: SourceFile,
+        line: int,
+        name: str,
+        source_package: str,
+        current_package: str,
+        meta: RuleMeta,
+    ) -> Violation:
+        """診断メッセージ仕様に従い Violation を生成する"""
+        return meta.create_violation_at(
+            location=source_file.location(line),
+            message=f"__all__ に別パッケージのシンボル `{name}` が含まれている（定義元: `{source_package}`）",
+            reason=f"`{source_package}` で定義されたシンボルを `{current_package}` の公開 API として再エクスポートすると、パッケージ境界が曖昧になる",
+            suggestion=f"`{name}` を __all__ から削除し、利用者が `from {source_package} import {name}` を直接使用するよう誘導してください",
+        )
+
+
 class NoCrossPackageReexportRule:
     """__init__.py の __all__ に別パッケージのシンボルが含まれていないかを AST で検出するルール"""
 
@@ -43,7 +83,7 @@ class NoCrossPackageReexportRule:
         if not all_exports.has_exports:
             return ()
 
-        import_mapping = NoCrossPackageReexportRule._collect_import_mapping(source_file)
+        import_mapping = ImportMappingCollector.collect(source_file)
 
         current_module = ModulePath(current_package)
         violations: list[Violation] = []
@@ -54,7 +94,7 @@ class NoCrossPackageReexportRule:
             if not import_module.is_subpackage_of(current_module):
                 source_package = import_module.package_key
                 violations.append(
-                    NoCrossPackageReexportRule._make_violation(
+                    CrossPackageReexportDetector.detect(
                         source_file=source_file,
                         line=all_exports.lineno,
                         name=name,
@@ -64,35 +104,3 @@ class NoCrossPackageReexportRule:
                     )
                 )
         return tuple(violations)
-
-    @staticmethod
-    def _collect_import_mapping(source_file: SourceFile) -> dict[str, str]:
-        """トップレベルの from X import Y 文を収集し {シンボル名: インポート元} を返す。
-
-        - as エイリアスがある場合は asname をキーとする
-        - 相対インポート（level >= 1）はスキップする
-        """
-        mapping: dict[str, str] = {}
-        for stmt in source_file.top_level_imports:
-            if not stmt.is_absolute_from_import:
-                continue
-            for imported in stmt.names:
-                mapping[imported.bound_name] = stmt.module_str
-        return mapping
-
-    @staticmethod
-    def _make_violation(
-        source_file: SourceFile,
-        line: int,
-        name: str,
-        source_package: str,
-        current_package: str,
-        meta: RuleMeta,
-    ) -> Violation:
-        """診断メッセージ仕様に従い Violation を生成する"""
-        return meta.create_violation_at(
-            location=source_file.location(line),
-            message=f"__all__ に別パッケージのシンボル `{name}` が含まれている（定義元: `{source_package}`）",
-            reason=f"`{source_package}` で定義されたシンボルを `{current_package}` の公開 API として再エクスポートすると、パッケージ境界が曖昧になる",
-            suggestion=f"`{name}` を __all__ から削除し、利用者が `from {source_package} import {name}` を直接使用するよう誘導してください",
-        )

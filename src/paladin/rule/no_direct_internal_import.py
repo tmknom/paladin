@@ -12,6 +12,125 @@ from paladin.rule.package_resolver import NON_PACKAGE_DIRS, PackageResolver
 from paladin.rule.types import RuleMeta, SourceFile, SourceFiles, Violation
 
 
+class SrcRootResolver:
+    """source_files のパスから src/ ディレクトリを推定する"""
+
+    @staticmethod
+    def resolve(source_files: SourceFiles) -> Path | None:
+        """source_files のパスから src/ ディレクトリを推定する"""
+        for source_file in source_files:
+            result = SrcRootResolver._find_src_root(source_file.file_path)
+            if result is not None:
+                return result
+        return None
+
+    @staticmethod
+    def _find_src_root(file_path: Path) -> Path | None:
+        """1ファイルのパスから src/ ディレクトリを推定する"""
+        parts = file_path.parts
+        for i, part in enumerate(parts):
+            if part not in NON_PACKAGE_DIRS:
+                continue
+            project_root = Path(*parts[:i]) if i > 0 else Path()
+            src_root = project_root / "src"
+            if src_root.is_dir():
+                return src_root
+        return None
+
+
+class SubpackageChecker:
+    """I/O を伴うサブパッケージ存在確認"""
+
+    @staticmethod
+    def is_subpackage(module: ModulePath, src_root: Path | None) -> bool:
+        """Module に対応する src/ 配下のディレクトリに __init__.py が存在するかを確認する"""
+        if src_root is None:
+            return False
+        package_dir = src_root.joinpath(*module.segments)
+        return (package_dir / "__init__.py").is_file()
+
+
+class PackageExportCollector:
+    """__init__.py を解析してパッケージパス -> 公開シンボルセットのマッピングを構築する"""
+
+    @staticmethod
+    def collect(
+        source_files: SourceFiles,
+        resolver: PackageResolver,
+        extractor: AllExportsExtractor,
+    ) -> dict[str, set[str]]:
+        """__init__.py を解析して、パッケージパス -> 公開シンボルセットのマッピングを構築する
+
+        キーは先頭2セグメントではなく正確なパッケージパス（全セグメント）を使用する。
+        例: src/paladin/foundation/model/__init__.py -> "paladin.foundation.model"
+        """
+        package_exports: dict[str, set[str]] = {}
+
+        for source_file in source_files.init_files():
+            exact_key = resolver.resolve_exact_package_path(source_file.file_path)
+            if exact_key is None:
+                continue
+
+            exports = extractor.extract_with_reexports(source_file)
+            package_exports[exact_key] = exports
+
+        return package_exports
+
+
+class InternalImportDetector:
+    """内部モジュールへの直接インポートの判定と Violation 生成"""
+
+    @staticmethod
+    def detect(
+        source_file: SourceFile,
+        imp: AbsoluteFromImport,
+        name: str,
+        package: str,
+        package_exports: dict[str, set[str]],
+        meta: RuleMeta,
+    ) -> Violation | None:
+        """違反として報告すべきかを判定し、Violation を返す"""
+        if not InternalImportDetector._should_report(name, package, package_exports):
+            return None
+        return InternalImportDetector._make_violation(source_file, imp, name, package, meta)
+
+    @staticmethod
+    def _should_report(
+        name: str,
+        import_package: str,
+        package_exports: dict[str, set[str]],
+    ) -> bool:
+        """違反として報告すべきかを判定する"""
+        if import_package not in package_exports:
+            # __init__.py が解析対象にない場合はヒューリスティック検出
+            return True
+
+        exports = package_exports[import_package]
+        if not exports:
+            # __init__.py が存在するがエクスポートが空の場合もヒューリスティック検出
+            return True
+
+        # __init__.py で公開されているシンボルのみを違反として報告
+        return name in exports
+
+    @staticmethod
+    def _make_violation(
+        source_file: SourceFile,
+        imp: AbsoluteFromImport,
+        name: str,
+        package: str,
+        meta: RuleMeta,
+    ) -> Violation:
+        """違反オブジェクトを生成する"""
+        module_path = imp.module_str
+        return meta.create_violation_at(
+            location=source_file.location_from(imp),
+            message=f"`from {module_path} import {name}` は内部モジュールへの直接参照である",
+            reason=f"`{package}` の内部実装に直接依存しており、パッケージの公開 API を経由していない",
+            suggestion=f"`from {module_path} import {name}` を `from {package} import {name}` に書き換えてください",
+        )
+
+
 class NoDirectInternalImportRule:
     """他パッケージの内部モジュールへの直接インポートを検出するルール"""
 
@@ -44,63 +163,16 @@ class NoDirectInternalImportRule:
         if not self._root_packages:
             return ()
 
-        package_exports = self._build_package_exports(source_files)
-        src_root = self._infer_src_root(source_files)
+        package_exports = PackageExportCollector.collect(
+            source_files, self._resolver, self._extractor
+        )
+        src_root = SrcRootResolver.resolve(source_files)
         violations: list[Violation] = []
 
         for source_file in source_files:
             violations.extend(self._check_file(source_file, package_exports, src_root))
 
         return tuple(violations)
-
-    def _infer_src_root(self, source_files: SourceFiles) -> Path | None:
-        """source_files のパスから src/ ディレクトリを推定する
-
-        アンカー（src or tests）の親ディレクトリをプロジェクトルートとして算出し、
-        <project_root>/src を返す。
-        """
-        for source_file in source_files:
-            result = self._find_src_root(source_file.file_path)
-            if result is not None:
-                return result
-        return None
-
-    def _find_src_root(self, file_path: Path) -> Path | None:
-        """1ファイルのパスから src/ ディレクトリを推定する"""
-        parts = file_path.parts
-        for i, part in enumerate(parts):
-            if part not in NON_PACKAGE_DIRS:
-                continue
-            project_root = Path(*parts[:i]) if i > 0 else Path()
-            src_root = project_root / "src"
-            if src_root.is_dir():
-                return src_root
-        return None
-
-    def _is_subpackage_on_filesystem(self, module: ModulePath, src_root: Path | None) -> bool:
-        """Module に対応する src/ 配下のディレクトリに __init__.py が存在するかを確認する"""
-        if src_root is None:
-            return False
-        package_dir = src_root.joinpath(*module.segments)
-        return (package_dir / "__init__.py").is_file()
-
-    def _build_package_exports(self, source_files: SourceFiles) -> dict[str, set[str]]:
-        """__init__.py を解析して、パッケージパス -> 公開シンボルセットのマッピングを構築する
-
-        キーは先頭2セグメントではなく正確なパッケージパス（全セグメント）を使用する。
-        例: src/paladin/foundation/model/__init__.py -> "paladin.foundation.model"
-        """
-        package_exports: dict[str, set[str]] = {}
-
-        for source_file in source_files.init_files():
-            exact_key = self._resolver.resolve_exact_package_path(source_file.file_path)
-            if exact_key is None:
-                continue
-
-            exports = self._extractor.extract_with_reexports(source_file)
-            package_exports[exact_key] = exports
-
-        return package_exports
 
     def _check_file(
         self,
@@ -130,7 +202,7 @@ class NoDirectInternalImportRule:
             # インポートモジュール自体がサブパッケージ（__init__.py を持つ）なら対象外
             if imp.module.value in package_exports:
                 continue
-            if self._is_subpackage_on_filesystem(imp.module, src_root):
+            if SubpackageChecker.is_subpackage(imp.module, src_root):
                 continue
 
             violations.extend(
@@ -149,43 +221,9 @@ class NoDirectInternalImportRule:
         """インポートの各 name を検査して違反リストを返す"""
         violations: list[Violation] = []
         for imported in imp.names:
-            if self._should_report(imported.name, import_package, package_exports):
-                violations.append(
-                    self._make_violation(source_file, imp, imported.name, import_package)
-                )
+            v = InternalImportDetector.detect(
+                source_file, imp, imported.name, import_package, package_exports, self._meta
+            )
+            if v is not None:
+                violations.append(v)
         return violations
-
-    def _should_report(
-        self,
-        name: str,
-        import_package: str,
-        package_exports: dict[str, set[str]],
-    ) -> bool:
-        """違反として報告すべきかを判定する"""
-        if import_package not in package_exports:
-            # __init__.py が解析対象にない場合はヒューリスティック検出
-            return True
-
-        exports = package_exports[import_package]
-        if not exports:
-            # __init__.py が存在するがエクスポートが空の場合もヒューリスティック検出
-            return True
-
-        # __init__.py で公開されているシンボルのみを違反として報告
-        return name in exports
-
-    def _make_violation(
-        self,
-        source_file: SourceFile,
-        imp: AbsoluteFromImport,
-        name: str,
-        package: str,
-    ) -> Violation:
-        """違反オブジェクトを生成する"""
-        module_path = imp.module_str
-        return self._meta.create_violation_at(
-            location=source_file.location_from(imp),
-            message=f"`from {module_path} import {name}` は内部モジュールへの直接参照である",
-            reason=f"`{package}` の内部実装に直接依存しており、パッケージの公開 API を経由していない",
-            suggestion=f"`from {module_path} import {name}` を `from {package} import {name}` に書き換えてください",
-        )

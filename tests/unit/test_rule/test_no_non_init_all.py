@@ -3,7 +3,7 @@ from pathlib import Path
 
 import pytest
 
-from paladin.rule.no_non_init_all import NoNonInitAllRule
+from paladin.rule.no_non_init_all import NonInitAllDetector, NoNonInitAllRule
 from paladin.rule.types import RuleMeta, SourceFile
 from tests.unit.test_rule.helpers import make_source_file
 
@@ -26,24 +26,6 @@ class TestNoNonInitAllRuleMeta:
 
 class TestNoNonInitAllRuleCheck:
     """NoNonInitAllRule.check のテスト"""
-
-    def test_check_正常系_違反のフィールド値が正しいこと(self):
-        # Arrange
-        rule = NoNonInitAllRule()
-        source = '__all__ = ["Foo"]\n'
-        source_file = make_source_file(source, "module.py")
-
-        # Act
-        result = rule.check(source_file)
-
-        # Assert
-        assert len(result) == 1
-        violation = result[0]
-        assert violation.file == Path("module.py")
-        assert violation.line == 1
-        assert violation.column == 0
-        assert violation.rule_id == "no-non-init-all"
-        assert violation.rule_name == "No Non-Init All"
 
     @pytest.mark.parametrize(
         ("source", "filename"),
@@ -123,3 +105,15 @@ class TestNoNonInitAllRuleCheck:
 
         # Assert
         assert len(result) == 1
+
+
+class TestNonInitAllDetector:
+    """NonInitAllDetector のテスト"""
+
+    def test_detect_正常系_Violationを返すこと(self):
+        rule = NoNonInitAllRule()
+        source = '__all__ = ["Foo"]\n'
+        source_file = make_source_file(source, "module.py")
+        result = NonInitAllDetector.detect(rule.meta, source_file, 1)
+        assert result.rule_id == "no-non-init-all"
+        assert "__init__.py 以外" in result.message

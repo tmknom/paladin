@@ -2,7 +2,7 @@ from pathlib import Path
 
 import pytest
 
-from paladin.rule.no_mock_usage import NoMockUsageRule
+from paladin.rule.no_mock_usage import MockUsageDetector, NoMockUsageRule
 from paladin.rule.types import RuleMeta
 from tests.unit.test_rule.helpers import make_source_file
 
@@ -56,30 +56,6 @@ class TestNoMockUsageRuleCheck:
         # Assert
         assert len(result) == 2
 
-    def test_check_正常系_通常importは違反なしを返すこと(self):
-        # Arrange: import os は unittest.mock でないため違反なし（_detect_plain_import の早期リターン）
-        rule = NoMockUsageRule()
-        source = "import os\n"
-        source_file = make_source_file(source)
-
-        # Act
-        result = rule.check(source_file)
-
-        # Assert
-        assert len(result) == 0
-
-    def test_check_正常系_別モジュールのfrom_importは違反なしを返すこと(self):
-        # Arrange: from os import path は unittest.mock でないため違反なし（_detect_from_import の早期リターン）
-        rule = NoMockUsageRule()
-        source = "from os import path\n"
-        source_file = make_source_file(source)
-
-        # Act
-        result = rule.check(source_file)
-
-        # Assert
-        assert len(result) == 0
-
     def test_check_正常系_patchとMockの混合インポートでMockのみ検出すること(self):
         # Arrange: patchとMockの混合でMockのみ検出
         rule = NoMockUsageRule()
@@ -111,3 +87,65 @@ class TestNoMockUsageRuleCheck:
 
         # Assert
         assert len(result) == 1
+
+
+class TestMockUsageDetector:
+    """MockUsageDetector のテスト"""
+
+    def test_detect_from_import_正常系_Mockインポートで違反を返すこと(self):
+        # Arrange
+        rule = NoMockUsageRule()
+        source = "from unittest.mock import Mock\n"
+        source_file = make_source_file(source)
+        stmt = source_file.imports[0]
+        imported = stmt.names[0]
+
+        # Act
+        result = MockUsageDetector.detect_from_import(source_file, stmt, imported, rule.meta)
+
+        # Assert
+        assert result is not None
+        assert result.rule_id == "no-mock-usage"
+
+    def test_detect_from_import_正常系_別モジュールはNoneを返すこと(self):
+        # Arrange
+        rule = NoMockUsageRule()
+        source = "from os import path\n"
+        source_file = make_source_file(source)
+        stmt = source_file.imports[0]
+        imported = stmt.names[0]
+
+        # Act
+        result = MockUsageDetector.detect_from_import(source_file, stmt, imported, rule.meta)
+
+        # Assert
+        assert result is None
+
+    def test_detect_plain_import_正常系_unittest_mockインポートで違反を返すこと(self):
+        # Arrange
+        rule = NoMockUsageRule()
+        source = "import unittest.mock\n"
+        source_file = make_source_file(source)
+        stmt = source_file.imports[0]
+        imported = stmt.names[0]
+
+        # Act
+        result = MockUsageDetector.detect_plain_import(source_file, stmt, imported, rule.meta)
+
+        # Assert
+        assert result is not None
+        assert result.rule_id == "no-mock-usage"
+
+    def test_detect_plain_import_正常系_別モジュールはNoneを返すこと(self):
+        # Arrange
+        rule = NoMockUsageRule()
+        source = "import os\n"
+        source_file = make_source_file(source)
+        stmt = source_file.imports[0]
+        imported = stmt.names[0]
+
+        # Act
+        result = MockUsageDetector.detect_plain_import(source_file, stmt, imported, rule.meta)
+
+        # Assert
+        assert result is None
