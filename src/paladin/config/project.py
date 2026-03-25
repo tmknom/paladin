@@ -1,7 +1,6 @@
-"""プロジェクト設定の読み込み機能
+"""Config 層のプロジェクト設定読み込みモジュール
 
-pyproject.toml の [tool.paladin] セクションを読み込み、
-アプリケーション全体で共有するプロジェクト設定を提供する。
+pyproject.toml を情報源とし、Foundation 層の FileSystemReader および Rule 層の型に依存する。
 """
 
 import logging
@@ -34,11 +33,7 @@ class ProjectConfigLoader:
     """pyproject.toml からプロジェクト設定を読み込むローダー"""
 
     def __init__(self, reader: TextFileSystemReaderProtocol) -> None:
-        """ProjectConfigLoader を初期化する
-
-        Args:
-            reader: ファイル読み込み用のリーダー
-        """
+        """Accept a TextFileSystemReaderProtocol for dependency injection."""
         self._reader = reader
 
     def load(self) -> ProjectConfig:
@@ -46,6 +41,11 @@ class ProjectConfigLoader:
 
         Returns:
             ProjectConfig。ファイルが存在しない場合やセクションがない場合はデフォルト値を返す
+
+        Flow:
+            1. pyproject.toml を読み込み（失敗時はデフォルト値返却）
+            2. 各セクションを個別にパース
+            3. ProjectConfig を組み立てて返す
         """
         try:
             content = self._reader.read(Path("pyproject.toml"))
@@ -77,6 +77,9 @@ class ProjectConfigLoader:
 
         Returns:
             正規化されたプロジェクト名。セクションまたは name が存在しない場合は None
+
+        Constraints:
+            正規化: 区切り文字 (-, _, .) を _ に統一し小文字に変換 (PEP 503 準拠)
         """
         try:
             project_section: dict[str, object] = data["project"]  # type: ignore[assignment]
