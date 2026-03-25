@@ -110,6 +110,94 @@ class TestFunctionCollector:
         # Assert
         assert result == ()
 
+    def test_collect_正常系_with文内のネスト関数を収集すること(self):
+        # Arrange: with ブロック内のネスト関数（_iter_child_stmt_lists の With ブランチ）
+        source = "def outer():\n    with open('f') as f:\n        def inner(): pass\n"
+        tree = ast.parse(source)
+
+        # Act
+        result = FunctionCollector.collect(tree)
+
+        # Assert
+        names = {s.node.name for s in result}
+        assert "inner" in names
+
+    def test_collect_正常系_try内のネスト関数を収集すること(self):
+        # Arrange: try/except ブロック内のネスト関数（_iter_child_stmt_lists の Try ブランチ）
+        source = (
+            "def outer():\n"
+            "    try:\n"
+            "        def inner(): pass\n"
+            "    except Exception:\n"
+            "        pass\n"
+        )
+        tree = ast.parse(source)
+
+        # Act
+        result = FunctionCollector.collect(tree)
+
+        # Assert
+        names = {s.node.name for s in result}
+        assert "inner" in names
+
+    def test_collect_正常系_for_else内のネスト関数を収集すること(self):
+        # Arrange: for/else の else ブロック内のネスト関数（_iter_child_stmt_lists の orelse ブランチ）
+        source = (
+            "def outer():\n    for x in []:\n        pass\n    else:\n        def inner(): pass\n"
+        )
+        tree = ast.parse(source)
+
+        # Act
+        result = FunctionCollector.collect(tree)
+
+        # Assert
+        names = {s.node.name for s in result}
+        assert "inner" in names
+
+    def test_collect_正常系_try_else内のネスト関数を収集すること(self):
+        # Arrange: try/else ブロック内のネスト関数（_iter_child_stmt_lists の orelse ブランチ）
+        source = (
+            "def outer():\n"
+            "    try:\n"
+            "        pass\n"
+            "    except Exception:\n"
+            "        pass\n"
+            "    else:\n"
+            "        def inner(): pass\n"
+        )
+        tree = ast.parse(source)
+
+        # Act
+        result = FunctionCollector.collect(tree)
+
+        # Assert
+        names = {s.node.name for s in result}
+        assert "inner" in names
+
+    def test_collect_正常系_try_finally内のネスト関数を収集すること(self):
+        # Arrange: try/finally ブロック内のネスト関数（_iter_child_stmt_lists の finalbody ブランチ）
+        source = "def outer():\n    try:\n        pass\n    finally:\n        def inner(): pass\n"
+        tree = ast.parse(source)
+
+        # Act
+        result = FunctionCollector.collect(tree)
+
+        # Assert
+        names = {s.node.name for s in result}
+        assert "inner" in names
+
+    def test_collect_正常系_match内のネスト関数を収集すること(self):
+        # Arrange: match/case ブロック内のネスト関数（_iter_child_stmt_lists の Match ブランチ）
+        source = "def outer(x):\n    match x:\n        case 1:\n            def inner(): pass\n"
+        tree = ast.parse(source)
+
+        # Act
+        result = FunctionCollector.collect(tree)
+
+        # Assert
+        names = {s.node.name for s in result}
+        assert "inner" in names
+
 
 class TestNestingCalculator:
     """NestingCalculator.calc_max_depth のテスト"""
@@ -118,7 +206,7 @@ class TestNestingCalculator:
         """関数の body を返す"""
         tree = ast.parse(source)
         func = tree.body[0]
-        assert isinstance(func, ast.FunctionDef)
+        assert isinstance(func, (ast.FunctionDef, ast.AsyncFunctionDef))
         return func.body
 
     def test_calc_max_depth_正常系_ifネストの深度を返すこと(self):
@@ -222,6 +310,111 @@ class TestNestingCalculator:
 
         # Assert
         assert result == 1
+
+    @pytest.mark.parametrize(
+        ("source", "expected_depth"),
+        [
+            pytest.param(
+                "def f():\n"
+                "    for x in items:\n"
+                "        if cond_a:\n"
+                "            pass\n"
+                "        else:\n"
+                "            for y in items:\n"
+                "                if cond_b:\n"
+                "                    pass\n",
+                4,
+                id="else内ネスト",
+            ),
+            pytest.param(
+                "def f():\n"
+                "    for x in items:\n"
+                "        if cond_a:\n"
+                "            pass\n"
+                "    else:\n"
+                "        for y in items:\n"
+                "            if cond_b:\n"
+                "                pass\n",
+                3,
+                id="for_else",
+            ),
+            pytest.param(
+                "def f():\n"
+                "    try:\n"
+                "        try:\n"
+                "            pass\n"
+                "        finally:\n"
+                "            if True:\n"
+                "                pass\n"
+                "    finally:\n"
+                "        pass\n",
+                3,
+                id="try_finally",
+            ),
+            pytest.param(
+                "def f():\n"
+                "    try:\n"
+                "        try:\n"
+                "            pass\n"
+                "        except Exception:\n"
+                "            pass\n"
+                "        else:\n"
+                "            if True:\n"
+                "                pass\n"
+                "    except Exception:\n"
+                "        pass\n",
+                3,
+                id="try_else",
+            ),
+            pytest.param(
+                "def f(x):\n"
+                "    if True:\n"
+                "        if True:\n"
+                "            match x:\n"
+                "                case 1:\n"
+                "                    pass\n",
+                3,
+                id="match文",
+            ),
+            pytest.param(
+                "async def f():\n"
+                "    try:\n"
+                "        try:\n"
+                "            try:\n"
+                "                pass\n"
+                "            except* ValueError as eg:\n"
+                "                pass\n"
+                "        except* ValueError as eg:\n"
+                "            pass\n"
+                "    except* ValueError as eg:\n"
+                "        pass\n",
+                3,
+                id="try_except_star",
+            ),
+            pytest.param(
+                "def f():\n"
+                "    if cond_a:\n"
+                "        pass\n"
+                "    elif cond_b:\n"
+                "        for x in items:\n"
+                "            if cond_c:\n"
+                "                pass\n",
+                3,
+                id="elif内ネスト",
+            ),
+        ],
+    )
+    def test_calc_max_depth_正常系_各制御構造の深度を返すこと(
+        self, source: str, expected_depth: int
+    ) -> None:
+        # Arrange
+        stmts = self._parse_func_body(source)
+
+        # Act
+        result = NestingCalculator.calc_max_depth(stmts)
+
+        # Assert
+        assert result == expected_depth
 
 
 class TestNestingDetector:
@@ -362,310 +555,3 @@ class TestNoDeepNestingRuleCheck:
 
         # Assert
         assert len(result) == 2
-
-    @pytest.mark.parametrize(
-        "source",
-        [
-            pytest.param(
-                "def foo():\n    if True:\n        if True:\n            pass\n",
-                id="2段階以下のネスト",
-            ),
-            pytest.param(
-                "def outer():\n"
-                "    if True:\n"
-                "        if True:\n"
-                "            def inner():\n"
-                "                if True:\n"
-                "                    pass\n",
-                id="ネスト関数の深度非引き継ぎ",
-            ),
-            pytest.param(
-                "def foo():\n"
-                "    if True:\n"
-                "        if True:\n"
-                "            result = [x for x in [] if x > 0]\n",
-                id="内包表記",
-            ),
-            pytest.param("", id="空のソースコード"),
-            pytest.param(
-                "def foo():\n"
-                "    for x in items:\n"
-                "        if cond_a:\n"
-                "            do_a()\n"
-                "        elif cond_b:\n"
-                "            do_b()\n"
-                "        elif cond_c:\n"
-                "            do_c()\n",
-                id="elifは深度を増やさない",
-            ),
-        ],
-    )
-    def test_check_違反なしのケースで空を返すこと(self, source: str) -> None:
-        # Arrange
-        rule = NoDeepNestingRule()
-        source_file = make_source_file(source)
-
-        # Act
-        result = rule.check(source_file)
-
-        # Assert
-        assert len(result) == 0
-
-    @pytest.mark.parametrize(
-        "source",
-        [
-            pytest.param(
-                "def foo():\n"
-                "    if True:\n"
-                "        if True:\n"
-                "            if True:\n"
-                "                pass\n",
-                id="3段階ifネスト",
-            ),
-            pytest.param(
-                "def foo():\n"
-                "    if True:\n"
-                "        if True:\n"
-                "            if True:\n"
-                "                if True:\n"
-                "                    pass\n",
-                id="4段階ifネスト",
-            ),
-            pytest.param(
-                "def foo():\n"
-                "    for x in []:\n"
-                "        for y in []:\n"
-                "            for z in []:\n"
-                "                pass\n",
-                id="forループ3段階",
-            ),
-            pytest.param(
-                "def foo():\n"
-                "    while True:\n"
-                "        while True:\n"
-                "            while True:\n"
-                "                pass\n",
-                id="whileループ3段階",
-            ),
-            pytest.param(
-                "def foo():\n"
-                "    with open('a') as a:\n"
-                "        with open('b') as b:\n"
-                "            with open('c') as c:\n"
-                "                pass\n",
-                id="with文3段階",
-            ),
-            pytest.param(
-                "def foo():\n"
-                "    try:\n"
-                "        try:\n"
-                "            try:\n"
-                "                pass\n"
-                "            except Exception:\n"
-                "                pass\n"
-                "        except Exception:\n"
-                "            pass\n"
-                "    except Exception:\n"
-                "        pass\n",
-                id="try_except3段階",
-            ),
-            pytest.param(
-                "def foo():\n"
-                "    if True:\n"
-                "        for x in []:\n"
-                "            while True:\n"
-                "                pass\n",
-                id="if_else混在3段階",
-            ),
-            pytest.param(
-                "async def foo():\n"
-                "    async for x in []:\n"
-                "        async for y in []:\n"
-                "            async for z in []:\n"
-                "                pass\n",
-                id="async_for3段階",
-            ),
-            pytest.param(
-                "async def foo():\n"
-                "    async with open('a') as a:\n"
-                "        async with open('b') as b:\n"
-                "            async with open('c') as c:\n"
-                "                pass\n",
-                id="async_with3段階",
-            ),
-            pytest.param(
-                "class MyClass:\n"
-                "    def my_method(self):\n"
-                "        if True:\n"
-                "            if True:\n"
-                "                if True:\n"
-                "                    pass\n",
-                id="クラスメソッド3段階",
-            ),
-            pytest.param(
-                "def outer():\n"
-                "    if True:\n"
-                "        if True:\n"
-                "            def inner():\n"
-                "                if True:\n"
-                "                    if True:\n"
-                "                        if True:\n"
-                "                            pass\n",
-                id="ネスト関数独立スコープ",
-            ),
-            pytest.param(
-                "def outer():\n"
-                "    if True:\n"
-                "        if True:\n"
-                "            class Inner:\n"
-                "                def method(self):\n"
-                "                    if True:\n"
-                "                        if True:\n"
-                "                            if True:\n"
-                "                                pass\n",
-                id="ネストクラス独立スコープ",
-            ),
-            pytest.param(
-                "def foo():\n"
-                "    if True:\n"
-                "        if True:\n"
-                "            if True:\n"
-                "                pass\n"
-                "    if True:\n"
-                "        if True:\n"
-                "            if True:\n"
-                "                if True:\n"
-                "                    pass\n",
-                id="1関数1違反",
-            ),
-            pytest.param(
-                "def foo():\n"
-                "    for x in items:\n"
-                "        if cond_a:\n"
-                "            pass\n"
-                "        else:\n"
-                "            for y in items:\n"
-                "                if cond_b:\n"
-                "                    pass\n",
-                id="else内ネスト",
-            ),
-            pytest.param(
-                "def foo():\n"
-                "    for x in items:\n"
-                "        if cond_a:\n"
-                "            pass\n"
-                "    else:\n"
-                "        for y in items:\n"
-                "            if cond_b:\n"
-                "                pass\n",
-                id="for_else",
-            ),
-            pytest.param(
-                "def foo():\n"
-                "    try:\n"
-                "        try:\n"
-                "            pass\n"
-                "        finally:\n"
-                "            if True:\n"
-                "                pass\n"
-                "    finally:\n"
-                "        pass\n",
-                id="try_finally",
-            ),
-            pytest.param(
-                "class Outer:\n"
-                "    class Inner:\n"
-                "        def method(self):\n"
-                "            if True:\n"
-                "                if True:\n"
-                "                    if True:\n"
-                "                        pass\n",
-                id="クラス内クラス",
-            ),
-            pytest.param(
-                "def foo():\n"
-                "    try:\n"
-                "        try:\n"
-                "            pass\n"
-                "        except Exception:\n"
-                "            pass\n"
-                "        else:\n"
-                "            if True:\n"
-                "                pass\n"
-                "    except Exception:\n"
-                "        pass\n",
-                id="try_else",
-            ),
-            pytest.param(
-                "def foo(x):\n"
-                "    if True:\n"
-                "        if True:\n"
-                "            match x:\n"
-                "                case 1:\n"
-                "                    pass\n",
-                id="match文",
-            ),
-            pytest.param(
-                "async def foo():\n"
-                "    try:\n"
-                "        try:\n"
-                "            try:\n"
-                "                pass\n"
-                "            except* ValueError as eg:\n"
-                "                pass\n"
-                "        except* ValueError as eg:\n"
-                "            pass\n"
-                "    except* ValueError as eg:\n"
-                "        pass\n",
-                id="try_except_star",
-            ),
-            pytest.param(
-                "def foo():\n"
-                "    try:\n"
-                "        try:\n"
-                "            pass\n"
-                "        except* ValueError as eg:\n"
-                "            pass\n"
-                "        else:\n"
-                "            if True:\n"
-                "                pass\n"
-                "    except* ValueError as eg:\n"
-                "        pass\n",
-                id="try_except_star_else",
-            ),
-            pytest.param(
-                "def foo():\n"
-                "    try:\n"
-                "        try:\n"
-                "            pass\n"
-                "        except* ValueError as eg:\n"
-                "            pass\n"
-                "        finally:\n"
-                "            if True:\n"
-                "                pass\n"
-                "    except* ValueError as eg:\n"
-                "        pass\n",
-                id="try_except_star_finally",
-            ),
-            pytest.param(
-                "def foo():\n"
-                "    if cond_a:\n"
-                "        pass\n"
-                "    elif cond_b:\n"
-                "        for x in items:\n"
-                "            if cond_c:\n"
-                "                pass\n",
-                id="elif内ネスト",
-            ),
-        ],
-    )
-    def test_check_違反ありのケースで1件返すこと(self, source: str) -> None:
-        # Arrange
-        rule = NoDeepNestingRule()
-        source_file = make_source_file(source)
-
-        # Act
-        result = rule.check(source_file)
-
-        # Assert
-        assert len(result) == 1

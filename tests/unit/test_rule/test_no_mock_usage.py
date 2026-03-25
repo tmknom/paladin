@@ -7,80 +7,6 @@ from paladin.rule.types import RuleMeta
 from tests.unit.test_rule.helpers import make_source_file
 
 
-class TestNoMockUsageRuleDetectors:
-    """NoMockUsageRule._detect_from_import / _detect_plain_import の直接テスト"""
-
-    def test_detect_from_import_mock(self):
-        # Arrange
-        rule = NoMockUsageRule()
-        source = "from unittest.mock import Mock\n"
-        source_file = make_source_file(source)
-        stmt = source_file.imports[0]
-        imported = stmt.names[0]
-
-        # Act
-        result = NoMockUsageRule._detect_from_import(source_file, stmt, imported, rule.meta)  # type: ignore[reportPrivateUsage]
-
-        # Assert
-        assert result is not None
-
-    def test_detect_from_import_magic_mock(self):
-        # Arrange
-        rule = NoMockUsageRule()
-        source = "from unittest.mock import MagicMock\n"
-        source_file = make_source_file(source)
-        stmt = source_file.imports[0]
-        imported = stmt.names[0]
-
-        # Act
-        result = NoMockUsageRule._detect_from_import(source_file, stmt, imported, rule.meta)  # type: ignore[reportPrivateUsage]
-
-        # Assert
-        assert result is not None
-
-    def test_detect_from_import_other_name(self):
-        # Arrange
-        rule = NoMockUsageRule()
-        source = "from unittest.mock import patch\n"
-        source_file = make_source_file(source)
-        stmt = source_file.imports[0]
-        imported = stmt.names[0]
-
-        # Act
-        result = NoMockUsageRule._detect_from_import(source_file, stmt, imported, rule.meta)  # type: ignore[reportPrivateUsage]
-
-        # Assert
-        assert result is None
-
-    def test_detect_plain_import_unittest_mock(self):
-        # Arrange
-        rule = NoMockUsageRule()
-        source = "import unittest.mock\n"
-        source_file = make_source_file(source)
-        stmt = source_file.imports[0]
-        imported = stmt.names[0]
-
-        # Act
-        result = NoMockUsageRule._detect_plain_import(source_file, stmt, imported, rule.meta)  # type: ignore[reportPrivateUsage]
-
-        # Assert
-        assert result is not None
-
-    def test_detect_plain_import_other(self):
-        # Arrange
-        rule = NoMockUsageRule()
-        source = "import os\n"
-        source_file = make_source_file(source)
-        stmt = source_file.imports[0]
-        imported = stmt.names[0]
-
-        # Act
-        result = NoMockUsageRule._detect_plain_import(source_file, stmt, imported, rule.meta)  # type: ignore[reportPrivateUsage]
-
-        # Assert
-        assert result is None
-
-
 class TestNoMockUsageRuleMeta:
     """NoMockUsageRule.meta のテスト"""
 
@@ -130,6 +56,30 @@ class TestNoMockUsageRuleCheck:
         # Assert
         assert len(result) == 2
 
+    def test_check_正常系_通常importは違反なしを返すこと(self):
+        # Arrange: import os は unittest.mock でないため違反なし（_detect_plain_import の早期リターン）
+        rule = NoMockUsageRule()
+        source = "import os\n"
+        source_file = make_source_file(source)
+
+        # Act
+        result = rule.check(source_file)
+
+        # Assert
+        assert len(result) == 0
+
+    def test_check_正常系_別モジュールのfrom_importは違反なしを返すこと(self):
+        # Arrange: from os import path は unittest.mock でないため違反なし（_detect_from_import の早期リターン）
+        rule = NoMockUsageRule()
+        source = "from os import path\n"
+        source_file = make_source_file(source)
+
+        # Act
+        result = rule.check(source_file)
+
+        # Assert
+        assert len(result) == 0
+
     def test_check_正常系_patchとMockの混合インポートでMockのみ検出すること(self):
         # Arrange: patchとMockの混合でMockのみ検出
         rule = NoMockUsageRule()
@@ -145,30 +95,6 @@ class TestNoMockUsageRuleCheck:
     @pytest.mark.parametrize(
         "source",
         [
-            pytest.param("from unittest.mock import patch\n", id="patchのみ"),
-            pytest.param("", id="空ソース"),
-            pytest.param("import os\n", id="通常import"),
-        ],
-    )
-    def test_check_違反なしのケースで空を返すこと(self, source: str) -> None:
-        # Arrange
-        rule = NoMockUsageRule()
-        source_file = make_source_file(source)
-
-        # Act
-        result = rule.check(source_file)
-
-        # Assert
-        assert len(result) == 0
-
-    @pytest.mark.parametrize(
-        "source",
-        [
-            pytest.param("from unittest.mock import Mock\n", id="from_unittest_mock_import_Mock"),
-            pytest.param(
-                "from unittest.mock import MagicMock\n",
-                id="from_unittest_mock_import_MagicMock",
-            ),
             pytest.param("import unittest.mock\n", id="import_unittest_mock"),
             pytest.param(
                 "def test_foo():\n    from unittest.mock import Mock\n", id="関数内インポート"
