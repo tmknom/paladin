@@ -33,7 +33,9 @@ class TestOwnPackageResolverResolve:
         # Assert
         assert result == frozenset({"tests.unit", "paladin.view"})
 
-    def test_resolve_正常系_ネストされたテストディレクトリはドット連結でパッケージを返すこと(self):
+    def test_resolve_正常系_ネストされたテストディレクトリは最初のtest_ディレクトリからパッケージを返すこと(
+        self,
+    ):
         # Arrange
         resolver = OwnPackageResolver()
         file_path = Path("tests/unit/test_foundation/test_error/test_handler.py")
@@ -41,8 +43,8 @@ class TestOwnPackageResolverResolve:
         # Act
         result = resolver.resolve(file_path, ROOT_PACKAGES)
 
-        # Assert
-        assert result == frozenset({"tests.unit", "paladin.foundation.error"})
+        # Assert: パッケージキーは先頭2セグメント固定のため、最初の test_ ディレクトリのみ使われる
+        assert result == frozenset({"tests.unit", "paladin.foundation"})
 
     def test_resolve_正常系_複数root_packagesの場合は複数のプロダクションエントリを返すこと(self):
         # Arrange

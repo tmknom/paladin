@@ -103,9 +103,11 @@ allow-dirs = ["src/paladin/foundation/", "src/paladin/protocol/", "src/paladin/r
 
 ### テストファイルのマッピング
 
-`tests/` 配下のテストファイルは、対応するプロダクションパッケージと同一視します。ディレクトリ名から `test_` プレフィックスを除去してプロダクションパッケージを算出します。
+`tests/` 配下のテストファイルは、対応するプロダクションパッケージと同一視します。テストパス内の **最初の** `test_` プレフィックス付きディレクトリ名からプロダクションパッケージを算出します。パッケージキーは常に先頭2セグメント（ルートパッケージ + 最初の `test_` ディレクトリ）であり、テストディレクトリのネスト深度には依存しません。
 
 例: `tests/unit/test_check/test_orchestrator.py` は `paladin.check` パッケージと同一視されます。このため、このファイルから `paladin.check.formatter` をインポートしても違反になりません。一方、`paladin.view.formatter` のインポートは異なるパッケージからのインポートとして違反になります。
+
+ネストされたテストディレクトリも同様に扱います。`tests/unit/test_check/test_ignore/test_directive.py` は最初の `test_` ディレクトリ `test_check` から `paladin.check` パッケージと同一視されます。このため、`paladin.check.ignore.directive` をインポートしても違反になりません。ネストが何段増えても `paladin.check` への帰着は変わりません。
 
 ### 関連ルールとの差分
 
