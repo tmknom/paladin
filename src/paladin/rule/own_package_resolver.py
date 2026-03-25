@@ -46,14 +46,15 @@ class OwnPackageResolver:
             return frozenset(own)
 
         after_tests = dir_parts[tests_index + 1 :]
-        # "test_" プレフィックスを持つディレクトリのみを順番に抽出して連結する
-        # tests/unit/test_foundation/test_error/ → ["foundation", "error"]
-        #   → "foundation.error" → "paladin.foundation.error"
+        # "test_" プレフィックスを持つ最初のディレクトリからプロダクションパッケージを算出する。
+        # パッケージキーは常に先頭2セグメントで定義されるため、最初の test_ ディレクトリのみ使う。
+        # これにより tests/unit/test_check/test_ignore/ のようなネスト深度に関係なく
+        # 常に "paladin.check" という2セグメントのキーが生成される。
         test_dirs = [p[len("test_") :] for p in after_tests if p.startswith("test_")]
         if not test_dirs:
             return frozenset(own)
 
-        production_subpkg = ".".join(test_dirs)
+        production_subpkg = test_dirs[0]
         for root_pkg in root_packages:
             own.add(f"{root_pkg}.{production_subpkg}")
 

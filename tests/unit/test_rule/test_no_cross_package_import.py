@@ -168,6 +168,27 @@ class TestNoCrossPackageImportRuleCheck:
         # Assert
         assert len(result) == 0
 
+    def test_check_正常系_ネストされたテストディレクトリから対応プロダクションパッケージのインポートは違反なしを返すこと(
+        self,
+    ):
+        # Arrange: tests/unit/test_check/test_ignore/test_directive.py から
+        # myapp.check.ignore.directive をインポート
+        # → テストファイルは myapp.check と同一視されるため違反なし
+        source_files = make_source_files(
+            (
+                "from myapp.check.ignore.directive import FileIgnoreDirective\n",
+                "tests/unit/test_check/test_ignore/test_directive.py",
+            ),
+            ("x = 1\n", "src/myapp/check/__init__.py"),
+        )
+        rule = _rule_with_prepare(source_files, allow_dirs=("src/myapp/rule/",))
+
+        # Act
+        result = rule.check(source_files.files[0])
+
+        # Assert
+        assert len(result) == 0
+
     def test_check_正常系_テストファイルから異なるパッケージのインポートは違反を返すこと(self):
         # Arrange: tests/unit/test_check/test_orchestrator.py から myapp.view.formatter をインポート
         # → テストファイルは myapp.check と同一視されるが myapp.view は別パッケージのため違反
