@@ -109,7 +109,7 @@ class TestNoCrossPackageReexportRuleCheck:
             ),
             pytest.param(
                 'from tests.unit.fakes.rule import FakeRule\n__all__ = ["FakeRule"]\n',
-                "/Users/owner/code/paladin/tests/unit/fakes/__init__.py",
+                "/fake/project/tests/unit/fakes/__init__.py",
                 id="tests配下の同一パッケージシンボルは違反なし",
             ),
         ],
@@ -155,7 +155,7 @@ class TestNoCrossPackageReexportRuleCheck:
             ),
             pytest.param(
                 'from paladin.rule import RuleMeta\n__all__ = ["RuleMeta"]\n',
-                "/Users/owner/code/paladin/src/paladin/check/__init__.py",
+                "/fake/project/src/paladin/check/__init__.py",
                 id="絶対パスでもsrcアンカー以降のパッケージを正しく導出",
             ),
             pytest.param(
@@ -165,7 +165,7 @@ class TestNoCrossPackageReexportRuleCheck:
             ),
             pytest.param(
                 'from paladin.rule import RuleMeta\n__all__ = ["RuleMeta"]\n',
-                "/Users/owner/code/paladin/tests/unit/fakes/__init__.py",
+                "/fake/project/tests/unit/fakes/__init__.py",
                 id="tests配下の絶対パスでもパッケージを正しく導出",
             ),
             pytest.param(

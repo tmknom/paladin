@@ -161,8 +161,8 @@ class TestNoUnusedExportRuleCheck:
         init_source = '__all__ = ["Foo"]\n'
         cli_source = "from paladin.check import Foo\n"
         source_files = make_source_files(
-            (init_source, "/Users/owner/code/paladin/src/paladin/check/__init__.py"),
-            (cli_source, "/Users/owner/code/paladin/src/paladin/cli.py"),
+            (init_source, "/fake/project/src/paladin/check/__init__.py"),
+            (cli_source, "/fake/project/src/paladin/cli.py"),
         )
         rule = _rule(("paladin",))
 
@@ -229,11 +229,11 @@ class TestNoUnusedExportRuleCheck:
                 [
                     (
                         '__all__ = ["Foo"]\n',
-                        "/Users/owner/code/paladin/src/paladin/check/__init__.py",
+                        "/fake/project/src/paladin/check/__init__.py",
                     ),
                     (
                         "from paladin.check import Foo\n",
-                        "/Users/owner/code/paladin/src/paladin/cli.py",
+                        "/fake/project/src/paladin/cli.py",
                     ),
                 ],
                 id="絶対パスでの別パッケージfrom_import利用あり",

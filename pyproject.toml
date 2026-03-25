@@ -58,9 +58,6 @@ allow-dirs = ["src/paladin/foundation/", "src/paladin/protocol/", "src/paladin/r
 [tool.paladin.rule.max-file-length]
 max-test-lines = 700
 
-[tool.paladin.rule.max-class-length]
-max-test-lines = 650
-
 [tool.ruff]
 line-length = 100
 target-version = "py313"

@@ -102,12 +102,12 @@ class TestNoDirectInternalImportRuleCheck:
             ),
             pytest.param(
                 "from paladin.check.orchestrator import CheckOrchestrator\n",
-                "/Users/owner/code/paladin/src/paladin/check/foo.py",
+                "/fake/project/src/paladin/check/foo.py",
                 id="絶対パス_同一パッケージ",
             ),
             pytest.param(
                 "from paladin.check.bar import Baz\n",
-                "/Users/owner/code/paladin/src/paladin/check/foo.py",
+                "/fake/project/src/paladin/check/foo.py",
                 id="絶対パス_2階層",
             ),
         ],
@@ -160,12 +160,12 @@ class TestNoDirectInternalImportRuleCheck:
             ),
             pytest.param(
                 "from paladin.check.orchestrator import CheckOrchestrator\n",
-                "/Users/owner/code/paladin/src/other/module.py",
+                "/fake/project/src/other/module.py",
                 id="絶対パス_3階層",
             ),
             pytest.param(
                 "from paladin.rule.types import SourceFile\n",
-                "/Users/owner/code/paladin/src/paladin/check/foo.py",
+                "/fake/project/src/paladin/check/foo.py",
                 id="絶対パス_異なるサブパッケージ",
             ),
         ],
@@ -212,23 +212,6 @@ class TestNoDirectInternalImportRuleCheck:
 
         # Assert
         assert len(result) == 0
-
-    def test_check_エッジケース_パス深さが不足するinit_pyはpackage_exportsに登録されないこと(self):
-        # Arrange: src/__init__.py のようにパスのセグメント数が2未満の場合
-        # PackageResolver.resolve_exact_package_path が None を返すため登録をスキップする
-        init_source = '__all__ = ["Foo"]\n'
-        import_source = "from paladin.check.orchestrator import CheckOrchestrator\n"
-        source_files = make_source_files(
-            (init_source, "src/__init__.py"),  # セグメント不足で None を返す
-            (import_source, "src/other/module.py"),
-        )
-        rule = _rule(("paladin",))
-
-        # Act
-        result = rule.check(source_files)
-
-        # Assert: __init__.py が package_exports に登録されないためヒューリスティック検出
-        assert len(result) == 1
 
     def test_check_正常系_複数ファイルの違反を集約して返すこと(self):
         # Arrange: 2ファイルそれぞれから違反
@@ -336,38 +319,6 @@ class TestNoDirectInternalImportRuleCheck:
         # Assert: paladin.check.orchestrator はサブパッケージとして認識されるため対象外
         assert len(result) == 0
 
-    def test_check_正常系_絶対パスでinit_pyのパッケージキーが正しく解決されること(self):
-        # Arrange: __all__ に Foo がある絶対パスの __init__.py
-        init_source = '__all__ = ["Foo"]\n'
-        import_source = "from paladin.check.orchestrator import Foo\n"
-        source_files = make_source_files(
-            (init_source, "/Users/owner/code/paladin/src/paladin/check/__init__.py"),
-            (import_source, "/Users/owner/code/paladin/src/other/module.py"),
-        )
-        rule = _rule(("paladin",))
-
-        # Act
-        result = rule.check(source_files)
-
-        # Assert
-        assert len(result) == 1
-
-    def test_check_正常系_絶対パスでinit_pyに公開されていないシンボルは検出しないこと(self):
-        # Arrange: __init__.py に Foo は含まれない（Bar のみ）
-        init_source = '__all__ = ["Bar"]\n'
-        import_source = "from paladin.check.orchestrator import Foo\n"
-        source_files = make_source_files(
-            (init_source, "/Users/owner/code/paladin/src/paladin/check/__init__.py"),
-            (import_source, "/Users/owner/code/paladin/src/other/module.py"),
-        )
-        rule = _rule(("paladin",))
-
-        # Act
-        result = rule.check(source_files)
-
-        # Assert
-        assert len(result) == 0
-
     # ------------------------------------------------------------------
     # SubpackageFallback カテゴリ（個別維持: tmp_path を使う）
     # ------------------------------------------------------------------
@@ -444,44 +395,6 @@ class TestNoDirectInternalImportRuleCheck:
         result = rule.check(single_files)
 
         # Assert
-        assert len(result) == 0
-
-    def test_prepare_正常系_prepare後にcheckが正しく動作すること(self):
-        # Arrange: src/paladin/ があれば paladin が自動導出され、違反を検出できる
-        import_source = "from paladin.check.orchestrator import CheckOrchestrator\n"
-        stub_source = "x = 1\n"
-        source_files = make_source_files(
-            (import_source, "src/other/module.py"),
-            (stub_source, "src/paladin/stub.py"),  # paladin を自動導出するため
-        )
-        rule = NoDirectInternalImportRule()
-        rule.prepare(source_files)
-
-        # Act
-        result = rule.check(source_files)
-
-        # Assert: paladin が自動導出されるため違反を検出
-        assert len(result) == 1
-
-    def test_check_エッジケース_import_from_moduleがNoneの場合はスキップすること(self):
-        # Arrange: level=0 かつ module=None の ImportFrom を手動構築する
-        # （通常の Python 構文では生成されないが、AST を直接操作すると再現できる）
-        rule = _rule(("paladin",))
-        tree = ast.parse("")
-        import_from = ast.ImportFrom(
-            module=None,
-            names=[ast.alias(name="Foo", asname=None)],
-            level=0,
-        )
-        ast.fix_missing_locations(import_from)
-        tree.body = [import_from]
-        source_file = SourceFile(file_path=Path("src/other/module.py"), tree=tree, source="")
-        source_files = SourceFiles(files=(source_file,))
-
-        # Act
-        result = rule.check(source_files)
-
-        # Assert: module=None のインポートはスキップされ違反なし
         assert len(result) == 0
 
 

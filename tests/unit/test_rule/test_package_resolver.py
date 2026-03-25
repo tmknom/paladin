@@ -22,9 +22,7 @@ class TestPackageResolverResolvePackageKey:
 
     def test_正常系_絶対パスから先頭2セグメントを返すこと(self):
         resolver = PackageResolver()
-        result = resolver.resolve_package_key(
-            Path("/Users/owner/code/paladin/src/paladin/check/foo.py")
-        )
+        result = resolver.resolve_package_key(Path("/fake/project/src/paladin/check/foo.py"))
         assert result == "paladin.check"
 
     def test_正常系_testsレイアウトからtestsを先頭に含む2セグメントを返すこと(self):
@@ -182,7 +180,7 @@ class TestPackageResolverResolveRootPackages:
     def test_正常系_絶対パスでもルートパッケージを導出すること(self):
         resolver = PackageResolver()
         source_files = make_source_files(
-            ("x = 1\n", "/Users/owner/code/paladin/src/paladin/module.py"),
+            ("x = 1\n", "/fake/project/src/paladin/module.py"),
         )
         result = resolver.resolve_root_packages(source_files)
         assert "paladin" in result

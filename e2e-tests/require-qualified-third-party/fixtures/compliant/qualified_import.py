@@ -1,5 +1,3 @@
-import pydantic
+import os
 
-
-class MyModel(pydantic.BaseModel):
-    name: str
+x = os.path.join("a", "b")
