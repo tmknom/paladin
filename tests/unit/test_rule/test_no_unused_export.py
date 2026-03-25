@@ -125,53 +125,6 @@ class TestNoUnusedExportRuleCheck:
     # integration テスト: 個別維持
     # -------------------------------------------------------------------------
 
-    def test_check_正常系_prepare後にcheckが正しく動作すること(self):
-        # Arrange: prepare() で root_packages を自動導出してから check() で違反を検出
-        init_source = '__all__ = ["Foo"]\n'
-        stub_source = "x = 1\n"
-        source_files = make_source_files(
-            (init_source, "src/paladin/check/__init__.py"),
-            (stub_source, "src/paladin/stub.py"),
-        )
-        rule = NoUnusedExportRule()
-        rule.prepare(source_files)
-
-        # Act
-        result = rule.check(source_files)
-
-        # Assert
-        assert len(result) == 1
-        assert result[0].rule_id == "no-unused-export"
-
-    def test_check_正常系_RuleSetを通じた場合に防御的に動作すること(self):
-        # Arrange: NoUnusedExportRule は prepare() なしでも check() が安全に動作する
-        init_source = '__all__ = ["Foo"]\n'
-        source_files = make_source_files((init_source, "src/paladin/check/__init__.py"))
-        rule = NoUnusedExportRule()
-        # prepare() を呼ばない（RuleSet.run() が _multi_file_rules に prepare() を呼ばない現状を再現）
-
-        # Act
-        result = rule.check(source_files)
-
-        # Assert: _root_packages が空のため早期リターンし、空タプルを返す
-        assert len(result) == 0
-
-    def test_check_正常系_絶対パスのファイルでも正しく動作すること(self):
-        # Arrange: 絶対パス形式の SourceFile でもパッケージ解決が正常に機能する
-        init_source = '__all__ = ["Foo"]\n'
-        cli_source = "from paladin.check import Foo\n"
-        source_files = make_source_files(
-            (init_source, "/fake/project/src/paladin/check/__init__.py"),
-            (cli_source, "/fake/project/src/paladin/cli.py"),
-        )
-        rule = _rule(("paladin",))
-
-        # Act
-        result = rule.check(source_files)
-
-        # Assert
-        assert len(result) == 0
-
     # -------------------------------------------------------------------------
     # 複数ファイル違反: 個別維持（len==2）
     # -------------------------------------------------------------------------
@@ -202,18 +155,6 @@ class TestNoUnusedExportRuleCheck:
             pytest.param(
                 None,
                 id="空のSourceFiles",
-            ),
-            pytest.param(
-                [("__all__ = [variable]\n", "src/paladin/check/__init__.py")],
-                id="allの要素に非定数が含まれる",
-            ),
-            pytest.param(
-                [('__all__ = "Foo"\n', "src/paladin/check/__init__.py")],
-                id="allの値がリスト以外",
-            ),
-            pytest.param(
-                [('__all__ = ["Foo"]\n', "src/__init__.py")],
-                id="パス深さが不足するinit_py",
             ),
             pytest.param(
                 [

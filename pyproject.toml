@@ -55,9 +55,6 @@ allow-dirs = ["src/paladin/foundation/", "src/paladin/transform/", "tests/"]
 [tool.paladin.rule.no-cross-package-import]
 allow-dirs = ["src/paladin/foundation/", "src/paladin/protocol/", "src/paladin/rule/"]
 
-[tool.paladin.rule.max-file-length]
-max-test-lines = 700
-
 [tool.ruff]
 line-length = 100
 target-version = "py313"

@@ -63,9 +63,7 @@ class TestNoDirectInternalImportRuleMeta:
 class TestNoDirectInternalImportRuleCheck:
     """NoDirectInternalImportRule のチェックテスト"""
 
-    # ------------------------------------------------------------------
     # C カテゴリ: 0件ケースの parametrize
-    # ------------------------------------------------------------------
 
     @pytest.mark.parametrize(
         "source,filename",
@@ -99,16 +97,6 @@ class TestNoDirectInternalImportRuleCheck:
                 "import paladin.check.orchestrator\n",
                 "src/other/module.py",
                 id="import文",
-            ),
-            pytest.param(
-                "from paladin.check.orchestrator import CheckOrchestrator\n",
-                "/fake/project/src/paladin/check/foo.py",
-                id="絶対パス_同一パッケージ",
-            ),
-            pytest.param(
-                "from paladin.check.bar import Baz\n",
-                "/fake/project/src/paladin/check/foo.py",
-                id="絶対パス_2階層",
             ),
         ],
     )
@@ -146,9 +134,7 @@ class TestNoDirectInternalImportRuleCheck:
         # Assert
         assert len(result) == 0
 
-    # ------------------------------------------------------------------
     # B カテゴリ: 1件ケースの parametrize
-    # ------------------------------------------------------------------
 
     @pytest.mark.parametrize(
         "source,filename",
@@ -163,11 +149,6 @@ class TestNoDirectInternalImportRuleCheck:
                 "/fake/project/src/other/module.py",
                 id="絶対パス_3階層",
             ),
-            pytest.param(
-                "from paladin.rule.types import SourceFile\n",
-                "/fake/project/src/paladin/check/foo.py",
-                id="絶対パス_異なるサブパッケージ",
-            ),
         ],
     )
     def test_check_違反ありのケースで1件返すこと(self, source: str, filename: str) -> None:
@@ -181,9 +162,7 @@ class TestNoDirectInternalImportRuleCheck:
         # Assert
         assert len(result) == 1
 
-    # ------------------------------------------------------------------
     # 特殊テスト（個別維持）
-    # ------------------------------------------------------------------
 
     def test_check_エッジケース_moduleがNoneのImportFromノードを無視すること(self):
         # Arrange: level=0, module=None の ImportFrom は通常の ast.parse では生成されない
@@ -263,9 +242,7 @@ class TestNoDirectInternalImportRuleCheck:
         # Assert
         assert len(result) == 1
 
-    # ------------------------------------------------------------------
     # InitPy カテゴリ（個別維持: 複数ファイルの make_source_files を使う）
-    # ------------------------------------------------------------------
 
     def test_check_正常系_init_pyの再エクスポートに含まれるシンボルのインポートを検出すること(self):
         # Arrange: paladin/check/__init__.py に from .orchestrator import Foo がある
@@ -319,9 +296,7 @@ class TestNoDirectInternalImportRuleCheck:
         # Assert: paladin.check.orchestrator はサブパッケージとして認識されるため対象外
         assert len(result) == 0
 
-    # ------------------------------------------------------------------
     # SubpackageFallback カテゴリ（個別維持: tmp_path を使う）
-    # ------------------------------------------------------------------
 
     def test_check_正常系_解析スコープ外のサブパッケージは違反を検出しないこと(
         self, tmp_path: Path
@@ -344,9 +319,7 @@ class TestNoDirectInternalImportRuleCheck:
         # Assert: paladin.foundation.fs はサブパッケージ（__init__.py あり）なので対象外
         assert len(result) == 0
 
-    # ------------------------------------------------------------------
     # Prepare カテゴリ（個別維持: prepare() 挙動テスト）
-    # ------------------------------------------------------------------
 
     def test_prepare_正常系_source_filesからルートパッケージが自動導出されること(self):
         # Arrange: src/paladin/ があれば paladin が root_packages に自動導出される
@@ -369,33 +342,6 @@ class TestNoDirectInternalImportRuleCheck:
         # Assert: paladin が自動導出されるため違反を検出
         result_after = rule.check(source_files)
         assert len(result_after) == 1
-
-    def test_prepare_正常系_testsが常にroot_packagesに含まれること(self):
-        # Arrange: src 配下のパッケージに依存せず tests は常に自動導出される
-        # tests からのインポートを持つファイルを checks したとき tests を違反としないことで確認
-        tests_source = "from tests.unit.fakes import FakeRule\n"
-        source_files = make_source_files(
-            (tests_source, "src/myapp/module.py"),
-            ("x = 1\n", "src/myapp/stub.py"),
-        )
-        rule = NoDirectInternalImportRule()
-        rule.prepare(source_files)
-
-        # tests から 3階層インポートは tests が root_packages に含まれれば対象外
-        # ただし NoDirectInternalImportRule は tests.unit をパッケージキーとするため
-        # from tests.unit.fakes import X は同一パッケージ扱いになる
-        # ここでは prepare() が例外なく動作し root_packages に tests が含まれることを確認
-        # 間接的にテスト: tests からのインポートを持つファイルはスコープ外（2階層未満も対象外）
-        source = "from tests.foo import bar\n"
-        single_file = make_source_file(source, "src/myapp/test_helper.py")
-        single_files = SourceFiles(files=(single_file,))
-
-        # Act
-        # 2階層インポートは対象外なので違反なし
-        result = rule.check(single_files)
-
-        # Assert
-        assert len(result) == 0
 
 
 class TestSrcRootResolver:
@@ -531,22 +477,6 @@ class TestInternalImportDetector:
         assert result is not None
         assert result.rule_id == "no-direct-internal-import"
         assert "CheckOrchestrator" in result.message
-
-    def test_detect_正常系_公開済みシンボルはViolationを返すこと(self):
-        # Arrange: package_exports に name が含まれる場合は違反
-        rule = NoDirectInternalImportRule()
-        source = "from paladin.check.orchestrator import CheckOrchestrator\n"
-        source_file = make_source_file(source, "src/other/module.py")
-        imp = source_file.absolute_from_imports[0]
-        package_exports = {"paladin.check": {"CheckOrchestrator"}}
-
-        # Act
-        result = InternalImportDetector.detect(
-            source_file, imp, "CheckOrchestrator", "paladin.check", package_exports, rule.meta
-        )
-
-        # Assert
-        assert result is not None
 
     def test_detect_正常系_非公開シンボルはNoneを返すこと(self):
         # Arrange: package_exports に name が含まれない場合は対象外

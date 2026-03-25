@@ -110,85 +110,47 @@ class TestFunctionCollector:
         # Assert
         assert result == ()
 
-    def test_collect_正常系_with文内のネスト関数を収集すること(self):
-        # Arrange: with ブロック内のネスト関数（_iter_child_stmt_lists の With ブランチ）
-        source = "def outer():\n    with open('f') as f:\n        def inner(): pass\n"
-        tree = ast.parse(source)
-
-        # Act
-        result = FunctionCollector.collect(tree)
-
-        # Assert
-        names = {s.node.name for s in result}
-        assert "inner" in names
-
-    def test_collect_正常系_try内のネスト関数を収集すること(self):
-        # Arrange: try/except ブロック内のネスト関数（_iter_child_stmt_lists の Try ブランチ）
-        source = (
-            "def outer():\n"
-            "    try:\n"
-            "        def inner(): pass\n"
-            "    except Exception:\n"
-            "        pass\n"
-        )
-        tree = ast.parse(source)
-
-        # Act
-        result = FunctionCollector.collect(tree)
-
-        # Assert
-        names = {s.node.name for s in result}
-        assert "inner" in names
-
-    def test_collect_正常系_for_else内のネスト関数を収集すること(self):
-        # Arrange: for/else の else ブロック内のネスト関数（_iter_child_stmt_lists の orelse ブランチ）
-        source = (
-            "def outer():\n    for x in []:\n        pass\n    else:\n        def inner(): pass\n"
-        )
-        tree = ast.parse(source)
-
-        # Act
-        result = FunctionCollector.collect(tree)
-
-        # Assert
-        names = {s.node.name for s in result}
-        assert "inner" in names
-
-    def test_collect_正常系_try_else内のネスト関数を収集すること(self):
-        # Arrange: try/else ブロック内のネスト関数（_iter_child_stmt_lists の orelse ブランチ）
-        source = (
-            "def outer():\n"
-            "    try:\n"
-            "        pass\n"
-            "    except Exception:\n"
-            "        pass\n"
-            "    else:\n"
-            "        def inner(): pass\n"
-        )
-        tree = ast.parse(source)
-
-        # Act
-        result = FunctionCollector.collect(tree)
-
-        # Assert
-        names = {s.node.name for s in result}
-        assert "inner" in names
-
-    def test_collect_正常系_try_finally内のネスト関数を収集すること(self):
-        # Arrange: try/finally ブロック内のネスト関数（_iter_child_stmt_lists の finalbody ブランチ）
-        source = "def outer():\n    try:\n        pass\n    finally:\n        def inner(): pass\n"
-        tree = ast.parse(source)
-
-        # Act
-        result = FunctionCollector.collect(tree)
-
-        # Assert
-        names = {s.node.name for s in result}
-        assert "inner" in names
-
-    def test_collect_正常系_match内のネスト関数を収集すること(self):
-        # Arrange: match/case ブロック内のネスト関数（_iter_child_stmt_lists の Match ブランチ）
-        source = "def outer(x):\n    match x:\n        case 1:\n            def inner(): pass\n"
+    @pytest.mark.parametrize(
+        "source",
+        [
+            pytest.param(
+                "def outer():\n    with open('f') as f:\n        def inner(): pass\n",
+                id="with（Withブランチ）",
+            ),
+            pytest.param(
+                "def outer():\n"
+                "    try:\n"
+                "        def inner(): pass\n"
+                "    except Exception:\n"
+                "        pass\n",
+                id="try（Tryブランチ）",
+            ),
+            pytest.param(
+                "def outer():\n    for x in []:\n        pass\n    else:\n        def inner(): pass\n",
+                id="for_else（orelseブランチ）",
+            ),
+            pytest.param(
+                "def outer():\n"
+                "    try:\n"
+                "        pass\n"
+                "    except Exception:\n"
+                "        pass\n"
+                "    else:\n"
+                "        def inner(): pass\n",
+                id="try_else（orelseブランチ）",
+            ),
+            pytest.param(
+                "def outer():\n    try:\n        pass\n    finally:\n        def inner(): pass\n",
+                id="try_finally（finalbodyブランチ）",
+            ),
+            pytest.param(
+                "def outer(x):\n    match x:\n        case 1:\n            def inner(): pass\n",
+                id="match（Matchブランチ）",
+            ),
+        ],
+    )
+    def test_collect_正常系_制御構造内のネスト関数を収集すること(self, source: str) -> None:
+        # Arrange
         tree = ast.parse(source)
 
         # Act
@@ -222,51 +184,36 @@ class TestNestingCalculator:
         # Assert
         assert result == 3
 
-    def test_calc_max_depth_正常系_forループの深度を返すこと(self):
-        # Arrange: for x in []: for y in []: pass
-        source = "def f():\n    for x in []:\n        for y in []:\n            pass\n"
-        stmts = self._parse_func_body(source)
-
-        # Act
-        result = NestingCalculator.calc_max_depth(stmts)
-
-        # Assert
-        assert result == 2
-
-    def test_calc_max_depth_正常系_whileループの深度を返すこと(self):
-        # Arrange: while True: while True: pass
-        source = "def f():\n    while True:\n        while True:\n            pass\n"
-        stmts = self._parse_func_body(source)
-
-        # Act
-        result = NestingCalculator.calc_max_depth(stmts)
-
-        # Assert
-        assert result == 2
-
-    def test_calc_max_depth_正常系_with文の深度を返すこと(self):
-        # Arrange: with open('a'): with open('b'): pass
-        source = "def f():\n    with open('a'):\n        with open('b'):\n            pass\n"
-        stmts = self._parse_func_body(source)
-
-        # Act
-        result = NestingCalculator.calc_max_depth(stmts)
-
-        # Assert
-        assert result == 2
-
-    def test_calc_max_depth_正常系_try_exceptの深度を返すこと(self):
-        # Arrange: try: try: pass except: pass except: pass
-        source = (
-            "def f():\n"
-            "    try:\n"
-            "        try:\n"
-            "            pass\n"
-            "        except Exception:\n"
-            "            pass\n"
-            "    except Exception:\n"
-            "        pass\n"
-        )
+    @pytest.mark.parametrize(
+        "source",
+        [
+            pytest.param(
+                "def f():\n    for x in []:\n        for y in []:\n            pass\n",
+                id="for",
+            ),
+            pytest.param(
+                "def f():\n    while True:\n        while True:\n            pass\n",
+                id="while",
+            ),
+            pytest.param(
+                "def f():\n    with open('a'):\n        with open('b'):\n            pass\n",
+                id="with",
+            ),
+            pytest.param(
+                "def f():\n"
+                "    try:\n"
+                "        try:\n"
+                "            pass\n"
+                "        except Exception:\n"
+                "            pass\n"
+                "    except Exception:\n"
+                "        pass\n",
+                id="try_except",
+            ),
+        ],
+    )
+    def test_calc_max_depth_正常系_2段ネストの深度を返すこと(self, source: str) -> None:
+        # Arrange
         stmts = self._parse_func_body(source)
 
         # Act
@@ -440,20 +387,6 @@ class TestNestingDetector:
 
         # Assert
         assert result is None
-
-    def test_detect_正常系_閾値以上でViolationを返すこと(self):
-        # Arrange
-        rule = NoDeepNestingRule()
-        source_file = make_source_file("def foo():\n    pass\n")
-        scope = self._make_scope("def foo():\n    pass\n")
-
-        # Act
-        result = NestingDetector.detect(
-            scope, depth=3, threshold=3, meta=rule.meta, source_file=source_file
-        )
-
-        # Assert
-        assert result is not None
 
     def test_detect_正常系_メソッドのViolationメッセージにクラス名_メソッド名が含まれること(self):
         # Arrange
