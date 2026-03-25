@@ -66,7 +66,7 @@ class NoUnusedExportRule:
         violations: list[Violation] = []
         for name, lineno in symbols.items():
             if name not in used_symbols:
-                violations.append(self._make_violation(file_path, lineno, name))
+                violations.append(self._make_violation(file_path, lineno, name, self._meta))
         return violations
 
     def _collect_all_exports(
@@ -107,16 +107,17 @@ class NoUnusedExportRule:
         """
         usages: dict[str, set[str]] = {}
         for source_file in source_files:
-            self._collect_usages_from_file(source_file, all_exports, usages)
+            file_usages = self._collect_usages_from_file(source_file, all_exports)
+            for pkg, symbols in file_usages.items():
+                usages.setdefault(pkg, set()).update(symbols)
         return usages
 
     def _collect_usages_from_file(
         self,
         source_file: SourceFile,
         all_exports: dict[str, tuple[Path, dict[str, int]]],
-        usages: dict[str, set[str]],
-    ) -> None:
-        """1ファイルの AST を走査して usages を更新する"""
+    ) -> dict[str, set[str]]:
+        """1ファイルの AST を走査して利用シンボルを収集して返す"""
         is_test_file = source_file.is_test_file
         user_pkg_key = self._resolver.resolve_package_key(source_file.file_path)
         user_exact_pkg = self._resolver.resolve_exact_package_path(source_file.file_path)
@@ -126,10 +127,12 @@ class NoUnusedExportRule:
         all_nodes = list(ast.walk(source_file.tree))
         imported_modules = self._collect_imported_module_names(all_nodes)
 
+        usages: dict[str, set[str]] = {}
         for node in all_nodes:
             self._process_node(
                 node, all_exports, imported_modules, is_test_file, effective_user_key, usages
             )
+        return usages
 
     def _collect_imported_module_names(self, all_nodes: list[ast.AST]) -> set[str]:
         """Import 文から直接インポートされたモジュール名を収集する"""
@@ -198,10 +201,11 @@ class NoUnusedExportRule:
             return None
         return ".".join(reversed(parts))
 
-    def _make_violation(self, file_path: Path, lineno: int, name: str) -> Violation:
+    @staticmethod
+    def _make_violation(file_path: Path, lineno: int, name: str, meta: RuleMeta) -> Violation:
         """診断メッセージ仕様に従い Violation を生成する"""
         location = SourceLocation(file=file_path, line=lineno, column=0)
-        return self._meta.create_violation_at(
+        return meta.create_violation_at(
             location=location,
             message=f"`__all__` のシンボル `{name}` はどの別パッケージからも利用されていない",
             reason="利用されていないシンボルを公開し続けると、不必要な後方互換義務が生じる",
