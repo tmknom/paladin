@@ -2,7 +2,7 @@ from pathlib import Path
 
 import pytest
 
-from paladin.rule.max_file_length import FileLengthCalculator, MaxFileLengthRule
+from paladin.rule.max_file_length import FileLengthCalculator, FileLengthDetector, MaxFileLengthRule
 from paladin.rule.types import RuleMeta
 from tests.unit.test_rule.helpers import make_source_file, make_test_source_file
 
@@ -63,8 +63,6 @@ class TestMaxFileLengthRuleCheck:
     @pytest.mark.parametrize(
         "source",
         [
-            pytest.param(_make_source(299), id="上限以下"),
-            pytest.param(_make_source(300), id="上限ちょうど"),
             pytest.param("", id="空ソース"),
         ],
     )
@@ -78,23 +76,6 @@ class TestMaxFileLengthRuleCheck:
 
         # Assert
         assert len(result) == 0
-
-    @pytest.mark.parametrize(
-        "source",
-        [
-            pytest.param(_make_source(301), id="上限超過"),
-        ],
-    )
-    def test_check_違反ありのケースで1件返すこと(self, source: str) -> None:
-        # Arrange
-        rule = MaxFileLengthRule()
-        source_file = make_source_file(source)
-
-        # Act
-        result = rule.check(source_file)
-
-        # Assert
-        assert len(result) == 1
 
     def test_check_正常系_テストファイルはmax_test_linesが適用されること(self):
         # Arrange: テストファイルのデフォルト上限500行に対して501行のファイル
@@ -176,3 +157,29 @@ class TestFileLengthCalculator:
 
     def test_1行のソースは1を返すこと(self):
         assert FileLengthCalculator.calc("x = 1\n") == 1
+
+
+class TestFileLengthDetector:
+    """FileLengthDetector.detect のテスト"""
+
+    def test_detect_正常系_超過していればViolationを返すこと(self):
+        rule = MaxFileLengthRule(max_lines=5)
+        source = _make_source(6)
+        source_file = make_source_file(source)
+        result = FileLengthDetector.detect(source_file, 6, 5, rule.meta)
+        assert result is not None
+        assert result.rule_id == "max-file-length"
+
+    def test_detect_正常系_超過していなければNoneを返すこと(self):
+        rule = MaxFileLengthRule(max_lines=5)
+        source = _make_source(5)
+        source_file = make_source_file(source)
+        result = FileLengthDetector.detect(source_file, 5, 5, rule.meta)
+        assert result is None
+
+    def test_detect_正常系_ちょうど上限はNoneを返すこと(self):
+        rule = MaxFileLengthRule(max_lines=5)
+        source = _make_source(5)
+        source_file = make_source_file(source)
+        result = FileLengthDetector.detect(source_file, 5, 5, rule.meta)
+        assert result is None

@@ -1,10 +1,16 @@
 """NoTestingTestCodeRule のテスト"""
 
+import ast
+
 import pytest
 
-from paladin.rule.no_testing_test_code import NoTestingTestCodeRule
+from paladin.rule.no_testing_test_code import (
+    NoTestingTestCodeRule,
+    TestImportCollector,
+    TestTargetDetector,
+)
 from paladin.rule.types import RuleMeta, SourceFiles
-from tests.unit.test_rule.helpers import make_source_files
+from tests.unit.test_rule.helpers import make_source_file, make_source_files
 
 
 class TestNoTestingTestCodeRuleMeta:
@@ -22,30 +28,6 @@ class TestNoTestingTestCodeRuleMeta:
 
 
 class TestNoTestingTestCodeRuleCheck:
-    def test_check_正常系_違反のViolationフィールド値が正しいこと(self):
-        # Arrange
-        source = (
-            "from tests.unit.fakes.fs import InMemoryFsReader\n"
-            "\n"
-            "class TestInMemoryFsReader:\n"
-            "    pass\n"
-        )
-        source_files = make_source_files((source, "tests/unit/test_fakes/test_fs.py"))
-        rule = NoTestingTestCodeRule()
-
-        # Act
-        violations = rule.check(source_files)
-
-        # Assert
-        assert len(violations) == 1
-        v = violations[0]
-        assert v.rule_id == "no-testing-test-code"
-        assert v.rule_name == "No Testing Test Code"
-        assert "`InMemoryFsReader`" in v.message
-        assert "tests/" in v.message
-        assert "InMemoryFsReader" in v.suggestion
-        assert v.line == 3  # class TestInMemoryFsReader は3行目
-
     def test_check_正常系_空のSourceFilesで違反なし(self):
         # Arrange
         source_files = SourceFiles(files=())
@@ -101,15 +83,6 @@ class TestNoTestingTestCodeRuleCheck:
                 "class TestFoo:\n    def test_something(self) -> None:\n        pass\n",
                 "tests/unit/test_foo.py",
                 id="testsインポートなし",
-            ),
-            pytest.param(
-                "from tests.unit.fakes.fs import InMemoryFsReader\n"
-                "\n"
-                "class TestCheckOrchestrator:\n"
-                "    def test_orchestrate(self) -> None:\n"
-                "        reader = InMemoryFsReader()\n",
-                "tests/unit/test_check/test_orchestrator.py",
-                id="クラス名不一致",
             ),
             pytest.param(
                 "from paladin.check.orchestrator import CheckOrchestrator\n"
@@ -174,27 +147,10 @@ class TestNoTestingTestCodeRuleCheck:
             pytest.param(
                 "from tests.unit.fakes.fs import InMemoryFsReader\n"
                 "\n"
-                "class TestInMemoryFsReader:\n"
-                "    def test_read(self) -> None:\n"
-                "        pass\n",
-                "tests/unit/test_fakes/test_fs.py",
-                id="クラス名一致",
-            ),
-            pytest.param(
-                "from tests.unit.fakes.fs import InMemoryFsReader\n"
-                "\n"
                 "def test_in_memory_fs_reader_returns_content() -> None:\n"
                 "    pass\n",
                 "tests/unit/test_fakes/test_fs.py",
                 id="関数名一致_サフィックスあり",
-            ),
-            pytest.param(
-                "from tests.unit.fakes.fs import InMemoryFsReader\n"
-                "\n"
-                "def test_in_memory_fs_reader() -> None:\n"
-                "    pass\n",
-                "tests/unit/test_fakes/test_fs.py",
-                id="関数名一致_完全一致",
             ),
         ],
     )
@@ -208,3 +164,62 @@ class TestNoTestingTestCodeRuleCheck:
 
         # Assert
         assert len(violations) == 1
+
+
+class TestTestImportCollector:
+    """TestImportCollector のテスト"""
+
+    def test_collect_正常系_tests配下からのインポートを返すこと(self):
+        source = "from tests.unit.fakes.fs import InMemoryFsReader\n"
+        source_file = make_source_file(source, "tests/test_foo.py")
+        result = TestImportCollector.collect(source_file)
+        assert result == {"InMemoryFsReader": "InMemoryFsReader"}
+
+    def test_collect_正常系_tests以外のインポートは除外すること(self):
+        source = "from paladin.rule import RuleMeta\n"
+        source_file = make_source_file(source, "tests/test_foo.py")
+        result = TestImportCollector.collect(source_file)
+        assert result == {}
+
+
+class TestTestTargetDetector:
+    """TestTargetDetector のテスト"""
+
+    def test_detect_class_正常系_名前一致でViolationを返すこと(self):
+        rule = NoTestingTestCodeRule()
+        source = (
+            "from tests.unit.fakes.fs import InMemoryFsReader\n"
+            "class TestInMemoryFsReader:\n"
+            "    pass\n"
+        )
+        source_file = make_source_file(source, "tests/test_fs.py")
+        test_imports = TestImportCollector.collect(source_file)
+        node = next(n for n in source_file.tree.body if isinstance(n, ast.ClassDef))
+        result = TestTargetDetector.detect_class(source_file, node, test_imports, rule.meta)
+        assert result is not None
+        assert result.rule_id == "no-testing-test-code"
+
+    def test_detect_class_正常系_名前不一致でNoneを返すこと(self):
+        rule = NoTestingTestCodeRule()
+        source = (
+            "from tests.unit.fakes.fs import InMemoryFsReader\nclass TestOtherThing:\n    pass\n"
+        )
+        source_file = make_source_file(source, "tests/test_fs.py")
+        test_imports = TestImportCollector.collect(source_file)
+        node = next(n for n in source_file.tree.body if isinstance(n, ast.ClassDef))
+        result = TestTargetDetector.detect_class(source_file, node, test_imports, rule.meta)
+        assert result is None
+
+    def test_detect_func_正常系_名前一致でViolationを返すこと(self):
+        rule = NoTestingTestCodeRule()
+        source = (
+            "from tests.unit.fakes.fs import InMemoryFsReader\n"
+            "def test_in_memory_fs_reader() -> None:\n"
+            "    pass\n"
+        )
+        source_file = make_source_file(source, "tests/test_fs.py")
+        test_imports = TestImportCollector.collect(source_file)
+        node = next(n for n in source_file.tree.body if isinstance(n, ast.FunctionDef))
+        result = TestTargetDetector.detect_func(source_file, node, test_imports, rule.meta)
+        assert result is not None
+        assert result.rule_id == "no-testing-test-code"

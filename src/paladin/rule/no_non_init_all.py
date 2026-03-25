@@ -7,6 +7,20 @@ from paladin.rule.all_exports_extractor import AllExportsExtractor
 from paladin.rule.types import RuleMeta, SourceFile, Violation
 
 
+class NonInitAllDetector:
+    """__init__.py 以外での __all__ 定義の Violation を生成する"""
+
+    @staticmethod
+    def detect(meta: RuleMeta, source_file: SourceFile, line: int) -> Violation:
+        """Violation を生成する"""
+        return meta.create_violation_at(
+            location=source_file.location(line),
+            message="__init__.py 以外のファイルに __all__ が定義されている",
+            reason=meta.intent,
+            suggestion=meta.suggestion,
+        )
+
+
 class NoNonInitAllRule:
     """__init__.py 以外のファイルで __all__ が定義されていないかを AST で検出するルール"""
 
@@ -34,13 +48,4 @@ class NoNonInitAllRule:
         all_exports = self._extractor.extract(source_file)
         if not all_exports.is_defined:
             return ()
-        return (NoNonInitAllRule._make_violation(self._meta, source_file, all_exports.lineno),)
-
-    @staticmethod
-    def _make_violation(meta: RuleMeta, source_file: SourceFile, line: int) -> Violation:
-        return meta.create_violation_at(
-            location=source_file.location(line),
-            message="__init__.py 以外のファイルに __all__ が定義されている",
-            reason=meta.intent,
-            suggestion=meta.suggestion,
-        )
+        return (NonInitAllDetector.detect(self._meta, source_file, all_exports.lineno),)

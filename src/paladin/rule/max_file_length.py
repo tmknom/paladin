@@ -17,6 +17,29 @@ class FileLengthCalculator:
         return len(source.splitlines())
 
 
+class FileLengthDetector:
+    """ファイル行数の閾値判定と Violation 生成を行う"""
+
+    @staticmethod
+    def detect(
+        source_file: SourceFile,
+        length: int,
+        limit: int,
+        meta: RuleMeta,
+    ) -> Violation | None:
+        """Length が limit を超えていれば Violation を返す。そうでなければ None を返す"""
+        if length <= limit:
+            return None
+        file_path = source_file.file_path.name
+        message = f"ファイル `{file_path}` は `{length}` 行です。上限は `{limit}` 行です"
+        return meta.create_violation_at(
+            location=source_file.location(length),
+            message=message,
+            reason="ファイルが長すぎることは、責務の肥大化や設計上の問題を示す兆候です",
+            suggestion="ファイルを複数のモジュールに分割することを検討してください",
+        )
+
+
 class MaxFileLengthRule:
     """ファイルの行数が設定された上限を超えた場合に違反を検出するルール"""
 
@@ -44,17 +67,7 @@ class MaxFileLengthRule:
         """単一ファイルに対する違反判定を行う"""
         limit = self._max_test_lines if source_file.is_test_file else self._max_lines
         length = FileLengthCalculator.calc(source_file.source)
-
-        if length <= limit:
+        violation = FileLengthDetector.detect(source_file, length, limit, self._meta)
+        if violation is None:
             return ()
-
-        file_path = source_file.file_path.name
-        message = f"ファイル `{file_path}` は `{length}` 行です。上限は `{limit}` 行です"
-        return (
-            self._meta.create_violation_at(
-                location=source_file.location(length),
-                message=message,
-                reason="ファイルが長すぎることは、責務の肥大化や設計上の問題を示す兆候です",
-                suggestion="ファイルを複数のモジュールに分割することを検討してください",
-            ),
-        )
+        return (violation,)

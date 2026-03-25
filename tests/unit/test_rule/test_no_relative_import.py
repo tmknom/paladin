@@ -1,8 +1,6 @@
-from pathlib import Path
-
 import pytest
 
-from paladin.rule.no_relative_import import NoRelativeImportRule
+from paladin.rule.no_relative_import import NoRelativeImportRule, RelativeImportDetector
 from paladin.rule.types import RuleMeta
 from tests.unit.test_rule.helpers import make_source_file
 
@@ -25,23 +23,6 @@ class TestNoRelativeImportRuleMeta:
 
 class TestNoRelativeImportRuleCheck:
     """NoRelativeImportRule.check のテスト"""
-
-    def test_check_正常系_違反のフィールド値が正しいこと(self):
-        # Arrange
-        rule = NoRelativeImportRule()
-        source_file = make_source_file("from .module import Foo\n")
-
-        # Act
-        result = rule.check(source_file)
-
-        # Assert
-        assert len(result) == 1
-        violation = result[0]
-        assert violation.file == Path("example.py")
-        assert violation.line == 1
-        assert violation.column == 0
-        assert violation.rule_id == "no-relative-import"
-        assert violation.rule_name == "No Relative Import"
 
     def test_check_正常系_複数の相対インポートでそれぞれ個別の違反を返すこと(self):
         # Arrange
@@ -73,3 +54,16 @@ class TestNoRelativeImportRuleCheck:
 
         # Assert
         assert len(result) == 0
+
+
+class TestRelativeImportDetector:
+    """RelativeImportDetector のテスト"""
+
+    def test_detect_正常系_Violationを返すこと(self):
+        rule = NoRelativeImportRule()
+        source = "from .module import Foo\n"
+        source_file = make_source_file(source)
+        stmt = source_file.imports[0]
+        result = RelativeImportDetector.detect(stmt, source_file, rule.meta)
+        assert result.rule_id == "no-relative-import"
+        assert "相対インポート" in result.message

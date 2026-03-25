@@ -5,7 +5,15 @@ from pathlib import Path
 
 import pytest
 
-from paladin.rule.no_direct_internal_import import NoDirectInternalImportRule
+from paladin.rule.all_exports_extractor import AllExportsExtractor
+from paladin.rule.no_direct_internal_import import (
+    InternalImportDetector,
+    NoDirectInternalImportRule,
+    PackageExportCollector,
+    SrcRootResolver,
+    SubpackageChecker,
+)
+from paladin.rule.package_resolver import PackageResolver
 from paladin.rule.types import RuleMeta, SourceFile, SourceFiles
 from tests.unit.test_rule.helpers import make_source_file, make_source_files
 
@@ -54,24 +62,6 @@ class TestNoDirectInternalImportRuleMeta:
 
 class TestNoDirectInternalImportRuleCheck:
     """NoDirectInternalImportRule のチェックテスト"""
-
-    # ------------------------------------------------------------------
-    # A カテゴリ: フィールド値テスト（個別維持）
-    # ------------------------------------------------------------------
-
-    def test_check_正常系_3階層以上のインポートで違反を検出すること(self):
-        # Arrange: paladin.check.orchestrator は3階層（paladin, check, orchestrator）
-        # __init__.py が SourceFiles に含まれない場合はヒューリスティック検出
-        source = "from paladin.check.orchestrator import CheckOrchestrator\n"
-        source_files = make_source_files((source, "src/other/module.py"))
-        rule = _rule(("paladin",))
-
-        # Act
-        result = rule.check(source_files)
-
-        # Assert
-        assert len(result) == 1
-        assert result[0].rule_id == "no-direct-internal-import"
 
     # ------------------------------------------------------------------
     # C カテゴリ: 0件ケースの parametrize
@@ -163,11 +153,6 @@ class TestNoDirectInternalImportRuleCheck:
     @pytest.mark.parametrize(
         "source,filename",
         [
-            pytest.param(
-                "from paladin.check.orchestrator import CheckOrchestrator\n",
-                "src/other/module.py",
-                id="3階層以上",
-            ),
             pytest.param(
                 "from paladin.rule.types import SourceFile\n",
                 "src/paladin/check/foo.py",
@@ -299,22 +284,6 @@ class TestNoDirectInternalImportRuleCheck:
     # InitPy カテゴリ（個別維持: 複数ファイルの make_source_files を使う）
     # ------------------------------------------------------------------
 
-    def test_check_正常系_init_pyのall_exportsに含まれるシンボルのインポートを検出すること(self):
-        # Arrange: paladin/check/__init__.py に __all__ = ["Foo"] がある
-        init_source = '__all__ = ["Foo"]\n'
-        import_source = "from paladin.check.orchestrator import Foo\n"
-        source_files = make_source_files(
-            (init_source, "src/paladin/check/__init__.py"),
-            (import_source, "src/other/module.py"),
-        )
-        rule = _rule(("paladin",))
-
-        # Act
-        result = rule.check(source_files)
-
-        # Assert: Foo は __all__ で公開されているため違反
-        assert len(result) == 1
-
     def test_check_正常系_init_pyの再エクスポートに含まれるシンボルのインポートを検出すること(self):
         # Arrange: paladin/check/__init__.py に from .orchestrator import Foo がある
         init_source = "from .orchestrator import Foo\n"
@@ -330,22 +299,6 @@ class TestNoDirectInternalImportRuleCheck:
 
         # Assert: Foo は再エクスポートで公開されているため違反
         assert len(result) == 1
-
-    def test_check_正常系_init_pyで公開されていないシンボルは検出しないこと(self):
-        # Arrange: __init__.py に Foo は含まれない（Barのみ）
-        init_source = '__all__ = ["Bar"]\n'
-        import_source = "from paladin.check.orchestrator import Foo\n"
-        source_files = make_source_files(
-            (init_source, "src/paladin/check/__init__.py"),
-            (import_source, "src/other/module.py"),
-        )
-        rule = _rule(("paladin",))
-
-        # Act
-        result = rule.check(source_files)
-
-        # Assert: Foo は __init__.py で公開されていないため対象外
-        assert len(result) == 0
 
     def test_check_エッジケース_init_pyが空の場合はヒューリスティック検出にフォールバックすること(
         self,
@@ -440,39 +393,6 @@ class TestNoDirectInternalImportRuleCheck:
         # Assert: paladin.foundation.fs はサブパッケージ（__init__.py あり）なので対象外
         assert len(result) == 0
 
-    def test_check_正常系_解析スコープ外にサブパッケージが存在しない場合はヒューリスティック検出すること(
-        self, tmp_path: Path
-    ):
-        # Arrange: tmp_path/src/paladin/check/ は存在するが orchestrator/ ディレクトリはない
-        check_pkg = tmp_path / "src" / "paladin" / "check"
-        check_pkg.mkdir(parents=True)
-
-        import_source = "from paladin.check.orchestrator import CheckOrchestrator\n"
-        source_files = make_source_files(
-            (import_source, str(tmp_path / "tests" / "unit" / "test_something.py")),
-        )
-        rule = _rule(("paladin",))
-
-        # Act
-        result = rule.check(source_files)
-
-        # Assert: paladin.check.orchestrator に __init__.py が存在しないのでヒューリスティック検出
-        assert len(result) == 1
-
-    def test_check_正常系_srcディレクトリが存在しない場合は既存動作を維持すること(self):
-        # Arrange: 合成パス（src/ ディレクトリが実在しない）を使用する
-        import_source = "from paladin.check.orchestrator import CheckOrchestrator\n"
-        source_files = make_source_files(
-            (import_source, "nonexistent_project/tests/unit/test_something.py"),
-        )
-        rule = _rule(("paladin",))
-
-        # Act
-        result = rule.check(source_files)
-
-        # Assert: _infer_src_root が None を返すため既存のヒューリスティック検出が機能する
-        assert len(result) == 1
-
     # ------------------------------------------------------------------
     # Prepare カテゴリ（個別維持: prepare() 挙動テスト）
     # ------------------------------------------------------------------
@@ -563,3 +483,170 @@ class TestNoDirectInternalImportRuleCheck:
 
         # Assert: module=None のインポートはスキップされ違反なし
         assert len(result) == 0
+
+
+class TestSrcRootResolver:
+    """SrcRootResolver のテスト"""
+
+    def test_resolve_正常系_testsディレクトリからsrcルートを推定すること(self, tmp_path: Path):
+        # Arrange: tmp_path/src/ を作成して SrcRootResolver が発見できるようにする
+        src_dir = tmp_path / "src"
+        src_dir.mkdir()
+        source_file = SourceFile(
+            file_path=tmp_path / "tests" / "unit" / "test_foo.py",
+            tree=ast.parse(""),
+            source="",
+        )
+        source_files = SourceFiles(files=(source_file,))
+
+        # Act
+        result = SrcRootResolver.resolve(source_files)
+
+        # Assert
+        assert result == src_dir
+
+    def test_resolve_正常系_srcが存在しない場合はNoneを返すこと(self):
+        # Arrange: 合成パス（src/ ディレクトリが実在しない）
+        source_file = make_source_file("x = 1\n", "nonexistent/tests/foo.py")
+        source_files = SourceFiles(files=(source_file,))
+
+        # Act
+        result = SrcRootResolver.resolve(source_files)
+
+        # Assert
+        assert result is None
+
+    def test_resolve_正常系_空のSourceFilesでNoneを返すこと(self):
+        # Arrange
+        source_files = SourceFiles(files=())
+
+        # Act
+        result = SrcRootResolver.resolve(source_files)
+
+        # Assert
+        assert result is None
+
+
+class TestSubpackageChecker:
+    """SubpackageChecker のテスト"""
+
+    def test_is_subpackage_正常系_init_pyがある場合はTrueを返すこと(self, tmp_path: Path):
+        # Arrange: tmp_path/src/paladin/check/__init__.py を作成する
+        pkg_dir = tmp_path / "src" / "paladin" / "check"
+        pkg_dir.mkdir(parents=True)
+        (pkg_dir / "__init__.py").write_text("")
+        source_file = make_source_file("from paladin.check import Foo\n", "src/other/module.py")
+        module = source_file.absolute_from_imports[0].module
+
+        # Act
+        result = SubpackageChecker.is_subpackage(module, tmp_path / "src")
+
+        # Assert
+        assert result is True
+
+    def test_is_subpackage_正常系_init_pyがない場合はFalseを返すこと(self, tmp_path: Path):
+        # Arrange: ディレクトリはあるが __init__.py がない
+        pkg_dir = tmp_path / "src" / "paladin" / "check"
+        pkg_dir.mkdir(parents=True)
+        source_file = make_source_file("from paladin.check import Foo\n", "src/other/module.py")
+        module = source_file.absolute_from_imports[0].module
+
+        # Act
+        result = SubpackageChecker.is_subpackage(module, tmp_path / "src")
+
+        # Assert
+        assert result is False
+
+    def test_is_subpackage_正常系_src_rootがNoneの場合はFalseを返すこと(self):
+        # Arrange
+        source_file = make_source_file("from paladin.check import Foo\n", "src/other/module.py")
+        module = source_file.absolute_from_imports[0].module
+
+        # Act
+        result = SubpackageChecker.is_subpackage(module, None)
+
+        # Assert
+        assert result is False
+
+
+class TestPackageExportCollector:
+    """PackageExportCollector のテスト"""
+
+    def test_collect_正常系_init_pyからパッケージエクスポートを収集すること(self):
+        # Arrange
+        init_source = '__all__ = ["Foo"]\n'
+        source_files = make_source_files((init_source, "src/paladin/check/__init__.py"))
+        resolver = PackageResolver()
+        extractor = AllExportsExtractor()
+
+        # Act
+        result = PackageExportCollector.collect(source_files, resolver, extractor)
+
+        # Assert
+        assert "paladin.check" in result
+        assert "Foo" in result["paladin.check"]
+
+    def test_collect_正常系_init_py以外のファイルは無視すること(self):
+        # Arrange
+        source_files = make_source_files(("x = 1\n", "src/paladin/check/module.py"))
+        resolver = PackageResolver()
+        extractor = AllExportsExtractor()
+
+        # Act
+        result = PackageExportCollector.collect(source_files, resolver, extractor)
+
+        # Assert
+        assert result == {}
+
+
+class TestInternalImportDetector:
+    """InternalImportDetector のテスト"""
+
+    def test_detect_正常系_ヒューリスティック検出でViolationを返すこと(self):
+        # Arrange: package_exports にキーがない場合はヒューリスティック検出
+        rule = NoDirectInternalImportRule()
+        source = "from paladin.check.orchestrator import CheckOrchestrator\n"
+        source_file = make_source_file(source, "src/other/module.py")
+        imp = source_file.absolute_from_imports[0]
+
+        # Act
+        result = InternalImportDetector.detect(
+            source_file, imp, "CheckOrchestrator", "paladin.check", {}, rule.meta
+        )
+
+        # Assert
+        assert result is not None
+        assert result.rule_id == "no-direct-internal-import"
+        assert "CheckOrchestrator" in result.message
+
+    def test_detect_正常系_公開済みシンボルはViolationを返すこと(self):
+        # Arrange: package_exports に name が含まれる場合は違反
+        rule = NoDirectInternalImportRule()
+        source = "from paladin.check.orchestrator import CheckOrchestrator\n"
+        source_file = make_source_file(source, "src/other/module.py")
+        imp = source_file.absolute_from_imports[0]
+        package_exports = {"paladin.check": {"CheckOrchestrator"}}
+
+        # Act
+        result = InternalImportDetector.detect(
+            source_file, imp, "CheckOrchestrator", "paladin.check", package_exports, rule.meta
+        )
+
+        # Assert
+        assert result is not None
+
+    def test_detect_正常系_非公開シンボルはNoneを返すこと(self):
+        # Arrange: package_exports に name が含まれない場合は対象外
+        rule = NoDirectInternalImportRule()
+        source = "from paladin.check.orchestrator import InternalHelper\n"
+        source_file = make_source_file(source, "src/other/module.py")
+        imp = source_file.absolute_from_imports[0]
+        package_exports = {"paladin.check": {"CheckOrchestrator"}}
+
+        # Act
+        result = InternalImportDetector.detect(
+            source_file, imp, "InternalHelper", "paladin.check", package_exports, rule.meta
+        )
+
+        # Assert
+        assert result is None

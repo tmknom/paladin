@@ -11,6 +11,69 @@ from paladin.rule.package_resolver import PackageResolver
 from paladin.rule.types import RuleMeta, SourceFile, SourceFiles, Violation
 
 
+class ThirdPartyChecker:
+    """サードパーティライブラリかどうかの判定を行う"""
+
+    @staticmethod
+    def is_third_party(
+        module_name: str,
+        stdlib_modules: frozenset[str],
+        root_packages: tuple[str, ...],
+    ) -> bool:
+        """標準ライブラリとルートパッケージを除いたサードパーティかを判定する"""
+        if module_name in stdlib_modules:
+            return False
+        return module_name not in root_packages
+
+    @staticmethod
+    def is_allowed_path(file_path: Path, allow_dirs: tuple[str, ...]) -> bool:
+        """ファイルパスが allow_dirs のいずれかに前方一致するかを判定する"""
+        try:
+            rel_str = str(file_path.relative_to(Path.cwd()))
+        except ValueError:
+            rel_str = str(file_path)
+        return any(rel_str.startswith(allow_dir) for allow_dir in allow_dirs)
+
+
+class ThirdPartyImportDetector:
+    """サードパーティインポートの Violation を生成する"""
+
+    @staticmethod
+    def detect_from_import(
+        stmt: ImportStatement,
+        source_file: SourceFile,
+        meta: RuleMeta,
+    ) -> list[Violation]:
+        """From X import Y 形式の違反リストを返す"""
+        module_str = stmt.module_str
+        violations: list[Violation] = []
+        for imported in stmt.names:
+            violations.append(
+                meta.create_violation_at(
+                    location=source_file.location_from(stmt),
+                    message=f"`from {module_str} import {imported.name}` は許可ディレクトリ外でのサードパーティライブラリのインポートである",
+                    reason="サードパーティライブラリの利用は `allow-dirs` で指定されたディレクトリに集約する必要がある",
+                    suggestion=f"`{module_str}` の利用を許可ディレクトリ配下に移動するか、ラッパーモジュール経由でアクセスしてください",
+                )
+            )
+        return violations
+
+    @staticmethod
+    def detect_plain_import(
+        stmt: ImportStatement,
+        imported_name: str,
+        source_file: SourceFile,
+        meta: RuleMeta,
+    ) -> Violation:
+        """Import X 形式の違反を返す"""
+        return meta.create_violation_at(
+            location=source_file.location_from(stmt),
+            message=f"`import {imported_name}` は許可ディレクトリ外でのサードパーティライブラリのインポートである",
+            reason="サードパーティライブラリの利用は `allow-dirs` で指定されたディレクトリに集約する必要がある",
+            suggestion=f"`{imported_name}` の利用を許可ディレクトリ配下に移動するか、ラッパーモジュール経由でアクセスしてください",
+        )
+
+
 class NoThirdPartyImportRule:
     """許可ディレクトリ以外でのサードパーティライブラリのインポートを検出するルール"""
 
@@ -44,7 +107,7 @@ class NoThirdPartyImportRule:
 
     def check(self, source_file: SourceFile) -> tuple[Violation, ...]:
         """単一ファイルに対する違反判定を行う"""
-        if self._is_allowed(source_file.file_path):
+        if ThirdPartyChecker.is_allowed_path(source_file.file_path, self._allow_dirs):
             return ()
 
         violations: list[Violation] = []
@@ -62,21 +125,12 @@ class NoThirdPartyImportRule:
         stmt: ImportStatement,
         source_file: SourceFile,
     ) -> list[Violation]:
-        violations: list[Violation] = []
         top = stmt.top_level_module
-        if top is None or not self._is_third_party(top):
-            return violations
-        module_str = stmt.module_str
-        for imported in stmt.names:
-            violations.append(
-                self._meta.create_violation_at(
-                    location=source_file.location_from(stmt),
-                    message=f"`from {module_str} import {imported.name}` は許可ディレクトリ外でのサードパーティライブラリのインポートである",
-                    reason="サードパーティライブラリの利用は `allow-dirs` で指定されたディレクトリに集約する必要がある",
-                    suggestion=f"`{module_str}` の利用を許可ディレクトリ配下に移動するか、ラッパーモジュール経由でアクセスしてください",
-                )
-            )
-        return violations
+        if top is None or not ThirdPartyChecker.is_third_party(
+            top, self._stdlib_modules, self._root_packages
+        ):
+            return []
+        return ThirdPartyImportDetector.detect_from_import(stmt, source_file, self._meta)
 
     def _check_plain_import(
         self,
@@ -86,28 +140,11 @@ class NoThirdPartyImportRule:
         violations: list[Violation] = []
         for imported in stmt.names:
             top = ModulePath(imported.name).top_level
-            if not self._is_third_party(top):
+            if not ThirdPartyChecker.is_third_party(top, self._stdlib_modules, self._root_packages):
                 continue
             violations.append(
-                self._meta.create_violation_at(
-                    location=source_file.location_from(stmt),
-                    message=f"`import {imported.name}` は許可ディレクトリ外でのサードパーティライブラリのインポートである",
-                    reason="サードパーティライブラリの利用は `allow-dirs` で指定されたディレクトリに集約する必要がある",
-                    suggestion=f"`{imported.name}` の利用を許可ディレクトリ配下に移動するか、ラッパーモジュール経由でアクセスしてください",
+                ThirdPartyImportDetector.detect_plain_import(
+                    stmt, imported.name, source_file, self._meta
                 )
             )
         return violations
-
-    def _is_allowed(self, file_path: Path) -> bool:
-        """ファイルパスが allow_dirs のいずれかに前方一致するかを判定する"""
-        try:
-            rel_str = str(file_path.relative_to(Path.cwd()))
-        except ValueError:
-            rel_str = str(file_path)
-        return any(rel_str.startswith(allow_dir) for allow_dir in self._allow_dirs)
-
-    def _is_third_party(self, module_name: str) -> bool:
-        """標準ライブラリとルートパッケージを除いたサードパーティかを判定する"""
-        if module_name in self._stdlib_modules:
-            return False
-        return module_name not in self._root_packages

@@ -3,7 +3,11 @@ from pathlib import Path
 
 import pytest
 
-from paladin.rule.require_all_export import RequireAllExportRule
+from paladin.rule.require_all_export import (
+    AllExportDetector,
+    PublicSymbolCollector,
+    RequireAllExportRule,
+)
 from paladin.rule.types import RuleMeta, SourceFile
 from tests.unit.test_rule.helpers import make_source_file
 
@@ -27,30 +31,11 @@ class TestRequireAllExportRuleMeta:
 class TestRequireAllExportRuleCheck:
     """RequireAllExportRule.check のテスト"""
 
-    def test_check_正常系_違反のフィールド値が正しいこと(self):
-        # Arrange
-        rule = RequireAllExportRule()
-        source_file = make_source_file("from foo import bar\n", "__init__.py")
-
-        # Act
-        result = rule.check(source_file)
-
-        # Assert
-        assert len(result) == 1
-        violation = result[0]
-        assert violation.file == Path("__init__.py")
-        assert violation.line == 1
-        assert violation.column == 0
-        assert violation.rule_id == "require-all-export"
-        assert violation.rule_name == "Require __all__ Export"
-
     @pytest.mark.parametrize(
         ("source", "filename"),
         [
             pytest.param("x = 1\n", "main.py", id="init_py以外"),
-            pytest.param("", "__init__.py", id="空init_py"),
             pytest.param("# namespace package\n", "__init__.py", id="コメントのみ"),
-            pytest.param('"""Package."""\n', "__init__.py", id="docstringのみ"),
             pytest.param(
                 '__all__ = ["Foo"]\nfrom foo import Foo\n', "__init__.py", id="all定義済み"
             ),
@@ -107,45 +92,56 @@ class TestRequireAllExportRuleCheck:
         # Assert
         assert len(result) == 0
 
-    def test_check_正常系_相対インポートのシンボルを列挙したsuggestionを返すこと(self):
-        # Arrange
-        rule = RequireAllExportRule()
+
+class TestPublicSymbolCollector:
+    """PublicSymbolCollector のテスト"""
+
+    def test_collect_正常系_相対インポートのシンボルを返すこと(self):
         source = "from .module import Foo, Bar\n"
         source_file = make_source_file(source, "__init__.py")
+        result = PublicSymbolCollector.collect(source_file)
+        assert sorted(result) == ["Bar", "Foo"]
 
-        # Act
-        result = rule.check(source_file)
-
-        # Assert
-        assert len(result) == 1
-        violation = result[0]
-        assert '__all__ = ["Bar", "Foo"]' in violation.suggestion
-
-    def test_check_正常系_トップレベルクラスと関数を列挙したsuggestionを返すこと(self):
-        # Arrange
-        rule = RequireAllExportRule()
+    def test_collect_正常系_クラスと関数を返すこと(self):
         source = "class MyClass:\n    pass\n\ndef my_func():\n    pass\n"
         source_file = make_source_file(source, "__init__.py")
+        result = PublicSymbolCollector.collect(source_file)
+        assert sorted(result) == ["MyClass", "my_func"]
 
-        # Act
-        result = rule.check(source_file)
-
-        # Assert
-        assert len(result) == 1
-        violation = result[0]
-        assert '__all__ = ["MyClass", "my_func"]' in violation.suggestion
-
-    def test_check_正常系_アンダースコア始まりのシンボルはsuggestionに含まれないこと(self):
-        # Arrange
-        rule = RequireAllExportRule()
+    def test_collect_正常系_アンダースコア始まりは除外されること(self):
         source = "from .module import _Private, Public\n"
         source_file = make_source_file(source, "__init__.py")
+        result = PublicSymbolCollector.collect(source_file)
+        assert result == ["Public"]
 
-        # Act
-        result = rule.check(source_file)
+    def test_has_substantial_code_正常系_コードがあればTrueを返すこと(self):
+        tree = ast.parse("x = 1\n")
+        assert PublicSymbolCollector.has_substantial_code(tree) is True
 
-        # Assert
-        assert len(result) == 1
-        violation = result[0]
-        assert '"Public"' in violation.suggestion
-        assert "_Private" not in violation.suggestion
+    def test_has_substantial_code_正常系_docstringのみはFalseを返すこと(self):
+        tree = ast.parse('"""docstring"""\n')
+        assert PublicSymbolCollector.has_substantial_code(tree) is False
+
+    def test_has_substantial_code_正常系_空ファイルはFalseを返すこと(self):
+        tree = ast.parse("")
+        assert PublicSymbolCollector.has_substantial_code(tree) is False
+
+
+class TestAllExportDetector:
+    """AllExportDetector のテスト"""
+
+    def test_detect_正常系_シンボルありのViolationを返すこと(self):
+        source = "from .module import Foo\n"
+        source_file = make_source_file(source, "__init__.py")
+        rule = RequireAllExportRule()
+        result = AllExportDetector.detect(source_file, ["Foo"], rule.meta)
+        assert result.rule_id == "require-all-export"
+        assert '"Foo"' in result.suggestion
+
+    def test_detect_正常系_シンボルなしのViolationを返すこと(self):
+        source = "x = 1\n"
+        source_file = make_source_file(source, "__init__.py")
+        rule = RequireAllExportRule()
+        result = AllExportDetector.detect(source_file, [], rule.meta)
+        assert result.rule_id == "require-all-export"
+        assert "__all__" in result.suggestion

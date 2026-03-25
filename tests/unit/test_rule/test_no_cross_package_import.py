@@ -1,8 +1,15 @@
+import ast
 from pathlib import Path
 
 import pytest
 
-from paladin.rule.no_cross_package_import import NoCrossPackageImportRule
+from paladin.rule.import_statement import ModulePath
+from paladin.rule.no_cross_package_import import (
+    CrossPackageImportChecker,
+    CrossPackageImportDetector,
+    EntrypointChecker,
+    NoCrossPackageImportRule,
+)
 from paladin.rule.types import RuleMeta, SourceFiles
 from tests.unit.test_rule.helpers import make_source_files
 
@@ -63,27 +70,6 @@ class TestNoCrossPackageImportRuleCheck:
         assert "myapp.check" in violation.message
         assert "OutputFormat" in violation.message
 
-    def test_check_正常系_違反フィールド値が正しいこと_plain_import(self):
-        # Arrange
-        source_files = make_source_files(
-            ("import myapp.check.context\n", "src/myapp/view/handler.py"),
-            ("x = 1\n", "src/myapp/check/__init__.py"),
-            ("x = 1\n", "src/myapp/view/__init__.py"),
-        )
-        rule = _rule_with_prepare(source_files, allow_dirs=("src/myapp/rule/",))
-
-        # Act
-        result = rule.check(source_files.files[0])
-
-        # Assert
-        assert len(result) == 1
-        violation = result[0]
-        assert violation.file == Path("src/myapp/view/handler.py")
-        assert violation.line == 1
-        assert violation.column == 0
-        assert violation.rule_id == "no-cross-package-import"
-        assert "myapp.check.context" in violation.message
-
     def test_check_正常系_allow_dirs未設定の場合は全ファイルで違反を検出すること(self):
         # Arrange
         source_files = make_source_files(
@@ -131,21 +117,6 @@ class TestNoCrossPackageImportRuleCheck:
 
         # Assert: エントリーポイントではないので違反を検出する
         assert len(result) == 1
-
-    def test_check_正常系_from_importで複数名をインポートした場合に名前ごとに違反を返すこと(self):
-        # Arrange: from myapp.check import A, B で2件
-        source_files = make_source_files(
-            ("from myapp.check import OutputFormat, CheckContext\n", "src/myapp/view/handler.py"),
-            ("x = 1\n", "src/myapp/check/__init__.py"),
-            ("x = 1\n", "src/myapp/view/__init__.py"),
-        )
-        rule = _rule_with_prepare(source_files, allow_dirs=("src/myapp/rule/",))
-
-        # Act
-        result = rule.check(source_files.files[0])
-
-        # Assert
-        assert len(result) == 2
 
     def test_check_正常系_末尾スラッシュなしのallow_dirsが正規化されて機能すること(self):
         # Arrange: 末尾スラッシュなしで指定
@@ -336,3 +307,104 @@ class TestNoCrossPackageImportRuleCheck:
 
         # Assert
         assert len(result) == 1
+
+
+class TestEntrypointChecker:
+    """EntrypointChecker のテスト"""
+
+    def test_is_entrypoint_正常系_main関数があればTrueを返すこと(self):
+        tree = ast.parse("def main(): pass\n")
+        assert EntrypointChecker.is_entrypoint(tree) is True
+
+    def test_is_entrypoint_正常系_main関数がなければFalseを返すこと(self):
+        tree = ast.parse("def foo(): pass\n")
+        assert EntrypointChecker.is_entrypoint(tree) is False
+
+
+class TestCrossPackageImportChecker:
+    """CrossPackageImportChecker のテスト"""
+
+    _STDLIB = frozenset({"os", "sys"})
+    _ROOT = ("myapp",)
+    _ALLOW = ("src/myapp/rule/",)
+
+    def test_is_cross_package_正常系_標準ライブラリはFalseを返すこと(self):
+        module = ModulePath("os.path")
+        assert (
+            CrossPackageImportChecker.is_cross_package(
+                module, frozenset({"myapp.view"}), self._STDLIB, self._ROOT, self._ALLOW
+            )
+            is False
+        )
+
+    def test_is_cross_package_正常系_ルートパッケージ外はFalseを返すこと(self):
+        module = ModulePath("requests.auth")
+        assert (
+            CrossPackageImportChecker.is_cross_package(
+                module, frozenset({"myapp.view"}), self._STDLIB, self._ROOT, self._ALLOW
+            )
+            is False
+        )
+
+    def test_is_cross_package_正常系_同一パッケージはFalseを返すこと(self):
+        module = ModulePath("myapp.view.formatter")
+        assert (
+            CrossPackageImportChecker.is_cross_package(
+                module, frozenset({"myapp.view"}), self._STDLIB, self._ROOT, self._ALLOW
+            )
+            is False
+        )
+
+    def test_is_cross_package_正常系_allow_dirsに含まれるパッケージはFalseを返すこと(self):
+        module = ModulePath("myapp.rule.types")
+        assert (
+            CrossPackageImportChecker.is_cross_package(
+                module, frozenset({"myapp.view"}), self._STDLIB, self._ROOT, self._ALLOW
+            )
+            is False
+        )
+
+    def test_is_cross_package_正常系_クロスパッケージはTrueを返すこと(self):
+        module = ModulePath("myapp.check.formatter")
+        assert (
+            CrossPackageImportChecker.is_cross_package(
+                module, frozenset({"myapp.view"}), self._STDLIB, self._ROOT, self._ALLOW
+            )
+            is True
+        )
+
+
+class TestCrossPackageImportDetector:
+    """CrossPackageImportDetector のテスト"""
+
+    def test_detect_from_import_正常系_複数名で複数Violationを返すこと(self):
+        source = "from myapp.check import OutputFormat, Rule\n"
+        source_files = make_source_files(
+            (source, "src/myapp/view/handler.py"),
+            ("x = 1\n", "src/myapp/check/__init__.py"),
+            ("x = 1\n", "src/myapp/view/__init__.py"),
+        )
+        rule = _rule_with_prepare(source_files, allow_dirs=("src/myapp/rule/",))
+        source_file = source_files.files[0]
+        stmt = source_file.imports[0]
+        import_module = ModulePath("myapp.check")
+        result = CrossPackageImportDetector.detect_from_import(
+            stmt, import_module, source_file, rule.meta
+        )
+        assert len(result) == 2
+        assert result[0].rule_id == "no-cross-package-import"
+
+    def test_detect_plain_import_正常系_Violationを返すこと(self):
+        source = "import myapp.check.context\n"
+        source_files = make_source_files(
+            (source, "src/myapp/view/handler.py"),
+            ("x = 1\n", "src/myapp/check/__init__.py"),
+            ("x = 1\n", "src/myapp/view/__init__.py"),
+        )
+        rule = _rule_with_prepare(source_files, allow_dirs=("src/myapp/rule/",))
+        source_file = source_files.files[0]
+        stmt = source_file.imports[0]
+        result = CrossPackageImportDetector.detect_plain_import(
+            stmt, "myapp.check.context", source_file, rule.meta
+        )
+        assert result.rule_id == "no-cross-package-import"
