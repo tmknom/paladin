@@ -135,7 +135,7 @@ class TestConfigIgnoreResolver:
                 ignore_all=False,
             ),
         )
-        file_paths = (Path("/Users/owner/code/project/tests/test_main.py"),)
+        file_paths = (Path("/fake/project/tests/test_main.py"),)
         resolver = ConfigIgnoreResolver()
 
         # Act
@@ -144,7 +144,7 @@ class TestConfigIgnoreResolver:
         # Assert
         assert len(result) == 1
         directive = result[0]
-        assert directive.file_path == Path("/Users/owner/code/project/tests/test_main.py")
+        assert directive.file_path == Path("/fake/project/tests/test_main.py")
         assert directive.ignored_rules == frozenset({"R-001"})
 
     def test_resolve_正常系_ディレクトリパターンがネストした絶対パスにマッチすること(self):
@@ -156,7 +156,7 @@ class TestConfigIgnoreResolver:
                 ignore_all=False,
             ),
         )
-        file_paths = (Path("/Users/owner/code/project/tests/unit/test_check/test_main.py"),)
+        file_paths = (Path("/fake/project/tests/unit/test_check/test_main.py"),)
         resolver = ConfigIgnoreResolver()
 
         # Act
@@ -165,9 +165,7 @@ class TestConfigIgnoreResolver:
         # Assert
         assert len(result) == 1
         directive = result[0]
-        assert directive.file_path == Path(
-            "/Users/owner/code/project/tests/unit/test_check/test_main.py"
-        )
+        assert directive.file_path == Path("/fake/project/tests/unit/test_check/test_main.py")
         assert directive.ignored_rules == frozenset({"R-001"})
 
     def test_resolve_正常系_ディレクトリパターンが絶対パスのマッチしないファイルを除外すること(
@@ -181,7 +179,7 @@ class TestConfigIgnoreResolver:
                 ignore_all=False,
             ),
         )
-        file_paths = (Path("/Users/owner/code/project/src/main.py"),)
+        file_paths = (Path("/fake/project/src/main.py"),)
         resolver = ConfigIgnoreResolver()
 
         # Act
