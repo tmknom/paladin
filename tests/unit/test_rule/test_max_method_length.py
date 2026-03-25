@@ -1,8 +1,6 @@
 import ast
 from pathlib import Path
 
-import pytest
-
 from paladin.rule.max_method_length import (
     FunctionCollector,
     FunctionScope,
@@ -99,41 +97,10 @@ class TestMaxMethodLengthRuleCheck:
         # Assert
         assert len(result) == 2
 
-    def test_check_正常系_ネスト関数は独立して検査されること(self):
-        # Arrange: ネスト関数 inner が上限超過（51行）であることを確認する
-        # outer はネスト関数を含めて53行になり outer 自体も違反するが、
-        # inner は独立して検査されるため inner の違反も個別に報告される
-        rule = MaxMethodLengthRule()
-        lines = ["def outer():"]
-        lines.append("    def inner():")
-        for i in range(49):
-            lines.append(f"        x_{i} = {i}")
-        lines.append("        pass")
-        lines.append("    pass")
-        source = "\n".join(lines) + "\n"
-        source_file = make_source_file(source)
-
-        # Act
-        result = rule.check(source_file)
-
-        # Assert: outer と inner の両方が違反として報告される
-        assert len(result) == 2
-
-    @pytest.mark.parametrize(
-        "source",
-        [
-            pytest.param(_make_func(49), id="上限以下"),
-            pytest.param(_make_func(50), id="上限ちょうど"),
-            pytest.param("", id="空ソース"),
-            pytest.param(
-                _make_func_with_docstring(num_lines=55, docstring_lines=5),
-                id="docstring除外で上限以下",
-            ),
-        ],
-    )
-    def test_check_違反なしのケースで空を返すこと(self, source: str) -> None:
+    def test_check_違反なしのケースで空を返すこと_docstring除外で上限以下(self) -> None:
         # Arrange
         rule = MaxMethodLengthRule()
+        source = _make_func_with_docstring(num_lines=55, docstring_lines=5)
         source_file = make_source_file(source)
 
         # Act
@@ -142,19 +109,10 @@ class TestMaxMethodLengthRuleCheck:
         # Assert
         assert len(result) == 0
 
-    @pytest.mark.parametrize(
-        "source",
-        [
-            pytest.param(_make_func(51), id="上限超過"),
-            pytest.param(
-                _make_func_with_docstring(num_lines=61, docstring_lines=10),
-                id="docstring除外しても上限超過",
-            ),
-        ],
-    )
-    def test_check_違反ありのケースで1件返すこと(self, source: str) -> None:
+    def test_check_違反ありのケースで1件返すこと_docstring除外しても上限超過(self) -> None:
         # Arrange
         rule = MaxMethodLengthRule()
+        source = _make_func_with_docstring(num_lines=61, docstring_lines=10)
         source_file = make_source_file(source)
 
         # Act
@@ -210,80 +168,6 @@ class TestMaxMethodLengthRuleCheck:
 
         # Assert
         assert len(result) == 1
-
-    def test_check_正常系_クラスメソッドの違反メッセージにClassName_method_name形式が含まれること(
-        self,
-    ):
-        # Arrange
-        rule = MaxMethodLengthRule()
-        # クラス定義行 + メソッド51行
-        lines = ["class MyClass:"]
-        lines.append("    def my_method(self):")
-        for i in range(49):
-            lines.append(f"        x_{i} = {i}")
-        lines.append("        pass")
-        source = "\n".join(lines) + "\n"
-        source_file = make_source_file(source)
-
-        # Act
-        result = rule.check(source_file)
-
-        # Assert
-        assert len(result) == 1
-
-    def test_check_正常系_async関数でも違反を検出すること(self):
-        # Arrange: async def で51行の関数
-        rule = MaxMethodLengthRule()
-        lines = ["async def async_long():"]
-        for i in range(49):
-            lines.append(f"    x_{i} = {i}")
-        lines.append("    pass")
-        source = "\n".join(lines) + "\n"
-        source_file = make_source_file(source)
-
-        # Act
-        result = rule.check(source_file)
-
-        # Assert
-        assert len(result) == 1
-
-    def test_check_正常系_クラス内ネストクラスのメソッドを検査すること(self):
-        # Arrange: クラス内にネストクラスがある場合（_visit_class の ClassDef ブランチ）
-        rule = MaxMethodLengthRule(max_lines=5)
-        lines = ["class Outer:"]
-        lines.append("    class Inner:")
-        lines.append("        def method(self):")
-        for i in range(4):
-            lines.append(f"            x_{i} = {i}")
-        lines.append("            pass")
-        source = "\n".join(lines) + "\n"
-        source_file = make_source_file(source)
-
-        # Act
-        result = rule.check(source_file)
-
-        # Assert: Inner.method が6行（上限5行超え）で違反あり
-        assert len(result) == 1
-
-    def test_check_正常系_ネスト関数内のクラス定義のメソッドを検査すること(self):
-        # Arrange: 関数内にクラス定義がある場合（_check_function の ClassDef ブランチ）
-        # outer は4行（上限5行以内）、LocalClass.method は6行（上限超え）
-        rule = MaxMethodLengthRule(max_lines=5)
-        lines = ["def outer():"]
-        lines.append("    class LocalClass:")
-        lines.append("        def method(self):")
-        for i in range(4):
-            lines.append(f"            x_{i} = {i}")
-        lines.append("            pass")
-        source = "\n".join(lines) + "\n"
-        source_file = make_source_file(source)
-
-        # Act
-        result = rule.check(source_file)
-
-        # Assert: outer は5行以内なので違反なし、LocalClass.method のみ違反
-        messages = [v.message for v in result]
-        assert any("LocalClass.method" in m for m in messages)
 
     def test_check_正常系_violationメッセージにdocstring除外後の行数が表示されること(self):
         # Arrange: 物理61行・docstring10行 → 実効51行

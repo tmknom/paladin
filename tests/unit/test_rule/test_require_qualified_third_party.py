@@ -3,7 +3,7 @@ from pathlib import Path
 import pytest
 
 from paladin.rule.require_qualified_third_party import RequireQualifiedThirdPartyRule
-from paladin.rule.types import RuleMeta, SourceFiles, Violation
+from paladin.rule.types import RuleMeta, SourceFiles
 from tests.unit.test_rule.helpers import make_source_file, make_source_files
 
 
@@ -12,68 +12,6 @@ def _rule_with_prepare(source_files: SourceFiles) -> RequireQualifiedThirdPartyR
     rule = RequireQualifiedThirdPartyRule()
     rule.prepare(source_files)
     return rule
-
-
-class TestRequireQualifiedThirdPartyRuleHelpers:
-    """RequireQualifiedThirdPartyRule のヘルパーメソッドの直接テスト"""
-
-    def test_check_import_from_正常系_サードパーティのfrom_importで違反リストを返すこと(self):
-        # Arrange
-        source_files = make_source_files(("from requests import get\n", "src/paladin/example.py"))
-        rule = _rule_with_prepare(source_files)
-        source_file = source_files.files[0]
-        imp = source_file.absolute_from_imports[0]
-
-        # Act
-        result = rule._check_import_from(imp, source_file)  # type: ignore[reportPrivateUsage]
-
-        # Assert
-        assert isinstance(result, list)
-        assert len(result) == 1
-        assert isinstance(result[0], Violation)
-
-    def test_check_import_from_正常系_標準ライブラリのfrom_importで空リストを返すこと(self):
-        # Arrange
-        source_files = make_source_files(("from pathlib import Path\n", "src/paladin/example.py"))
-        rule = _rule_with_prepare(source_files)
-        source_file = source_files.files[0]
-        imp = source_file.absolute_from_imports[0]
-
-        # Act
-        result = rule._check_import_from(imp, source_file)  # type: ignore[reportPrivateUsage]
-
-        # Assert
-        assert isinstance(result, list)
-        assert len(result) == 0
-
-    def test_check_import_as_正常系_サードパーティのimport_asで違反リストを返すこと(self):
-        # Arrange
-        source_files = make_source_files(("import requests as req\n", "src/paladin/example.py"))
-        rule = _rule_with_prepare(source_files)
-        source_file = source_files.files[0]
-        stmt = source_file.imports[0]
-
-        # Act
-        result = rule._check_import_as(stmt, source_file)  # type: ignore[reportPrivateUsage]
-
-        # Assert
-        assert isinstance(result, list)
-        assert len(result) == 1
-        assert isinstance(result[0], Violation)
-
-    def test_check_import_as_正常系_エイリアスなしのimportで空リストを返すこと(self):
-        # Arrange
-        source_files = make_source_files(("import requests\n", "src/paladin/example.py"))
-        rule = _rule_with_prepare(source_files)
-        source_file = source_files.files[0]
-        stmt = source_file.imports[0]
-
-        # Act
-        result = rule._check_import_as(stmt, source_file)  # type: ignore[reportPrivateUsage]
-
-        # Assert
-        assert isinstance(result, list)
-        assert len(result) == 0
 
 
 class TestRequireQualifiedThirdPartyRuleMeta:

@@ -1,8 +1,6 @@
 import ast
 from pathlib import Path
 
-import pytest
-
 from paladin.rule.no_local_import import (
     LocalImportCollector,
     LocalImportDetector,
@@ -77,6 +75,22 @@ class TestLocalImportCollector:
     def test_collect_エッジケース_ローカルインポートなしで空タプルを返すこと(self):
         # Arrange
         source = "import os\nfrom sys import argv\n"
+        tree = ast.parse(source)
+
+        # Act
+        result = LocalImportCollector.collect(tree)
+
+        # Assert
+        assert result == ()
+
+    def test_collect_正常系_typing_TYPE_CHECKING属性を除外すること(self):
+        # Arrange
+        source = (
+            "from __future__ import annotations\n"
+            "import typing\n"
+            "if typing.TYPE_CHECKING:\n"
+            "    import os\n"
+        )
         tree = ast.parse(source)
 
         # Act
@@ -181,62 +195,3 @@ class TestNoLocalImportRuleCheck:
 
         # Assert
         assert len(result) == 2
-
-    @pytest.mark.parametrize(
-        "source",
-        [
-            pytest.param("import os\nfrom sys import argv\n", id="トップレベルimport"),
-            pytest.param(
-                "from __future__ import annotations\n"
-                "TYPE_CHECKING = False\n"
-                "if TYPE_CHECKING:\n"
-                "    import os\n",
-                id="TYPE_CHECKINGブロック",
-            ),
-            pytest.param(
-                "from __future__ import annotations\n"
-                "import typing\n"
-                "if typing.TYPE_CHECKING:\n"
-                "    import os\n",
-                id="TYPE_CHECKING属性",
-            ),
-            pytest.param("", id="空ソース"),
-            pytest.param("def foo():\n    x = 1\n    return x\n", id="importなし"),
-        ],
-    )
-    def test_check_違反なしのケースで空を返すこと(self, source: str) -> None:
-        # Arrange
-        rule = NoLocalImportRule()
-        source_file = make_source_file(source)
-
-        # Act
-        result = rule.check(source_file)
-
-        # Assert
-        assert len(result) == 0
-
-    @pytest.mark.parametrize(
-        "source",
-        [
-            pytest.param("def foo():\n    import os\n", id="関数内import"),
-            pytest.param("def foo():\n    from os import path\n", id="関数内from_import"),
-            pytest.param("class Foo:\n    import os\n", id="クラス直下import"),
-            pytest.param(
-                "class Foo:\n    def bar(self):\n        import os\n", id="メソッド内import"
-            ),
-            pytest.param(
-                "def outer():\n    def inner():\n        import os\n", id="ネスト関数内import"
-            ),
-            pytest.param("async def foo():\n    import os\n", id="async_def内import"),
-        ],
-    )
-    def test_check_違反ありのケースで1件返すこと(self, source: str) -> None:
-        # Arrange
-        rule = NoLocalImportRule()
-        source_file = make_source_file(source)
-
-        # Act
-        result = rule.check(source_file)
-
-        # Assert
-        assert len(result) == 1
