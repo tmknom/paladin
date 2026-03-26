@@ -1,7 +1,7 @@
-"""解析対象パスの解決機能
+"""Configパッケージのターゲットパス解決モジュール
 
-CLI ターゲット引数と設定ファイルの include を統合して解析対象パスを決定する
-TargetResolver を提供する。
+CLI引数・設定ファイル・カレントディレクトリのデフォルト規約を優先順位付きで解決する。
+Foundation層の ApplicationError に依存する。
 """
 
 from pathlib import Path
@@ -19,7 +19,7 @@ class TargetResolver:
     ) -> tuple[Path, ...]:
         """CLI ターゲットと include を解決し、最終的な解析対象パスを返す
 
-        解決ロジック:
+        Flow:
         1. targets が空でない場合 → targets を返す
         2. include が空でない場合 → include の各パスを Path に変換して返す
         3. カレントディレクトリの src / tests の存在を確認し、存在するものを返す

@@ -1,6 +1,6 @@
-"""アプリケーション設定の合成
+"""Configパッケージのアプリケーション設定合成モジュール
 
-環境変数設定とデフォルトパス設定を合成し、実行時に使用する設定値を提供する。
+EnvVarConfig と PathConfig を合成し、実行時設定を提供する。
 """
 
 from __future__ import annotations
@@ -30,6 +30,10 @@ class AppConfig:
         Args:
             env: 環境変数設定
             log_level: CLIオプションによるログレベル上書き（None の場合は env.log_level を使用）
+
+        Flow:
+            1. log_level は None でなければ引数値を優先、None の場合は env.log_level を使用
+            2. tmp_dir は env.tmp_dir が None の場合 PathConfig.from_base_dir(Path.cwd()).tmp_dir にフォールバック
         """
         effective_log_level = log_level if log_level is not None else env.log_level
         tmp_dir = (

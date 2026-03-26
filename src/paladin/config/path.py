@@ -1,6 +1,6 @@
-"""アプリケーション共通のパス設定
+"""Configパッケージのパス設定モジュール
 
-各層から参照されるパス情報を一元管理する不変データコンテナ。
+リポジトリルートを基点とした共通パスを定義し、他層のパス解決に依存される。
 """
 
 from __future__ import annotations
@@ -25,9 +25,6 @@ class PathConfig:
 
         Args:
             base_dir: ベースとなるディレクトリパス（リポジトリルートなど）
-
-        Returns:
-            標準的なパス構成のPathConfigインスタンス
         """
         tmp_dir = base_dir / "tmp"
         return PathConfig(

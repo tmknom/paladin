@@ -1,6 +1,6 @@
-"""設定管理の公開API。
+"""Configパッケージの公開API
 
-公開APIは `paladin.config` から import すること(`__all__` のみ互換性対象)。
+CLI・Check・Foundation 各層から参照され、Foundation層のみに依存する。
 
 Docs:
     - docs/specs/config/requirements.md

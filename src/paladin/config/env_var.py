@@ -1,6 +1,6 @@
-"""Config層の環境変数設定
+"""Configパッケージの環境変数設定モジュール
 
-環境変数から設定値を読み込む。プレフィックス EXAMPLE_ を付与した環境変数を対象とする。
+外部環境からの設定値注入を担い、Foundation層の CoreSettings に依存する。
 """
 
 from pathlib import Path
@@ -14,7 +14,7 @@ LogLevel = Literal["CRITICAL", "ERROR", "WARNING", "INFO", "DEBUG"]
 class EnvVarConfig(CoreSettings):
     """環境変数から設定値を読み込む不変データコンテナ
 
-    EXAMPLE_ プレフィックスの環境変数を自動マッピングする。
+    指定したプレフィックスの環境変数を自動マッピングする。
     未設定項目はデフォルト値を使用し、未知の環境変数は禁止する。
     """
 
