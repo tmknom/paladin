@@ -1,4 +1,7 @@
-"""Versionパッケージのバージョンリゾルバー"""
+"""importlib.metadata を通じてインストール済みパッケージのバージョンを解決する。
+
+実行環境にパッケージがインストールされていない場合は例外が送出される。
+"""
 
 import importlib.metadata
 
@@ -14,5 +17,9 @@ class VersionResolver:
 
     @log
     def resolve(self) -> str:
-        """パッケージのバージョン文字列を返す"""
+        """パッケージのバージョン文字列を返す。
+
+        Raises:
+            importlib.metadata.PackageNotFoundError: パッケージが実行環境にインストールされていない場合。
+        """
         return importlib.metadata.version(self.package_name)

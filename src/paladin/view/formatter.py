@@ -37,7 +37,7 @@ class ViewJsonFormatter:
     """RuleMeta を JSON 形式に変換する"""
 
     def format(self, rule: RuleMeta) -> str:
-        """RuleMeta の全 6 フィールドを JSON オブジェクトに変換する"""
+        """RuleMeta の全フィールドを JSON オブジェクトに変換する"""
         data = {
             "rule_id": rule.rule_id,
             "rule_name": rule.rule_name,
@@ -53,7 +53,7 @@ class ViewFormatterFactory:
     """OutputFormat に応じたフォーマッターを選択する"""
 
     def __init__(self) -> None:
-        """ViewFormatterFactoryを初期化する"""
+        """ViewFormatterFactory を初期化する"""
         self._text_formatter = ViewTextFormatter()
         self._json_formatter = ViewJsonFormatter()
 

@@ -92,6 +92,7 @@ class PathExcluder:
         return TargetFiles(files=kept)
 
     def _normalize_glob_pattern(self, pattern: str) -> str:
+        """Glob パターンに "**/" プレフィックスを付加して正規化する"""
         if pattern.startswith("/") or pattern.startswith("**/"):
             return pattern
         return "**/" + pattern

@@ -37,6 +37,7 @@ class RuleFilter:
     def _resolve_select_disabled(
         self, select_rules: frozenset[str], known_rule_ids: frozenset[str]
     ) -> frozenset[str]:
+        """--rule オプションから無効ルール ID を解決する"""
         if not select_rules:
             return frozenset()
         for rule_id in select_rules - known_rule_ids:
@@ -46,6 +47,7 @@ class RuleFilter:
     def _resolve_rules_disabled(
         self, rules: dict[str, bool], known_rule_ids: frozenset[str]
     ) -> frozenset[str]:
+        """設定ファイルの rules セクションから無効ルール ID を解決する"""
         disabled: set[str] = set()
         for rule_id, enabled in rules.items():
             if enabled:

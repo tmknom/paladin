@@ -17,11 +17,7 @@ class ViewOrchestratorProvider:
 
     @log
     def provide(self) -> ViewOrchestrator:
-        """ViewOrchestratorを構築する
-
-        Returns:
-            設定済みの ViewOrchestrator
-        """
+        """ViewOrchestratorを構築する"""
         rule_set = RuleSetFactory().create()
         formatter = ViewFormatterFactory()
         return ViewOrchestrator(rule_set=rule_set, formatter=formatter)

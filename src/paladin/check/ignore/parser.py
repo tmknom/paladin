@@ -1,4 +1,7 @@
-"""FileIgnoreParser / LineIgnoreParser の実装"""
+"""Ignoreパッケージのコメント解析
+
+ソーステキストから ignore-file / ignore ディレクティブを抽出する。
+"""
 
 import re
 from pathlib import Path

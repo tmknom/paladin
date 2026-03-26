@@ -15,8 +15,8 @@ class ListTextFormatter:
     def format(self, rules: tuple[RuleMeta, ...]) -> str:
         """ルール一覧を整列された text 形式に変換する
 
-        rule_id は固定幅（6文字 + 2スペース）、rule_name は最長に合わせてパディング、
-        summary はそのまま出力する。ルールが0件の場合は空文字列を返す。
+        rule_id・rule_name を最長に揃えてパディングし、summary を末尾に付けて行結合する。
+        ルールが0件の場合は空文字列を返す。
         """
         if not rules:
             return ""

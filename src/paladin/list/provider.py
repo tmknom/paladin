@@ -20,7 +20,7 @@ class ListOrchestratorProvider:
         """ListOrchestratorを構築する
 
         Returns:
-            設定済みの ListOrchestrator
+            RuleSetFactory で全ルールをロードし、ListFormatterFactory を注入した ListOrchestrator
         """
         rule_set = RuleSetFactory().create()
         formatter = ListFormatterFactory()

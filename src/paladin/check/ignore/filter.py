@@ -1,4 +1,7 @@
-"""ViolationFilter の実装"""
+"""Ignoreパッケージの違反フィルタリング
+
+ignore ディレクティブに基づいて違反を除外する。
+"""
 
 from pathlib import Path
 

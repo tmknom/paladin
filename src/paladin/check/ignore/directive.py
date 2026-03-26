@@ -1,4 +1,7 @@
-"""FileIgnoreDirective / LineIgnoreDirective の値オブジェクト定義"""
+"""Ignoreパッケージのドメインモデル定義
+
+ファイル単位・行単位の ignore ディレクティブを表す値オブジェクトを定義する。
+"""
 
 from dataclasses import dataclass
 from pathlib import Path

@@ -17,7 +17,7 @@ class ListOrchestrator:
         rule_set: RuleSet,
         formatter: ListFormatterFactory,
     ) -> None:
-        """ListOrchestratorを初期化する"""
+        """ListOrchestrator を初期化する"""
         self.rule_set = rule_set
         self.formatter = formatter
 

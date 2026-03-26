@@ -1,4 +1,7 @@
-"""IgnoreProcessor の実装"""
+"""Ignoreパッケージのファサード
+
+ignore ディレクティブの解析・統合・フィルタリングを一括実行する。
+"""
 
 from paladin.check.ignore.directive import FileIgnoreDirective
 from paladin.check.ignore.filter import ViolationFilter
