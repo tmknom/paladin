@@ -19,7 +19,7 @@ class VersionOrchestratorProvider:
         """VersionOrchestratorを構築する
 
         Returns:
-            設定済みの VersionOrchestrator
+            `paladin` パッケージ名を注入した VersionOrchestrator
         """
         resolver = VersionResolver(package_name="paladin")
         return VersionOrchestrator(resolver=resolver)

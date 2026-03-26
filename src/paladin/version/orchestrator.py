@@ -11,7 +11,7 @@ class VersionOrchestrator:
     """バージョン文字列取得の処理フローを制御する"""
 
     def __init__(self, resolver: VersionResolver) -> None:
-        """VersionOrchestratorを初期化する"""
+        """VersionOrchestrator を初期化する"""
         self.resolver = resolver
 
     @log

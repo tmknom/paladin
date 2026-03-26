@@ -1,4 +1,7 @@
-"""ConfigIgnoreResolver の実装"""
+"""Ignoreパッケージの設定ファイル解決
+
+per-file-ignores 設定をファイルパスと照合して FileIgnoreDirective に変換する。
+"""
 
 from pathlib import Path, PurePath
 
@@ -15,6 +18,7 @@ class ConfigIgnoreResolver:
     """
 
     def _normalize_glob_pattern(self, pattern: str) -> str:
+        """Glob パターンに "**/" プレフィックスを付加して正規化する"""
         if pattern.startswith("/") or pattern.startswith("**/"):
             return pattern
         return "**/" + pattern

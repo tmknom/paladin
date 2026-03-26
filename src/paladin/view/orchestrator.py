@@ -17,13 +17,16 @@ class ViewOrchestrator:
         rule_set: RuleSet,
         formatter: ViewFormatterFactory,
     ) -> None:
-        """ViewOrchestratorを初期化する"""
+        """ViewOrchestrator を初期化する"""
         self.rule_set = rule_set
         self.formatter = formatter
 
     @log
     def orchestrate(self, context: ViewContext) -> str:
-        """指定された rule_id のルール詳細をフォーマットした文字列を返す"""
+        """指定された rule_id のルール詳細をフォーマットした文字列を返す。
+
+        rule_id が存在しない場合は format に応じたエラー文字列を返す。
+        """
         rule = self.rule_set.find_rule(context.rule_id)
         if rule is None:
             message = f"Error: Rule '{context.rule_id}' not found."
