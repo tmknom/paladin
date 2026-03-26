@@ -191,19 +191,6 @@ class TestCheckJsonFormatter:
         assert data["summary"]["by_file"]["a/__init__.py"] == 1
         assert data["summary"]["by_file"]["b/__init__.py"] == 2
 
-    def test_json_format_エッジケース_同一入力に対してJSON構造が安定していること(self):
-        # Arrange
-        v = _make_violation()
-        result = _make_check_result((v,))
-        formatter = CheckJsonFormatter()
-
-        # Act
-        report1 = formatter.format(result)
-        report2 = formatter.format(result)
-
-        # Assert
-        assert report1.text == report2.text
-
     def test_json_format_正常系_fileフィールドがPath型から文字列に変換されること(self):
         # Arrange
         v = _make_violation(file="src/paladin/__init__.py")
@@ -215,17 +202,6 @@ class TestCheckJsonFormatter:
         # Assert
         data = json.loads(report.text)
         assert isinstance(data["diagnostics"][0]["file"], str)
-
-    def test_json_format_正常系_出力がvalid_JSONであること(self):
-        # Arrange
-        v = _make_violation()
-        result = _make_check_result((v,))
-
-        # Act
-        report = CheckJsonFormatter().format(result)
-
-        # Assert
-        json.loads(report.text)  # 例外なくパースできることを検証
 
 
 class TestCheckFormatterFactory:

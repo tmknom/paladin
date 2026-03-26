@@ -11,139 +11,10 @@ class TestRuleSetFactory:
         result = RuleSetFactory().create()
         assert isinstance(result, RuleSet)
 
-    def test_create_正常系_全ルールが登録されていること(self):
-        result = RuleSetFactory().create()
-        rule_ids = result.rule_ids
-        assert "require-all-export" in rule_ids
-        assert "no-relative-import" in rule_ids
-        assert "no-local-import" in rule_ids
-        assert "require-qualified-third-party" in rule_ids
-
     def test_create_正常系_呼び出すたびに独立したインスタンスを返すこと(self):
         a = RuleSetFactory().create()
         b = RuleSetFactory().create()
         assert a is not b
-
-    def test_create_正常系_no_direct_internal_importルールが登録されていること(self):
-        result = RuleSetFactory().create()
-        assert "no-direct-internal-import" in result.rule_ids
-
-    def test_create_正常系_no_mock_usageルールが登録されていること(self):
-        result = RuleSetFactory().create()
-        assert "no-mock-usage" in result.rule_ids
-
-    def test_create_正常系_全ルールが登録されていること_9ルール(self):
-        result = RuleSetFactory().create()
-        rule_ids = result.rule_ids
-        assert "require-all-export" in rule_ids
-        assert "no-relative-import" in rule_ids
-        assert "no-local-import" in rule_ids
-        assert "require-qualified-third-party" in rule_ids
-        assert "no-direct-internal-import" in rule_ids
-        assert "no-non-init-all" in rule_ids
-        assert "no-cross-package-reexport" in rule_ids
-        assert "no-mock-usage" in rule_ids
-        assert "no-unused-export" in rule_ids
-
-    def test_create_正常系_no_deep_nestingルールが登録されていること(self):
-        result = RuleSetFactory().create()
-        assert "no-deep-nesting" in result.rule_ids
-
-    def test_create_正常系_全ルールが登録されていること_10ルール(self):
-        result = RuleSetFactory().create()
-        rule_ids = result.rule_ids
-        assert "require-all-export" in rule_ids
-        assert "no-relative-import" in rule_ids
-        assert "no-local-import" in rule_ids
-        assert "require-qualified-third-party" in rule_ids
-        assert "no-direct-internal-import" in rule_ids
-        assert "no-non-init-all" in rule_ids
-        assert "no-cross-package-reexport" in rule_ids
-        assert "no-mock-usage" in rule_ids
-        assert "no-unused-export" in rule_ids
-        assert "no-deep-nesting" in rule_ids
-
-    def test_create_正常系_no_third_party_importルールが登録されていること(self):
-        result = RuleSetFactory().create()
-        assert "no-third-party-import" in result.rule_ids
-
-    def test_create_正常系_全ルールが登録されていること_11ルール(self):
-        result = RuleSetFactory().create()
-        rule_ids = result.rule_ids
-        assert "require-all-export" in rule_ids
-        assert "no-relative-import" in rule_ids
-        assert "no-local-import" in rule_ids
-        assert "require-qualified-third-party" in rule_ids
-        assert "no-direct-internal-import" in rule_ids
-        assert "no-non-init-all" in rule_ids
-        assert "no-cross-package-reexport" in rule_ids
-        assert "no-mock-usage" in rule_ids
-        assert "no-unused-export" in rule_ids
-        assert "no-deep-nesting" in rule_ids
-        assert "no-third-party-import" in rule_ids
-
-    def test_create_正常系_no_cross_package_importルールが登録されていること(self):
-        result = RuleSetFactory().create()
-        assert "no-cross-package-import" in result.rule_ids
-
-    def test_create_正常系_全ルールが登録されていること_12ルール(self):
-        result = RuleSetFactory().create()
-        rule_ids = result.rule_ids
-        assert "require-all-export" in rule_ids
-        assert "no-relative-import" in rule_ids
-        assert "no-local-import" in rule_ids
-        assert "require-qualified-third-party" in rule_ids
-        assert "no-direct-internal-import" in rule_ids
-        assert "no-non-init-all" in rule_ids
-        assert "no-cross-package-reexport" in rule_ids
-        assert "no-mock-usage" in rule_ids
-        assert "no-unused-export" in rule_ids
-        assert "no-deep-nesting" in rule_ids
-        assert "no-third-party-import" in rule_ids
-        assert "no-cross-package-import" in rule_ids
-
-    def test_create_正常系_no_testing_test_codeルールが登録されていること(self):
-        result = RuleSetFactory().create()
-        assert "no-testing-test-code" in result.rule_ids
-
-    def test_create_正常系_全ルールが登録されていること_13ルール(self):
-        result = RuleSetFactory().create()
-        rule_ids = result.rule_ids
-        assert "require-all-export" in rule_ids
-        assert "no-relative-import" in rule_ids
-        assert "no-local-import" in rule_ids
-        assert "require-qualified-third-party" in rule_ids
-        assert "no-direct-internal-import" in rule_ids
-        assert "no-non-init-all" in rule_ids
-        assert "no-cross-package-reexport" in rule_ids
-        assert "no-mock-usage" in rule_ids
-        assert "no-unused-export" in rule_ids
-        assert "no-deep-nesting" in rule_ids
-        assert "no-third-party-import" in rule_ids
-        assert "no-cross-package-import" in rule_ids
-        assert "no-testing-test-code" in rule_ids
-
-    def test_create_正常系_max_method_lengthルールが登録されていること(self):
-        result = RuleSetFactory().create()
-        assert "max-method-length" in result.rule_ids
-
-    def test_create_正常系_全ルールが登録されていること_14ルール(self):
-        result = RuleSetFactory().create()
-        rule_ids = result.rule_ids
-        assert "require-all-export" in rule_ids
-        assert "no-relative-import" in rule_ids
-        assert "no-local-import" in rule_ids
-        assert "require-qualified-third-party" in rule_ids
-        assert "no-direct-internal-import" in rule_ids
-        assert "no-non-init-all" in rule_ids
-        assert "no-cross-package-reexport" in rule_ids
-        assert "no-mock-usage" in rule_ids
-        assert "no-unused-export" in rule_ids
-        assert "no-deep-nesting" in rule_ids
-        assert "no-third-party-import" in rule_ids
-        assert "no-cross-package-import" in rule_ids
-        assert "no-testing-test-code" in rule_ids
-        assert "max-method-length" in rule_ids
 
     def test_create_正常系_rule_optionsでmax_method_lengthのmax_linesを指定できること(self):
         # Arrange
@@ -157,29 +28,6 @@ class TestRuleSetFactory:
         # Assert: ルールが登録されていること
         assert "max-method-length" in result.rule_ids
 
-    def test_create_正常系_max_class_lengthルールが登録されていること(self):
-        result = RuleSetFactory().create()
-        assert "max-class-length" in result.rule_ids
-
-    def test_create_正常系_全ルールが登録されていること_15ルール(self):
-        result = RuleSetFactory().create()
-        rule_ids = result.rule_ids
-        assert "require-all-export" in rule_ids
-        assert "no-relative-import" in rule_ids
-        assert "no-local-import" in rule_ids
-        assert "require-qualified-third-party" in rule_ids
-        assert "no-direct-internal-import" in rule_ids
-        assert "no-non-init-all" in rule_ids
-        assert "no-cross-package-reexport" in rule_ids
-        assert "no-mock-usage" in rule_ids
-        assert "no-unused-export" in rule_ids
-        assert "no-deep-nesting" in rule_ids
-        assert "no-third-party-import" in rule_ids
-        assert "no-cross-package-import" in rule_ids
-        assert "no-testing-test-code" in rule_ids
-        assert "max-method-length" in rule_ids
-        assert "max-class-length" in rule_ids
-
     def test_create_正常系_rule_optionsでmax_class_lengthのmax_linesを指定できること(self):
         # Arrange
         rule_options: dict[str, dict[str, object]] = {
@@ -191,10 +39,6 @@ class TestRuleSetFactory:
 
         # Assert: ルールが登録されていること
         assert "max-class-length" in result.rule_ids
-
-    def test_create_正常系_max_file_lengthルールが登録されていること(self):
-        result = RuleSetFactory().create()
-        assert "max-file-length" in result.rule_ids
 
     def test_create_正常系_全ルールが登録されていること_16ルール(self):
         result = RuleSetFactory().create()
@@ -268,18 +112,6 @@ class TestRuleSetFactory:
 
         # Assert: 不正な型でも例外なく動作する
         assert "no-third-party-import" in result.rule_ids
-
-    def test_create_正常系_no_unused_exportルールが登録されていること(self):
-        result = RuleSetFactory().create()
-        assert "no-unused-export" in result.rule_ids
-
-    def test_create_正常系_no_cross_package_reexportルールが登録されていること(self):
-        result = RuleSetFactory().create()
-        assert "no-cross-package-reexport" in result.rule_ids
-
-    def test_create_正常系_no_non_init_allルールが登録されていること(self):
-        result = RuleSetFactory().create()
-        assert "no-non-init-all" in result.rule_ids
 
     def test_create_正常系_testsパッケージはデフォルトでroot_packagesに含まれること(self):
         # Arrange: RuleSet.run() が prepare() を呼び tests が自動でルートパッケージになる

@@ -2,71 +2,7 @@
 
 from pathlib import Path
 
-from paladin.check.ignore.directive import FileIgnoreDirective, LineIgnoreDirective
-
-
-class TestFileIgnoreDirective:
-    """FileIgnoreDirective クラスのテスト"""
-
-    def test_FileIgnoreDirective_正常系_全ルールignoreのインスタンスを生成できること(self):
-        # Arrange / Act
-        directive = FileIgnoreDirective(
-            file_path=Path("example.py"),
-            ignore_all=True,
-            ignored_rules=frozenset(),
-        )
-
-        # Assert
-        assert directive.file_path == Path("example.py")
-        assert directive.ignore_all is True
-        assert directive.ignored_rules == frozenset()
-
-    def test_FileIgnoreDirective_正常系_特定ルールignoreのインスタンスを生成できること(self):
-        # Arrange / Act
-        directive = FileIgnoreDirective(
-            file_path=Path("example.py"),
-            ignore_all=False,
-            ignored_rules=frozenset({"rule-a"}),
-        )
-
-        # Assert
-        assert directive.file_path == Path("example.py")
-        assert directive.ignore_all is False
-        assert directive.ignored_rules == frozenset({"rule-a"})
-
-
-class TestLineIgnoreDirective:
-    """LineIgnoreDirective クラスのテスト"""
-
-    def test_LineIgnoreDirective_正常系_全ルールignoreのインスタンスを生成できること(self):
-        # Arrange / Act
-        directive = LineIgnoreDirective(
-            file_path=Path("example.py"),
-            target_line=5,
-            ignore_all=True,
-            ignored_rules=frozenset(),
-        )
-
-        # Assert
-        assert directive.file_path == Path("example.py")
-        assert directive.target_line == 5
-        assert directive.ignore_all is True
-        assert directive.ignored_rules == frozenset()
-
-    def test_LineIgnoreDirective_正常系_特定ルールignoreのインスタンスを生成できること(self):
-        # Arrange / Act
-        directive = LineIgnoreDirective(
-            file_path=Path("example.py"),
-            target_line=3,
-            ignore_all=False,
-            ignored_rules=frozenset({"rule-a"}),
-        )
-
-        # Assert
-        assert directive.file_path == Path("example.py")
-        assert directive.target_line == 3
-        assert directive.ignore_all is False
-        assert directive.ignored_rules == frozenset({"rule-a"})
+from paladin.check.ignore.directive import FileIgnoreDirective
 
 
 class TestMergeFileIgnoreDirectives:

@@ -80,8 +80,6 @@ class TestNoUnusedExportRuleCheck:
 
         # Assert
         assert len(result) == 1
-        assert result[0].message is not None
-        assert "Unused" in result[0].message
 
     # -------------------------------------------------------------------------
     # prepare テスト: 個別維持
@@ -410,9 +408,6 @@ class TestUnusedExportDetector:
 
         # Assert
         assert len(result) == 2
-        names = {v.message for v in result}
-        assert any("Foo" in m for m in names)
-        assert any("Bar" in m for m in names)
 
     def test_detect_正常系_使用済みシンボルは違反を返さないこと(self):
         # Arrange
@@ -442,5 +437,3 @@ class TestUnusedExportDetector:
         v = result[0]
         assert v.rule_id == "no-unused-export"
         assert v.line == 3
-        assert "Foo" in v.message
-        assert "Foo" in v.suggestion

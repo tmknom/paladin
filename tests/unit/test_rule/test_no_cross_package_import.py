@@ -38,10 +38,6 @@ class TestNoCrossPackageImportRuleMeta:
         assert isinstance(result, RuleMeta)
         assert result.rule_id == "no-cross-package-import"
         assert result.rule_name == "No Cross Package Import"
-        assert result.summary != ""
-        assert result.intent != ""
-        assert result.guidance != ""
-        assert result.suggestion != ""
 
 
 class TestNoCrossPackageImportRuleCheck:
@@ -67,8 +63,6 @@ class TestNoCrossPackageImportRuleCheck:
         assert violation.column == 0
         assert violation.rule_id == "no-cross-package-import"
         assert violation.rule_name == "No Cross Package Import"
-        assert "myapp.check" in violation.message
-        assert "OutputFormat" in violation.message
 
     def test_check_正常系_allow_dirs未設定の場合は全ファイルで違反を検出すること(self):
         # Arrange

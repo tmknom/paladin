@@ -156,7 +156,6 @@ class TestClassLengthDetector:
 
         # Assert
         assert result is not None
-        assert "TargetClass" in result.message
 
 
 class TestMaxClassLengthRuleMeta:

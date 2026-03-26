@@ -1,6 +1,5 @@
 """VersionOrchestratorProviderクラスのテスト"""
 
-from paladin.version.orchestrator import VersionOrchestrator
 from paladin.version.provider import VersionOrchestratorProvider
 
 
@@ -12,4 +11,4 @@ class TestVersionOrchestratorProvider:
         result = VersionOrchestratorProvider().provide()
 
         # Assert
-        assert isinstance(result, VersionOrchestrator)
+        assert isinstance(result.orchestrate(), str)

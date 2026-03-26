@@ -1,40 +1,8 @@
 from pathlib import Path
 
-from paladin.check.result import CheckReport, CheckResult, CheckStatus, CheckSummary
+from paladin.check.result import CheckResult, CheckStatus, CheckSummary
 from paladin.check.types import TargetFiles
 from paladin.rule import SourceFiles, Violation, Violations
-
-
-class TestCheckResult:
-    """CheckResultクラスのテスト"""
-
-    def test_init_正常系_target_filesとsource_filesとviolationsを保持すること(self):
-        # Arrange
-        target_files = TargetFiles(files=(Path("a.py"),))
-        source_files = SourceFiles(files=())
-        violations = Violations(items=())
-
-        # Act
-        result = CheckResult(
-            target_files=target_files,
-            source_files=source_files,
-            violations=violations,
-        )
-
-        # Assert
-        assert result.target_files == target_files
-        assert result.source_files == source_files
-        assert result.violations == violations
-
-
-class TestCheckStatus:
-    """CheckStatusクラスのテスト"""
-
-    def test_check_status_正常系_OK値がokであること(self):
-        assert CheckStatus.OK.value == "ok"
-
-    def test_check_status_正常系_VIOLATIONS値がviolationsであること(self):
-        assert CheckStatus.VIOLATIONS.value == "violations"
 
 
 class TestCheckSummary:
@@ -105,15 +73,3 @@ class TestCheckSummary:
 
         # Assert
         assert summary.by_file["a/__init__.py"] == 2
-
-
-class TestCheckReport:
-    """CheckReportクラスのテスト"""
-
-    def test_check_report_init_正常系_textとexit_codeを保持すること(self):
-        # Arrange & Act
-        report = CheckReport(text="summary: ok", exit_code=0)
-
-        # Assert
-        assert report.text == "summary: ok"
-        assert report.exit_code == 0

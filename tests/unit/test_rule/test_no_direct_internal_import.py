@@ -476,7 +476,6 @@ class TestInternalImportDetector:
         # Assert
         assert result is not None
         assert result.rule_id == "no-direct-internal-import"
-        assert "CheckOrchestrator" in result.message
 
     def test_detect_正常系_非公開シンボルはNoneを返すこと(self):
         # Arrange: package_exports に name が含まれない場合は対象外

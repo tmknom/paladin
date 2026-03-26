@@ -8,6 +8,8 @@ from paladin.foundation.error import ApplicationError
 
 
 class TestTargetResolver:
+    """TargetResolver クラスのテスト"""
+
     def test_resolve_正常系_CLIターゲット指定ありの場合targetsを返すこと(self):
         # Arrange
         targets = (Path("src/"),)

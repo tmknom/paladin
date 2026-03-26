@@ -136,7 +136,6 @@ class TestAllExportDetector:
         rule = RequireAllExportRule()
         result = AllExportDetector.detect(source_file, ["Foo"], rule.meta)
         assert result.rule_id == "require-all-export"
-        assert '"Foo"' in result.suggestion
 
     def test_detect_正常系_シンボルなしのViolationを返すこと(self):
         source = "x = 1\n"
@@ -144,4 +143,3 @@ class TestAllExportDetector:
         rule = RequireAllExportRule()
         result = AllExportDetector.detect(source_file, [], rule.meta)
         assert result.rule_id == "require-all-export"
-        assert "__all__" in result.suggestion

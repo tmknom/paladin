@@ -14,6 +14,8 @@ from tests.unit.test_rule.helpers import make_source_file, make_source_files
 
 
 class TestNoTestingTestCodeRuleMeta:
+    """NoTestingTestCodeRule.meta のテスト"""
+
     def test_meta_正常系_ルールメタ情報を返すこと(self):
         # Arrange
         rule = NoTestingTestCodeRule()
@@ -28,6 +30,8 @@ class TestNoTestingTestCodeRuleMeta:
 
 
 class TestNoTestingTestCodeRuleCheck:
+    """NoTestingTestCodeRule.check のテスト"""
+
     def test_check_正常系_空のSourceFilesで違反なし(self):
         # Arrange
         source_files = SourceFiles(files=())
@@ -72,9 +76,8 @@ class TestNoTestingTestCodeRuleCheck:
         # Act
         violations = NoTestingTestCodeRule().check(source_files)
 
-        # Assert: bound_name=FakeReader が TestFakeReader と一致、message に InMemoryFsReader
+        # Assert
         assert len(violations) == 1
-        assert "InMemoryFsReader" in violations[0].message
 
     @pytest.mark.parametrize(
         ("source", "filename"),

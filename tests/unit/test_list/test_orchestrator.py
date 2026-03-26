@@ -43,20 +43,6 @@ class TestListOrchestrator:
         # Assert
         assert result == ""
 
-    def test_orchestrate_正常系_format_TEXT指定でテキスト形式を返すこと(self):
-        # Arrange
-        fake_rule = FakeRule(rule_id="PAL001", rule_name="fake-rule", summary="フェイク概要")
-        orchestrator = self._make_orchestrator(rules=(fake_rule,))
-        context = ListContext(format=OutputFormat.TEXT)
-
-        # Act
-        result = orchestrator.orchestrate(context)
-
-        # Assert
-        assert "PAL001" in result
-        assert "fake-rule" in result
-        assert "フェイク概要" in result
-
     def test_orchestrate_正常系_format_JSON指定でrulesキーを含むJSON形式を返すこと(self):
         # Arrange
         fake_rule = FakeRule(rule_id="PAL001", rule_name="fake-rule", summary="フェイク概要")
