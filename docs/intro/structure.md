@@ -98,8 +98,8 @@ tests/
 │       ├── test_transformer.py
 │       ├── test_types.py
 │       └── test_writer.py
-└── integration/                  # 統合テスト
-    └── test_integration_cli.py   # CLI 統合テスト
+└── integration/                  # インテグレーションテスト
+    └── test_integration_cli.py   # CLI インテグレーションテスト
 ```
 
 ## docs/
