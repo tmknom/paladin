@@ -4,19 +4,9 @@ import subprocess
 import sys
 from pathlib import Path
 
-import pytest
-
-
-@pytest.fixture
-def tmp_dir(tmp_path: Path) -> Path:
-    """統合テスト用ワークスペース"""
-    test_dir = tmp_path / "integration_test"
-    test_dir.mkdir()
-    return test_dir
-
 
 class TestIntegrationMaxMethodLength:
-    """max-method-length ルールの統合テスト"""
+    """CLI を経由した max-method-length ルールのエンドツーエンドテスト"""
 
     def test_check_正常系_上限超過の関数で違反が報告されること(self, tmp_dir: Path):
         # Arrange: 51行の関数（デフォルト上限50行超え）
