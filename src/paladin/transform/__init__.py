@@ -1,6 +1,4 @@
-"""テキスト変換システムの公開API(Transform層)
-
-公開APIは `paladin.transform` から import すること(`__all__` のみ互換性対象)。
+"""Transformパッケージの公開API
 
 Docs:
     - docs/specs/transform/requirements.md

@@ -1,6 +1,6 @@
-"""List層の Composition Root
+"""ListパッケージのComposition Root
 
-具象クラスへの依存を隠蔽し、List層の生成ロジックを一元化する。
+具象クラスへの依存を隠蔽し、Listパッケージの生成ロジックを一元化する。
 """
 
 from paladin.foundation.log import log

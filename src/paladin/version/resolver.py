@@ -1,4 +1,4 @@
-"""VersionResolverの実装"""
+"""Versionパッケージのバージョンリゾルバー"""
 
 import importlib.metadata
 

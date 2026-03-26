@@ -1,4 +1,4 @@
-"""Check層の実行時パラメータ
+"""Checkパッケージの実行時コンテキスト
 
 CLIから受け取ったパラメータを不変のまま処理完了まで保持する。
 """
@@ -12,7 +12,7 @@ from paladin.rule import OverrideEntry, PerFileIgnoreEntry
 
 @dataclass(frozen=True)
 class CheckContext:
-    """Check処理の実行時コンテキスト
+    """Check処理の実行時パラメータを保持する値オブジェクト
 
     Lifecycle:
         処理開始時に生成され、処理完了まで不変のまま保持される

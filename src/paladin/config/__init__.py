@@ -1,6 +1,6 @@
 """Configパッケージの公開API
 
-CLI・Check・Foundation 各層から参照され、Foundation層のみに依存する。
+Foundation層のみに依存する。
 
 Docs:
     - docs/specs/config/requirements.md

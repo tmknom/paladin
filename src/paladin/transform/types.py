@@ -1,4 +1,4 @@
-"""Transform向けドメインモデル定義"""
+"""Transformパッケージのドメインモデル定義"""
 
 from dataclasses import dataclass
 from datetime import datetime

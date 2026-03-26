@@ -1,6 +1,4 @@
-"""ルール一覧表示の公開API（List層）
-
-公開APIは `paladin.list` から import すること(`__all__` のみ互換性対象)。
+"""Listパッケージの公開API
 
 Docs:
     - docs/specs/list/requirements.md

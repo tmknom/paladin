@@ -1,4 +1,4 @@
-"""Check結果のフォーマット変換
+"""Checkパッケージの出力フォーマッター
 
 CheckResult を text / JSON 形式の診断レポートに変換する。
 """

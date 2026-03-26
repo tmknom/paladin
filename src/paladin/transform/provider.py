@@ -1,6 +1,6 @@
-"""TransformOrchestratorとその依存を一括生成するファクトリー
+"""TransformパッケージのComposition Root
 
-具象クラスへの依存を隠蔽し、Transform層の生成ロジックを一元化する。
+具象クラスへの依存を隠蔽し、Transformパッケージの生成ロジックを一元化する。
 """
 
 from paladin.foundation.fs import TextFileSystemReader, TextFileSystemWriter

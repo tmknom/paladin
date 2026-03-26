@@ -1,4 +1,7 @@
-"""VersionOrchestratorProviderの実装"""
+"""VersionパッケージのComposition Root
+
+具象クラスへの依存を隠蔽し、Versionパッケージの生成ロジックを一元化する。
+"""
 
 from paladin.foundation.log import log
 from paladin.version.orchestrator import VersionOrchestrator

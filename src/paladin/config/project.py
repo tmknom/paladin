@@ -1,6 +1,6 @@
-"""Config 層のプロジェクト設定読み込みモジュール
+"""Configパッケージのプロジェクト設定読み込みモジュール
 
-pyproject.toml を情報源とし、Foundation 層の FileSystemReader および Rule 層の型に依存する。
+pyproject.toml を情報源とする。
 """
 
 import logging
@@ -33,7 +33,7 @@ class ProjectConfigLoader:
     """pyproject.toml からプロジェクト設定を読み込むローダー"""
 
     def __init__(self, reader: TextFileSystemReaderProtocol) -> None:
-        """Accept a TextFileSystemReaderProtocol for dependency injection."""
+        """依存オブジェクトを受け取り初期化する。"""
         self._reader = reader
 
     def load(self) -> ProjectConfig:

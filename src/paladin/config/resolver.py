@@ -1,7 +1,6 @@
 """Configパッケージのターゲットパス解決モジュール
 
 CLI引数・設定ファイル・カレントディレクトリのデフォルト規約を優先順位付きで解決する。
-Foundation層の ApplicationError に依存する。
 """
 
 from pathlib import Path
@@ -10,7 +9,7 @@ from paladin.foundation.error import ApplicationError
 
 
 class TargetResolver:
-    """CLI 引数と設定ファイルの include を解決して解析対象パスを返す純粋計算クラス"""
+    """CLI 引数と設定ファイルの include を解決して解析対象パスを返すクラス"""
 
     def resolve(
         self,
