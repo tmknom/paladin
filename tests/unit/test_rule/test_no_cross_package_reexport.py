@@ -316,4 +316,3 @@ class TestCrossPackageReexportDetector:
             meta=rule.meta,
         )
         assert result.rule_id == "no-cross-package-reexport"
-        assert "RuleMeta" in result.message

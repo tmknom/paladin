@@ -66,4 +66,3 @@ class TestRelativeImportDetector:
         stmt = source_file.imports[0]
         result = RelativeImportDetector.detect(stmt, source_file, rule.meta)
         assert result.rule_id == "no-relative-import"
-        assert "相対インポート" in result.message

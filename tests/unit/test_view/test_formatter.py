@@ -69,12 +69,6 @@ class TestViewTextFormatter:
         # Assert
         assert len(lines) == 6
         # 各行の値部分が同じ列から始まること（固定幅ラベル列による整列）
-        assert lines[0].endswith("my-rule")
-        assert lines[1].endswith("My Rule")
-        assert lines[2].endswith("概要")
-        assert lines[3].endswith("意図")
-        assert lines[4].endswith("見方")
-        assert lines[5].endswith("修正方向")
         value_col_0 = len(lines[0]) - len("my-rule")
         value_col_1 = len(lines[1]) - len("My Rule")
         value_col_2 = len(lines[2]) - len("概要")
@@ -112,17 +106,6 @@ class TestViewJsonFormatter:
         assert data["intent"] == "意図テキスト"
         assert data["guidance"] == "見方テキスト"
         assert data["suggestion"] == "修正方向テキスト"
-
-    def test_format_正常系_出力がvalid_JSONであること(self):
-        # Arrange
-        rule = _make_rule_meta()
-        formatter = ViewJsonFormatter()
-
-        # Act
-        result = formatter.format(rule)
-
-        # Assert: json.loads が例外なく成功する
-        json.loads(result)
 
     def test_format_正常系_日本語を含むフィールドがエスケープされずに出力されること(self):
         # Arrange

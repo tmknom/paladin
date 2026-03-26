@@ -1,131 +1,14 @@
+import pytest
+
 from paladin.config import ProjectConfigLoader
 from paladin.config.project import ProjectConfig
 from paladin.foundation.fs import FileSystemError
-from paladin.rule import OverrideEntry, PerFileIgnoreEntry
 from tests.unit.fakes import ErrorFsReader, InMemoryFsReader
 
 
-class TestOverrideEntry:
-    def test_OverrideEntry_正常系_インスタンスを生成できること(self):
-        # Arrange / Act
-        entry = OverrideEntry(
-            files=("tests/**",),
-            rules={"require-all-export": False},
-        )
-
-        # Assert
-        assert entry.files == ("tests/**",)
-        assert entry.rules == {"require-all-export": False}
-
-
-class TestPerFileIgnoreEntry:
-    def test_PerFileIgnoreEntry_正常系_インスタンスを生成できること(self):
-        # Arrange / Act
-        entry = PerFileIgnoreEntry(
-            pattern="tests/**",
-            rule_ids=frozenset({"R-001", "R-002"}),
-            ignore_all=False,
-        )
-
-        # Assert
-        assert entry.pattern == "tests/**"
-        assert entry.rule_ids == frozenset({"R-001", "R-002"})
-        assert entry.ignore_all is False
-
-
-class TestProjectConfig:
-    def test_ProjectConfig_正常系_デフォルト値でインスタンスを生成できること(self):
-        # Arrange / Act
-        config = ProjectConfig()
-
-        # Assert
-        assert config.per_file_ignores == ()
-        assert config.rules == {}
-
-    def test_ProjectConfig_正常系_project_nameフィールドを保持できること(self):
-        # Arrange / Act
-        config = ProjectConfig(project_name="myapp")
-
-        # Assert
-        assert config.project_name == "myapp"
-
-    def test_ProjectConfig_正常系_デフォルトでproject_nameがNoneであること(self):
-        # Arrange / Act
-        config = ProjectConfig()
-
-        # Assert
-        assert config.project_name is None
-
-    def test_ProjectConfig_正常系_デフォルト値でrulesが空dictであること(self):
-        # Arrange / Act
-        config = ProjectConfig()
-
-        # Assert
-        assert config.rules == {}
-
-    def test_ProjectConfig_正常系_includeフィールドを保持できること(self):
-        # Arrange / Act
-        config = ProjectConfig(include=("src/",))
-
-        # Assert
-        assert config.include == ("src/",)
-
-    def test_ProjectConfig_正常系_excludeフィールドを保持できること(self):
-        # Arrange / Act
-        config = ProjectConfig(exclude=(".venv/",))
-
-        # Assert
-        assert config.exclude == (".venv/",)
-
-    def test_ProjectConfig_正常系_デフォルトでincludeとexcludeが空タプルであること(self):
-        # Arrange / Act
-        config = ProjectConfig()
-
-        # Assert
-        assert config.include == ()
-        assert config.exclude == ()
-
-    def test_ProjectConfig_正常系_rulesフィールドを保持できること(self):
-        # Arrange / Act
-        config = ProjectConfig(rules={"no-relative-import": False})
-
-        # Assert
-        assert config.rules == {"no-relative-import": False}
-
-    def test_ProjectConfig_正常系_overridesフィールドを保持できること(self):
-        # Arrange
-        entry = OverrideEntry(files=("tests/**",), rules={"require-all-export": False})
-
-        # Act
-        config = ProjectConfig(overrides=(entry,))
-
-        # Assert
-        assert config.overrides == (entry,)
-
-    def test_ProjectConfig_正常系_デフォルトでoverridesが空タプルであること(self):
-        # Arrange / Act
-        config = ProjectConfig()
-
-        # Assert
-        assert config.overrides == ()
-
-    def test_ProjectConfig_正常系_per_file_ignoresを保持できること(self):
-        # Arrange
-        entry = PerFileIgnoreEntry(
-            pattern="tests/**",
-            rule_ids=frozenset({"R-001"}),
-            ignore_all=False,
-        )
-
-        # Act
-        config = ProjectConfig(per_file_ignores=(entry,))
-
-        # Assert
-        assert len(config.per_file_ignores) == 1
-        assert config.per_file_ignores[0] == entry
-
-
 class TestProjectConfigLoader:
+    """ProjectConfigLoader クラスのテスト"""
+
     def test_load_正常系_per_file_ignoresを含むProjectConfigを返すこと(self):
         # Arrange
         toml_content = """\
@@ -361,12 +244,20 @@ name = "myapp"
         # Assert
         assert result.project_name == "myapp"
 
-    def test_load_正常系_project_nameのハイフンがアンダースコアに正規化されること(self):
+    @pytest.mark.parametrize(
+        ("raw_name", "expected"),
+        [
+            pytest.param("my-app", "my_app", id="ハイフンがアンダースコアに正規化される"),
+            pytest.param("my.app", "my_app", id="ドットがアンダースコアに正規化される"),
+            pytest.param("MyApp", "myapp", id="大文字が小文字に正規化される"),
+            pytest.param(
+                "my--app", "my_app", id="連続区切り文字が単一アンダースコアに正規化される"
+            ),
+        ],
+    )
+    def test_load_正常系_project_nameが正規化されること(self, raw_name: str, expected: str):
         # Arrange
-        toml_content = """\
-[project]
-name = "my-app"
-"""
+        toml_content = f'[project]\nname = "{raw_name}"\n'
         reader = InMemoryFsReader(contents={"pyproject.toml": toml_content})
         loader = ProjectConfigLoader(reader=reader)
 
@@ -374,52 +265,7 @@ name = "my-app"
         result = loader.load()
 
         # Assert
-        assert result.project_name == "my_app"
-
-    def test_load_正常系_project_nameのドットがアンダースコアに正規化されること(self):
-        # Arrange
-        toml_content = """\
-[project]
-name = "my.app"
-"""
-        reader = InMemoryFsReader(contents={"pyproject.toml": toml_content})
-        loader = ProjectConfigLoader(reader=reader)
-
-        # Act
-        result = loader.load()
-
-        # Assert
-        assert result.project_name == "my_app"
-
-    def test_load_正常系_project_nameの大文字が小文字に正規化されること(self):
-        # Arrange
-        toml_content = """\
-[project]
-name = "MyApp"
-"""
-        reader = InMemoryFsReader(contents={"pyproject.toml": toml_content})
-        loader = ProjectConfigLoader(reader=reader)
-
-        # Act
-        result = loader.load()
-
-        # Assert
-        assert result.project_name == "myapp"
-
-    def test_load_正常系_project_nameの連続区切り文字が単一アンダースコアに正規化されること(self):
-        # Arrange
-        toml_content = """\
-[project]
-name = "my--app"
-"""
-        reader = InMemoryFsReader(contents={"pyproject.toml": toml_content})
-        loader = ProjectConfigLoader(reader=reader)
-
-        # Act
-        result = loader.load()
-
-        # Assert
-        assert result.project_name == "my_app"
+        assert result.project_name == expected
 
     def test_load_エッジケース_projectセクションにnameがない場合project_nameがNoneであること(self):
         # Arrange

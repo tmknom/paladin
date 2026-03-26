@@ -1,6 +1,5 @@
 """ListOrchestratorProviderクラスのテスト"""
 
-from paladin.list.orchestrator import ListOrchestrator
 from paladin.list.provider import ListOrchestratorProvider
 
 
@@ -13,7 +12,6 @@ class TestListOrchestratorProvider:
         rules = result.rule_set.list_rules()
 
         # Assert
-        assert isinstance(result, ListOrchestrator)
         assert len(rules) == 16
         rule_ids = {r.rule_id for r in rules}
         assert "require-all-export" in rule_ids

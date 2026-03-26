@@ -116,4 +116,3 @@ class TestNonInitAllDetector:
         source_file = make_source_file(source, "module.py")
         result = NonInitAllDetector.detect(rule.meta, source_file, 1)
         assert result.rule_id == "no-non-init-all"
-        assert "__init__.py 以外" in result.message

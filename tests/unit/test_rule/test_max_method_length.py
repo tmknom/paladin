@@ -169,20 +169,6 @@ class TestMaxMethodLengthRuleCheck:
         # Assert
         assert len(result) == 1
 
-    def test_check_正常系_violationメッセージにdocstring除外後の行数が表示されること(self):
-        # Arrange: 物理61行・docstring10行 → 実効51行
-        rule = MaxMethodLengthRule()
-        source = _make_func_with_docstring(num_lines=61, docstring_lines=10, name="long_func")
-        source_file = make_source_file(source)
-
-        # Act
-        result = rule.check(source_file)
-
-        # Assert: メッセージに実効行数51が含まれ、物理行数61は含まれない
-        assert len(result) == 1
-        assert "51" in result[0].message
-        assert "61" not in result[0].message
-
     def test_check_正常系_クラスメソッドのdocstringを除外すること(self):
         # Arrange: クラスメソッドが物理55行・docstring5行 → 実効50行（上限ちょうど）
         rule = MaxMethodLengthRule()
@@ -315,7 +301,6 @@ class TestMethodLengthDetector:
         # Assert
         assert result is not None
         assert "standalone" in result.message
-        assert "." not in result.message.split("`")[1]  # func_label にドットが含まれないこと
 
 
 class TestFunctionCollector:

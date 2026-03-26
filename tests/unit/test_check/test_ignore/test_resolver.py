@@ -7,6 +7,8 @@ from paladin.rule import PerFileIgnoreEntry
 
 
 class TestConfigIgnoreResolver:
+    """ConfigIgnoreResolver クラスのテスト"""
+
     def test_resolve_正常系_glob_パターンにマッチするファイルのFileIgnoreDirectiveを返すこと(self):
         # Arrange
         per_file_ignores = (

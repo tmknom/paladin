@@ -1,5 +1,7 @@
 """VersionOrchestratorクラスのテスト"""
 
+from importlib.metadata import version
+
 from paladin.version.orchestrator import VersionOrchestrator
 from paladin.version.resolver import VersionResolver
 
@@ -16,4 +18,4 @@ class TestVersionOrchestrator:
         result = orchestrator.orchestrate()
 
         # Assert
-        assert result == "0.1.0"
+        assert result == version("paladin")

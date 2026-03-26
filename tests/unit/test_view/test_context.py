@@ -7,21 +7,14 @@ from paladin.view.context import ViewContext
 class TestViewContext:
     """ViewContextクラスのテスト"""
 
-    def test_ViewContext_正常系_rule_id指定でインスタンス生成できること(self):
-        # Act
-        result = ViewContext(rule_id="require-all-export")
-
-        # Assert
-        assert result.rule_id == "require-all-export"
-
-    def test_ViewContext_正常系_format未指定でデフォルトがTEXTであること(self):
+    def test_format_未指定時のデフォルトがTEXTであること(self):
         # Act
         result = ViewContext(rule_id="test")
 
         # Assert
         assert result.format == OutputFormat.TEXT
 
-    def test_ViewContext_正常系_format指定でJSON形式を保持すること(self):
+    def test_format_JSON指定で保持されること(self):
         # Act
         result = ViewContext(rule_id="test", format=OutputFormat.JSON)
 

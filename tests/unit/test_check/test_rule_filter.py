@@ -5,6 +5,8 @@ from tests.unit.fakes import FakeRule
 
 
 class TestRuleFilter:
+    """RuleFilter クラスのテスト"""
+
     def test_resolve_disabled_rules_正常系_falseに設定されたルールIDを返すこと(self):
         # Arrange
         rules = {"no-relative-import": False, "require-all-export": True}

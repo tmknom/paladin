@@ -101,17 +101,6 @@ class TestListJsonFormatter:
         assert data["rules"][0]["rule_id"] == "PAL001"
         assert data["rules"][1]["rule_id"] == "PAL002"
 
-    def test_format_正常系_出力がvalid_JSONであること(self):
-        # Arrange
-        rules = (_make_rule_meta(),)
-
-        # Act
-        result = ListJsonFormatter().format(rules)
-
-        # Assert
-        parsed = json.loads(result)
-        assert isinstance(parsed, dict)
-
     def test_format_正常系_日本語を含むフィールドがエスケープされずに出力されること(self):
         # Arrange
         rules = (_make_rule_meta(summary="日本語の概要"),)
@@ -121,16 +110,6 @@ class TestListJsonFormatter:
 
         # Assert
         assert "日本語の概要" in result
-
-    def test_format_正常系_インデント付きで整形されること(self):
-        # Arrange
-        rules = (_make_rule_meta(),)
-
-        # Act
-        result = ListJsonFormatter().format(rules)
-
-        # Assert
-        assert "\n" in result
 
     def test_format_エッジケース_ルール0件でrulesキーが空配列のJSONを返すこと(self):
         # Arrange
@@ -158,12 +137,6 @@ class TestListFormatterFactory:
         assert "PAL001" in result
         assert "rule-name" in result
         assert "概要テキスト" in result
-        # JSON ではないことを確認
-        try:
-            json.loads(result)
-            raise AssertionError("TEXT 形式なのに valid JSON が返った")
-        except json.JSONDecodeError:
-            pass
 
     def test_format_正常系_JSON指定でrulesキーを含むJSON形式を返すこと(self):
         # Arrange

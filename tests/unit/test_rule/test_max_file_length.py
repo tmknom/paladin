@@ -1,7 +1,5 @@
 from pathlib import Path
 
-import pytest
-
 from paladin.rule.max_file_length import FileLengthCalculator, FileLengthDetector, MaxFileLengthRule
 from paladin.rule.types import RuleMeta
 from tests.unit.test_rule.helpers import make_source_file, make_test_source_file
@@ -60,16 +58,10 @@ class TestMaxFileLengthRuleCheck:
         assert len(result) == 1
         assert result[0].line == 301
 
-    @pytest.mark.parametrize(
-        "source",
-        [
-            pytest.param("", id="空ソース"),
-        ],
-    )
-    def test_check_違反なしのケースで空を返すこと(self, source: str) -> None:
+    def test_check_正常系_空ソースで違反なしを返すこと(self) -> None:
         # Arrange
         rule = MaxFileLengthRule()
-        source_file = make_source_file(source)
+        source_file = make_source_file("")
 
         # Act
         result = rule.check(source_file)

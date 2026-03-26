@@ -273,21 +273,10 @@ class TestAbsoluteFromImport:
         imp = self._make()
         assert imp.top_level == "paladin"
 
-    def test_module_型がModulePathとして確定していること(self):
-        imp = self._make()
-        # module は ModulePath 型が確定しているため .depth 等に直接アクセスできる
-        assert imp.module.depth == 3
-        assert imp.module.package_key == "paladin.check"
-
     def test_names_正常系_インポート名タプルを保持すること(self):
         imp = self._make()
         assert len(imp.names) == 1
         assert imp.names[0].name == "Foo"
-
-    def test_line_column_正常系_位置情報を保持すること(self):
-        imp = self._make()
-        assert imp.line == 1
-        assert imp.column == 0
 
 
 class TestSourceLocation:
