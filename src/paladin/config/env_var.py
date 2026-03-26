@@ -1,6 +1,6 @@
 """Configパッケージの環境変数設定モジュール
 
-外部環境からの設定値注入を担い、Foundation層の CoreSettings に依存する。
+外部環境からの設定値注入を担う。
 """
 
 from pathlib import Path

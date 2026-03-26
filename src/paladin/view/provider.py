@@ -1,6 +1,6 @@
-"""View層の Composition Root
+"""ViewパッケージのComposition Root
 
-具象クラスへの依存を隠蔽し、View層の生成ロジックを一元化する。
+具象クラスへの依存を隠蔽し、Viewパッケージの生成ロジックを一元化する。
 """
 
 from paladin.foundation.log import log

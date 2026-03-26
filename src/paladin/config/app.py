@@ -1,7 +1,4 @@
-"""Configパッケージのアプリケーション設定合成モジュール
-
-EnvVarConfig と PathConfig を合成し、実行時設定を提供する。
-"""
+"""Configパッケージのアプリケーション設定合成モジュール"""
 
 from __future__ import annotations
 

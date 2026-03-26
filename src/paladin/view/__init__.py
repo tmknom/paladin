@@ -1,6 +1,4 @@
-"""ルール詳細表示の公開API（View層）
-
-公開APIは `paladin.view` から import すること(`__all__` のみ互換性対象)。
+"""Viewパッケージの公開API
 
 Docs:
     - docs/specs/view/requirements.md

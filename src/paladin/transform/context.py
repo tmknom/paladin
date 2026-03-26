@@ -1,4 +1,4 @@
-"""Transform処理の実行時パラメータを保持する値オブジェクト
+"""Transformパッケージの実行時コンテキスト
 
 変換処理に必要な入力ファイル、出力先、実行日時を保持する。
 """
@@ -10,7 +10,7 @@ from pathlib import Path
 
 @dataclass(frozen=True)
 class TransformContext:
-    """Transform処理の実行時コンテキスト
+    """Transform処理の実行時パラメータを保持する値オブジェクト
 
     Lifecycle:
         処理開始時に生成され、処理完了まで不変のまま保持される

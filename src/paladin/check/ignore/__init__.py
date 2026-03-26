@@ -1,6 +1,4 @@
-"""ファイル単位・行単位の Ignore 機能の公開 API。
-
-公開 API は `paladin.check.ignore` から import すること。
+"""Ignoreパッケージの公開API
 
 Docs:
     - docs/design/ignore.md

@@ -1,4 +1,4 @@
-"""version パッケージの公開 API"""
+"""Versionパッケージの公開API"""
 
 from paladin.version.provider import VersionOrchestratorProvider
 

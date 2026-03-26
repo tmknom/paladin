@@ -1,6 +1,6 @@
-"""Check層の Composition Root
+"""CheckパッケージのComposition Root
 
-具象クラスへの依存を隠蔽し、Check層の生成ロジックを一元化する。
+具象クラスへの依存を隠蔽し、Checkパッケージの生成ロジックを一元化する。
 """
 
 from paladin.check.collector import FileCollector, PathExcluder

@@ -1,6 +1,4 @@
-"""静的解析システムの公開API（Check層）
-
-公開APIは `paladin.check` から import すること(`__all__` のみ互換性対象)。
+"""Checkパッケージの公開API
 
 Docs:
     - docs/specs/check/requirements.md

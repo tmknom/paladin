@@ -1,6 +1,6 @@
-"""Transform層の中核
+"""Transformパッケージのオーケストレーター
 
-変換パイプライン全体を制御し、入力・変換・出力の流れを調整する。
+入力・変換・出力の処理フロー全体を制御する。
 """
 
 from paladin.foundation.log import log

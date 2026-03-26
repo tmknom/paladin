@@ -1,4 +1,7 @@
-"""VersionOrchestratorの実装"""
+"""Versionパッケージのオーケストレーター
+
+バージョン取得の処理フロー全体を制御する。
+"""
 
 from paladin.foundation.log import log
 from paladin.version.resolver import VersionResolver
