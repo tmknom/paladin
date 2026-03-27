@@ -1,120 +1,13 @@
-"""統合CLIツールの統合テスト
-
-CLIの共通動作を検証
-"""
+"""check サブコマンドのインテグレーションテスト"""
 
 import json
-import os
-import re
 import subprocess
 import sys
 from pathlib import Path
 
 
-class TestIntegrationCLI:
-    """CLI共通動作の統合テスト"""
-
-    def test_transform_正常系_変換結果のjsonとファイルが出力されること(self, tmp_dir: Path):
-        # Arrange
-        input_file = tmp_dir / "input.txt"
-        input_file.write_text("test line", encoding="utf-8")
-        tmp_output_dir = tmp_dir / "tmp"
-        tmp_output_dir.mkdir()
-
-        # Act
-        cmd = [sys.executable, "-m", "paladin.cli", "transform", str(input_file)]
-        result = subprocess.run(cmd, cwd=tmp_dir, capture_output=True, text=True, timeout=10)
-
-        # Assert
-        assert result.returncode == 0
-        data = json.loads(result.stdout)
-        assert "src_length" in data
-        assert "dst_length" in data
-
-        # 出力ファイルが作成されていることを確認
-        output_file = tmp_output_dir / "input.txt"
-        assert output_file.exists()
-        content = output_file.read_text(encoding="utf-8")
-        assert "1: test line" in content
-
-    def test_transform_正常系_tmp_dirオプションが環境変数より優先される(self, tmp_dir: Path):
-        # Arrange
-        input_file = tmp_dir / "input.txt"
-        input_file.write_text("test line", encoding="utf-8")
-        env_tmp_dir = tmp_dir / "env_tmp"
-        env_tmp_dir.mkdir()
-        cli_tmp_dir = tmp_dir / "cli_tmp"
-        cli_tmp_dir.mkdir()
-
-        # Act
-        cmd = [
-            sys.executable,
-            "-m",
-            "paladin.cli",
-            "transform",
-            str(input_file),
-            "--tmp-dir",
-            str(cli_tmp_dir),
-        ]
-        result = subprocess.run(
-            cmd,
-            cwd=tmp_dir,
-            capture_output=True,
-            text=True,
-            timeout=10,
-            env={**os.environ, "EXAMPLE_TMP_DIR": str(env_tmp_dir)},
-        )
-
-        # Assert
-        assert result.returncode == 0
-        data = json.loads(result.stdout)
-        assert "src_length" in data
-        assert (cli_tmp_dir / "input.txt").exists()
-        assert not (env_tmp_dir / "input.txt").exists()
-
-
-class TestIntegrationListCLI:
-    """list サブコマンドの統合テスト"""
-
-    def test_list_正常系_ルール一覧をtext形式で出力しexit_code_0で終了すること(self):
-        # Act
-        cmd = [sys.executable, "-m", "paladin.cli", "list"]
-        result = subprocess.run(cmd, capture_output=True, text=True, timeout=10)
-
-        # Assert
-        assert result.returncode == 0
-        assert result.stdout != ""
-
-
-class TestIntegrationViewCLI:
-    """view サブコマンドの統合テスト"""
-
-    def test_view_正常系_rule_id指定で対象ルールの詳細を出力しexit_code_0で終了すること(self):
-        # Act
-        cmd = [sys.executable, "-m", "paladin.cli", "view", "require-all-export"]
-        result = subprocess.run(cmd, capture_output=True, text=True, timeout=10)
-
-        # Assert
-        assert result.returncode == 0
-        assert result.stdout != ""
-        assert "require-all-export" in result.stdout
-
-
-class TestIntegrationVersionCLI:
-    """version サブコマンドの統合テスト"""
-
-    def test_version_正常系_バージョン文字列を出力しexit_code_0で終了すること(self):
-        # Act
-        cmd = [sys.executable, "-m", "paladin.cli", "version"]
-        result = subprocess.run(cmd, capture_output=True, text=True, timeout=10)
-
-        # Assert
-        assert result.returncode == 0
-        assert re.search(r"\d+\.\d+\.\d+", result.stdout) is not None
-
-
-class TestIntegrationCheckCLI:
-    """check サブコマンドの統合テスト"""
+class TestIntegrationCheck:
+    """check サブコマンドの基本動作のインテグレーションテスト"""
 
     def test_check_正常系_違反なしでexit_code_0とOKサマリーを出力すること(self, tmp_dir: Path):
         # Arrange
@@ -179,32 +72,9 @@ class TestIntegrationCheckCLI:
         assert isinstance(data["diagnostics"], list)
         assert len(data["diagnostics"]) > 0
 
-    def test_check_正常系_ignore_ruleで指定ルールの違反が除外されること(self, tmp_dir: Path):
-        # Arrange: __init__.py に __all__ なし（require-all-export 違反）
-        src_dir = tmp_dir / "src"
-        src_dir.mkdir()
-        init_file = src_dir / "__init__.py"
-        init_file.write_text("x = 1\n")
-
-        # Act
-        cmd = [
-            sys.executable,
-            "-m",
-            "paladin.cli",
-            "check",
-            str(src_dir),
-            "--ignore-rule",
-            "require-all-export",
-        ]
-        result = subprocess.run(cmd, cwd=tmp_dir, capture_output=True, text=True, timeout=10)
-
-        # Assert: 違反が除外されて exit_code=0
-        assert result.returncode == 0
-        assert "status: ok" in result.stdout
-
 
 class TestIntegrationCheckRuleOption:
-    """check コマンドの --rule オプションの統合テスト"""
+    """check コマンドの --rule オプションのインテグレーションテスト"""
 
     def test_check_正常系_ruleオプションで指定ルールのみ実行されること(self, tmp_dir: Path):
         # Arrange: __init__.py に __all__ なし（require-all-export 違反）
@@ -256,9 +126,30 @@ class TestIntegrationCheckRuleOption:
         assert result.returncode == 1
         assert "require-all-export" in result.stdout
 
+    def test_check_正常系_rule_optionsでカスタム上限を指定できること(self, tmp_dir: Path):
+        # Arrange: 11行の関数、設定で max-lines=10 に設定
+        src_dir = tmp_dir / "src"
+        src_dir.mkdir()
+        py_file = src_dir / "mid_func.py"
+        lines = ["def mid_function():"]
+        for i in range(9):
+            lines.append(f"    x_{i} = {i}")
+        lines.append("    pass")
+        py_file.write_text("\n".join(lines) + "\n")
+        pyproject = tmp_dir / "pyproject.toml"
+        pyproject.write_text("[tool.paladin.rule.max-method-length]\nmax-lines = 10\n")
+
+        # Act
+        cmd = [sys.executable, "-m", "paladin.cli", "check", str(src_dir)]
+        result = subprocess.run(cmd, cwd=tmp_dir, capture_output=True, text=True, timeout=10)
+
+        # Assert: カスタム上限10行に対して11行の関数が違反として検出される
+        assert result.returncode == 1
+        assert "max-method-length" in result.stdout
+
 
 class TestIntegrationCheckConfig:
-    """check コマンドの設定ファイル連携の統合テスト"""
+    """check コマンドの設定ファイル連携のインテグレーションテスト"""
 
     def test_check_正常系_rulesセクションでfalseに設定されたルールが無効化されること(
         self, tmp_dir: Path
@@ -321,7 +212,7 @@ class TestIntegrationCheckConfig:
 
 
 class TestIntegrationCheckIgnore:
-    """check コマンドの Ignore 機能の統合テスト"""
+    """check コマンドの Ignore 機能のインテグレーションテスト"""
 
     def test_check_正常系_ignore_fileコメントで違反が無視されること(self, tmp_dir: Path):
         # Arrange: # paladin: ignore-file コメントで全ルール違反を無視
@@ -352,5 +243,28 @@ class TestIntegrationCheckIgnore:
         result = subprocess.run(cmd, cwd=tmp_dir, capture_output=True, text=True, timeout=10)
 
         # Assert: require-all-export が per-file-ignores で除外されるため exit_code=0
+        assert result.returncode == 0
+        assert "status: ok" in result.stdout
+
+    def test_check_正常系_ignore_ruleで指定ルールの違反が除外されること(self, tmp_dir: Path):
+        # Arrange: __init__.py に __all__ なし（require-all-export 違反）
+        src_dir = tmp_dir / "src"
+        src_dir.mkdir()
+        init_file = src_dir / "__init__.py"
+        init_file.write_text("x = 1\n")
+
+        # Act
+        cmd = [
+            sys.executable,
+            "-m",
+            "paladin.cli",
+            "check",
+            str(src_dir),
+            "--ignore-rule",
+            "require-all-export",
+        ]
+        result = subprocess.run(cmd, cwd=tmp_dir, capture_output=True, text=True, timeout=10)
+
+        # Assert: 違反が除外されて exit_code=0
         assert result.returncode == 0
         assert "status: ok" in result.stdout
