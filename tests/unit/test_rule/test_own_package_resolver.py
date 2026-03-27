@@ -60,13 +60,13 @@ class TestOwnPackageResolverResolve:
     def test_resolve_正常系_tests配下だがtest_プレフィックスなしはpackage_keyのみを返すこと(self):
         # Arrange
         resolver = OwnPackageResolver()
-        file_path = Path("tests/unit/fakes/fake_rule.py")
+        file_path = Path("tests/fake/fake_rule.py")
 
         # Act
         result = resolver.resolve(file_path, ROOT_PACKAGES)
 
         # Assert
-        assert result == frozenset({"tests.unit"})
+        assert result == frozenset({"tests.fake"})
 
     def test_resolve_正常系_ファイル名がtestsでディレクトリでない場合はテストマッピングなし(self):
         # Arrange

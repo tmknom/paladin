@@ -7,7 +7,7 @@ from paladin.check.parser import AstParser
 from paladin.check.types import TargetFiles
 from paladin.foundation.fs import FileSystemError
 from paladin.rule import SourceFile
-from tests.unit.fakes import ErrorFsReader, InMemoryFsReader
+from tests.fake import ErrorFsReader, InMemoryFsReader
 
 
 class TestAstParserParse:

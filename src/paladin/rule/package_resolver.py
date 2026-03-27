@@ -31,7 +31,7 @@ class PackageResolver:
 
         例: src/paladin/foundation/model/__init__.py -> "paladin.foundation.model"
              src/paladin/check/__init__.py           -> "paladin.check"
-             tests/unit/fakes/__init__.py            -> "tests.unit.fakes"
+             tests/fake/__init__.py                  -> "tests.fake"
         """
         parts = self._resolve_package_parts(file_path)
         return ".".join(parts) if parts else None

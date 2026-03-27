@@ -65,7 +65,7 @@ class TestRequireQualifiedThirdPartyRuleCheck:
             pytest.param("import paladin as p\n", id="ルートパッケージのimport_as"),
             pytest.param("import requests\n", id="通常のimport文"),
             pytest.param(
-                "from tests.unit.fakes import InMemoryFsReader\n",
+                "from tests.unit.fake import InMemoryFsReader\n",
                 id="testsパッケージのfrom_import",
             ),
             pytest.param("", id="空ソース"),
@@ -151,7 +151,7 @@ class TestRequireQualifiedThirdPartyRulePrepare:
         rule = RequireQualifiedThirdPartyRule()
         rule.prepare(source_files)
         source = make_source_file(
-            "from tests.unit.fakes import InMemoryFsReader\n", "src/paladin/example.py"
+            "from tests.unit.fake import InMemoryFsReader\n", "src/paladin/example.py"
         )
 
         # Act

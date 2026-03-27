@@ -63,7 +63,7 @@ def test_something():
 ### 準拠コード
 
 ```python
-# tests/unit/fakes/fake_rule.py — Protocol を満たす Fake クラスを定義
+# tests/fake/fake_rule.py — Protocol を満たす Fake クラスを定義
 from paladin.rule.protocol import Rule
 from paladin.rule.types import RuleMeta, SourceFile, Violation
 
@@ -89,7 +89,7 @@ class FakeRule:
 
 ```python
 # tests/unit/test_check/test_orchestrator.py
-from tests.unit.fakes.fake_rule import FakeRule  # 準拠: Fake クラスを使用
+from tests.fake.fake_rule import FakeRule  # 準拠: Fake クラスを使用
 
 def test_orchestrator():
     rule = FakeRule(violations=())  # 準拠: Fake を直接インスタンス化

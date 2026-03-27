@@ -1,4 +1,4 @@
-from tests.unit.fakes import FakeHelper
+from tests.unit.fake import FakeHelper
 
 
 class TestApp:

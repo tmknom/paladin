@@ -10,7 +10,7 @@ from paladin.check.parser import AstParser
 from paladin.check.result import CheckReport
 from paladin.check.rule_filter import RuleFilter
 from paladin.rule import OverrideEntry, RuleSet, Violation
-from tests.unit.fakes import FakeRule, InMemoryFsReader
+from tests.fake import FakeRule, InMemoryFsReader
 
 
 class TestCheckOrchestrator:

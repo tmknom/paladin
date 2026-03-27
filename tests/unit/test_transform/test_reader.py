@@ -2,7 +2,7 @@ from pathlib import Path
 
 from paladin.transform.reader import TextReader
 from paladin.transform.types import SrcText
-from tests.unit.test_transform.fakes import InMemoryFsReader
+from tests.unit.test_transform.fake import InMemoryFsReader
 
 
 class TestTextReader:

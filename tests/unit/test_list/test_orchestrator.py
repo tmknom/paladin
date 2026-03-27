@@ -7,7 +7,7 @@ from paladin.list.context import ListContext
 from paladin.list.formatter import ListFormatterFactory
 from paladin.list.orchestrator import ListOrchestrator
 from paladin.rule import Rule, RuleSet
-from tests.unit.fakes import FakeRule
+from tests.fake import FakeRule
 
 
 class TestListOrchestrator:

@@ -47,7 +47,7 @@ src/paladin/transform/
 
 ```bash
 tests/unit/test_transform/
-├── fakes.py             # テスト用 Fake（FS Protocol のスタブ実装）
+├── fake.py              # テスト用 Fake（FS Protocol のスタブ実装）
 ├── test_context.py      # TransformContext のテスト
 ├── test_orchestrator.py # TransformOrchestrator のテスト
 ├── test_provider.py     # TransformOrchestratorProvider のテスト
@@ -117,11 +117,11 @@ world
 
 ### テストコード: Fake による副作用の分離
 
-**設計の意図**: テストでは実際のファイルシステムにアクセスせず、`fakes.py` に定義された Fake（foundation の FS Protocol のスタブ実装）を使用する。
+**設計の意図**: テストでは実際のファイルシステムにアクセスせず、`fake.py` に定義された Fake（foundation の FS Protocol のスタブ実装）を使用する。
 
 **なぜそう設計したか**: ファイルシステムへのアクセスは副作用であり、テストに含めると実行速度の低下・環境依存・テスト間の干渉が生じる。foundation パッケージが Protocol でファイルシステムを抽象化しているため、テスト時は Fake に差し替えることで、変換ロジック単体を副作用なしに検証できる。
 
-**制約**: 新規テストを追加する場合は `fakes.py` の Fake を使うこと。独自のモックやパッチを使ってファイルシステムをスタブにしてはならない。Fake の実装を変更・拡張する場合も `fakes.py` に集約する。
+**制約**: 新規テストを追加する場合は `fake.py` の Fake を使うこと。独自のモックやパッチを使ってファイルシステムをスタブにしてはならない。Fake の実装を変更・拡張する場合も `fake.py` に集約する。
 
 ## 制約と注意点
 

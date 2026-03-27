@@ -2,7 +2,7 @@ from pathlib import Path
 
 from paladin.rule.rule_set import RuleSet
 from paladin.rule.types import RuleMeta, SourceFiles, Violation, Violations
-from tests.unit.fakes import FakeMultiFileRule, FakePreparableRule, FakeRule
+from tests.fake import FakeMultiFileRule, FakePreparableRule, FakeRule
 from tests.unit.test_rule.helpers import make_source_files
 
 

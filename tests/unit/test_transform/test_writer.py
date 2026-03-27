@@ -2,7 +2,7 @@ from pathlib import Path
 
 from paladin.transform.types import DstText
 from paladin.transform.writer import TextWriter
-from tests.unit.test_transform.fakes import InMemoryFsWriter
+from tests.unit.test_transform.fake import InMemoryFsWriter
 
 
 class TestTextWriter:

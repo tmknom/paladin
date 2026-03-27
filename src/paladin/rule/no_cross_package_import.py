@@ -49,10 +49,16 @@ class CrossPackageImportChecker:
         """インポート先モジュールのパッケージパスが allow-dirs に前方一致するかを判定する
 
         呼び出し前に depth >= 2 が保証されているため、segments の長さは常に 2 以上である。
+        allow-dirs には "src/paladin/foundation/" のような src/ 相対パスと
+        "tests/fake/" のような tests/ 相対パスの両方を指定できる。
         """
         segments = import_module.segments
-        pkg_path = "src/" + "/".join(segments[:2]) + "/"
-        return any(pkg_path.startswith(allow_dir) for allow_dir in allow_dirs)
+        pkg_path_src = "src/" + "/".join(segments[:2]) + "/"
+        pkg_path_bare = "/".join(segments[:2]) + "/"
+        return any(
+            pkg_path_src.startswith(allow_dir) or pkg_path_bare.startswith(allow_dir)
+            for allow_dir in allow_dirs
+        )
 
 
 class CrossPackageImportDetector:

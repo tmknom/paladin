@@ -156,9 +156,9 @@ class TestNoUnusedExportRuleCheck:
             ),
             pytest.param(
                 [
-                    ('__all__ = ["FakeRule"]\n', "tests/unit/fakes/__init__.py"),
+                    ('__all__ = ["FakeRule"]\n', "tests/unit/fake/__init__.py"),
                     (
-                        "from tests.unit.fakes import FakeRule\n",
+                        "from tests.unit.fake import FakeRule\n",
                         "tests/unit/test_check/test_foo.py",
                     ),
                 ],

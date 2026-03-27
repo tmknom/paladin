@@ -52,8 +52,10 @@ allow-dirs = ["src/paladin/foundation/", "src/paladin/transform/", "tests/"]
 
 # allow-dirs 未指定だと全パッケージ間のクロスインポートが禁止されるため、
 # 複数パッケージから参照される共通パッケージを明示的に許可する。
+#
+# - tests/fake/ : 複数のテストパッケージから共有される Fake クラス（FakeRule / InMemoryFsReader 等）
 [tool.paladin.rule.no-cross-package-import]
-allow-dirs = ["src/paladin/foundation/", "src/paladin/protocol/", "src/paladin/rule/"]
+allow-dirs = ["src/paladin/foundation/", "src/paladin/protocol/", "src/paladin/rule/", "tests/fake/"]
 
 [tool.ruff]
 line-length = 100

@@ -1,6 +1,6 @@
 """準拠fixture: Fakeをセットアップに使うテスト（no-testing-test-code 非違反）"""
 
-from tests.unit.fakes.fs import InMemoryFsReader
+from tests.unit.fake.fs import InMemoryFsReader
 
 
 class TestOrchestrator:

@@ -43,7 +43,7 @@ class TestE2ENoUnusedExport:
         self,
         run_paladin_check: Callable[[Path], subprocess.CompletedProcess[str]],
     ):
-        # Arrange: tests/unit/fakes/__init__.py の FakeHelper が別テストから利用されている
+        # Arrange: tests/unit/fake/__init__.py の FakeHelper が別テストから利用されている
         target = FIXTURES_DIR / "compliant_test_export"
 
         # Act

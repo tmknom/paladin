@@ -6,7 +6,7 @@ from paladin.transform.orchestrator import TransformOrchestrator
 from paladin.transform.reader import TextReader
 from paladin.transform.transformer import TextTransformer
 from paladin.transform.writer import TextWriter
-from tests.unit.test_transform.fakes import InMemoryFsReader, InMemoryFsWriter
+from tests.unit.test_transform.fake import InMemoryFsReader, InMemoryFsWriter
 
 
 class TestTransformOrchestrator:

@@ -59,8 +59,8 @@ class TestPackageResolverResolveExactPackagePath:
 
     def test_正常系_testsレイアウトからtestsを先頭に含む全セグメントを返すこと(self):
         resolver = PackageResolver()
-        result = resolver.resolve_exact_package_path(Path("tests/unit/fakes/__init__.py"))
-        assert result == "tests.unit.fakes"
+        result = resolver.resolve_exact_package_path(Path("tests/fake/__init__.py"))
+        assert result == "tests.fake"
 
     def test_エッジケース_セグメントが2未満の場合はNoneを返すこと(self):
         resolver = PackageResolver()
