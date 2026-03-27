@@ -7,7 +7,7 @@ from paladin.rule import Rule, RuleSet
 from paladin.view.context import ViewContext
 from paladin.view.formatter import ViewFormatterFactory
 from paladin.view.orchestrator import ViewOrchestrator
-from tests.unit.fakes import FakeRule
+from tests.fake import FakeRule
 
 
 class TestViewOrchestrator:

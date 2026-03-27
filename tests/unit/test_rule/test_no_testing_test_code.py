@@ -46,8 +46,8 @@ class TestNoTestingTestCodeRuleCheck:
     def test_check_違反検出_複数違反がある場合にすべて検出されること(self):
         # Arrange: 2つの Fake クラスに対して2つのテストクラスがある
         source = (
-            "from tests.unit.fakes.fs import InMemoryFsReader\n"
-            "from tests.unit.fakes.db import FakeDatabase\n"
+            "from tests.unit.fake.fs import InMemoryFsReader\n"
+            "from tests.unit.fake.db import FakeDatabase\n"
             "\n"
             "class TestInMemoryFsReader:\n"
             "    pass\n"
@@ -55,7 +55,7 @@ class TestNoTestingTestCodeRuleCheck:
             "class TestFakeDatabase:\n"
             "    pass\n"
         )
-        source_files = make_source_files((source, "tests/unit/test_fakes/test_all.py"))
+        source_files = make_source_files((source, "tests/unit/test_fake/test_all.py"))
 
         # Act
         violations = NoTestingTestCodeRule().check(source_files)
@@ -66,12 +66,12 @@ class TestNoTestingTestCodeRuleCheck:
     def test_check_違反検出_エイリアスインポートでも元の名前が診断メッセージに表示されること(self):
         # Arrange: alias で別名インポートしている場合
         source = (
-            "from tests.unit.fakes.fs import InMemoryFsReader as FakeReader\n"
+            "from tests.unit.fake.fs import InMemoryFsReader as FakeReader\n"
             "\n"
             "class TestFakeReader:\n"
             "    pass\n"
         )
-        source_files = make_source_files((source, "tests/unit/test_fakes/test_fs.py"))
+        source_files = make_source_files((source, "tests/unit/test_fake/test_fs.py"))
 
         # Act
         violations = NoTestingTestCodeRule().check(source_files)
@@ -97,7 +97,7 @@ class TestNoTestingTestCodeRuleCheck:
                 id="srcからのインポート",
             ),
             pytest.param(
-                "from tests.unit.fakes.fs import InMemoryFsReader\n"
+                "from tests.unit.fake.fs import InMemoryFsReader\n"
                 "\n"
                 "class TestInMemoryFsReader:\n"
                 "    pass\n",
@@ -105,7 +105,7 @@ class TestNoTestingTestCodeRuleCheck:
                 id="テストファイルでない",
             ),
             pytest.param(
-                "from tests.unit.fakes.fs import InMemoryFsReader\n"
+                "from tests.unit.fake.fs import InMemoryFsReader\n"
                 "\n"
                 "class TestInMemoryFsReader:\n"
                 "    pass\n",
@@ -113,7 +113,7 @@ class TestNoTestingTestCodeRuleCheck:
                 id="conftest",
             ),
             pytest.param(
-                "from tests.unit.fakes.fs import InMemoryFsReader\n"
+                "from tests.unit.fake.fs import InMemoryFsReader\n"
                 "\n"
                 "def test_orchestrate() -> None:\n"
                 "    reader = InMemoryFsReader()\n",
@@ -121,14 +121,14 @@ class TestNoTestingTestCodeRuleCheck:
                 id="関数名不一致",
             ),
             pytest.param(
-                "from tests.unit.fakes.fs import InMemoryFsReader\n"
+                "from tests.unit.fake.fs import InMemoryFsReader\n"
                 "\n"
                 "class HelperClass:\n"
                 "    pass\n"
                 "\n"
                 "def helper_function() -> None:\n"
                 "    pass\n",
-                "tests/unit/test_fakes/test_fs.py",
+                "tests/unit/test_fake/test_fs.py",
                 id="プレフィックス不一致",
             ),
         ],
@@ -148,11 +148,11 @@ class TestNoTestingTestCodeRuleCheck:
         ("source", "filename"),
         [
             pytest.param(
-                "from tests.unit.fakes.fs import InMemoryFsReader\n"
+                "from tests.unit.fake.fs import InMemoryFsReader\n"
                 "\n"
                 "def test_in_memory_fs_reader_returns_content() -> None:\n"
                 "    pass\n",
-                "tests/unit/test_fakes/test_fs.py",
+                "tests/unit/test_fake/test_fs.py",
                 id="関数名一致_サフィックスあり",
             ),
         ],
@@ -173,7 +173,7 @@ class TestTestImportCollector:
     """TestImportCollector のテスト"""
 
     def test_collect_正常系_tests配下からのインポートを返すこと(self):
-        source = "from tests.unit.fakes.fs import InMemoryFsReader\n"
+        source = "from tests.unit.fake.fs import InMemoryFsReader\n"
         source_file = make_source_file(source, "tests/test_foo.py")
         result = TestImportCollector.collect(source_file)
         assert result == {"InMemoryFsReader": "InMemoryFsReader"}
@@ -191,7 +191,7 @@ class TestTestTargetDetector:
     def test_detect_class_正常系_名前一致でViolationを返すこと(self):
         rule = NoTestingTestCodeRule()
         source = (
-            "from tests.unit.fakes.fs import InMemoryFsReader\n"
+            "from tests.unit.fake.fs import InMemoryFsReader\n"
             "class TestInMemoryFsReader:\n"
             "    pass\n"
         )
@@ -205,7 +205,7 @@ class TestTestTargetDetector:
     def test_detect_class_正常系_名前不一致でNoneを返すこと(self):
         rule = NoTestingTestCodeRule()
         source = (
-            "from tests.unit.fakes.fs import InMemoryFsReader\nclass TestOtherThing:\n    pass\n"
+            "from tests.unit.fake.fs import InMemoryFsReader\nclass TestOtherThing:\n    pass\n"
         )
         source_file = make_source_file(source, "tests/test_fs.py")
         test_imports = TestImportCollector.collect(source_file)
@@ -216,7 +216,7 @@ class TestTestTargetDetector:
     def test_detect_func_正常系_名前一致でViolationを返すこと(self):
         rule = NoTestingTestCodeRule()
         source = (
-            "from tests.unit.fakes.fs import InMemoryFsReader\n"
+            "from tests.unit.fake.fs import InMemoryFsReader\n"
             "def test_in_memory_fs_reader() -> None:\n"
             "    pass\n"
         )

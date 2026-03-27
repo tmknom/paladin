@@ -66,7 +66,6 @@ src/paladin/check/
 ```bash
 tests/unit/test_check/
 ├── __init__.py
-├── fakes.py              # テスト用 Fake（FakeRule / InMemoryFsReader）
 ├── test_collector.py
 ├── test_context.py
 ├── test_formatter.py
@@ -208,11 +207,11 @@ view/  → rule/ (RuleSet, RuleMeta)
 
 ### テストコード: Fake による副作用の分離
 
-**設計の意図**: テストでは実際のファイルシステムにアクセスせず、`fakes.py` に定義された Fake（`FakeRule` / `InMemoryFsReader`）を使用する。
+**設計の意図**: テストでは実際のファイルシステムにアクセスせず、`tests/fake/` に定義された Fake（`FakeRule` / `InMemoryFsReader`）を使用する。
 
 **なぜそう設計したか**: ファイルシステムへのアクセスは副作用であり、テストに含めると実行速度の低下・環境依存・テスト間の干渉が生じる。Protocol でファイルシステムと Rule が抽象化されているため、テスト時は Fake に差し替えることで各コンポーネントを副作用なしに検証できる。
 
-**制約**: 新規テストを追加する場合は `fakes.py` の Fake を使うこと。独自のモックやパッチを使ってファイルシステムをスタブにしてはならない。Fake の実装を変更・拡張する場合も `fakes.py` に集約する。
+**制約**: 新規テストを追加する場合は `tests/fake/` の Fake を使うこと。独自のモックやパッチを使ってファイルシステムをスタブにしてはならない。Fake の実装を変更・拡張する場合も `tests/fake/` に集約する。
 
 ## 制約と注意点
 

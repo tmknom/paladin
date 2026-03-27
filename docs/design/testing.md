@@ -94,15 +94,15 @@ Fake 化は副作用境界のみに限定する。
 
 | 配置先 | 対象 |
 |--------|------|
-| `tests/unit/fakes/` | 複数のパッケージのテストで共有する Fake クラス |
+| `tests/fake/` | 複数のパッケージのテストで共有する Fake クラス |
 | `tests/unit/test_<package>/helpers.py` | 特定パッケージのテストのみで使う値オブジェクトファクトリ関数 |
-| `tests/unit/test_<package>/fakes.py` | 特定パッケージのテストのみで使う Fake クラス |
+| `tests/unit/test_<package>/fake.py` | 特定パッケージのテストのみで使う Fake クラス |
 
-`tests/unit/fakes/` は Fake クラスのみで構成する。
+`tests/fake/` は Fake クラスのみで構成する。
 
 | ファイル | 内容 |
 |--------|------|
-| `fakes/rule.py` | Protocol に適合する Fake クラス（`FakeRule` 等） |
+| `fake/rule.py` | Protocol に適合する Fake クラス（`FakeRule` 等） |
 
 値オブジェクト生成ファクトリ関数（`make_source_file` 等）は、利用するテストパッケージの `helpers.py` に定義する。
 ファクトリ関数はアンダースコアを付けず公開関数として定義し、各テストファイルから明示的に import する。

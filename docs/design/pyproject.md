@@ -65,7 +65,7 @@
 
 `pythonpath` は pytest 7.0+ のビルトイン機能であり、追加プラグインは不要。プロジェクト標準は `pyproject.toml` の `[tool.pytest.ini_options]` セクションの設定を正とする。
 
-`"."` （プロジェクトルート）を `pythonpath` に追加することで、`tests.unit.test_transform.fakes` のような絶対 import が解決できる。`__init__.py` によりテストディレクトリがパッケージとして認識されるため、各 `fakes.py` を絶対パスで参照できる。
+`"."` （プロジェクトルート）を `pythonpath` に追加することで、`tests.unit.test_transform.fake` のような絶対 import が解決できる。`__init__.py` によりテストディレクトリがパッケージとして認識されるため、各 `fake.py` を絶対パスで参照できる。
 
 ### coverage
 
@@ -204,7 +204,7 @@ Ruff はデフォルトで `build/` や `dist/` を除外するため、`exclude
 - `root = "src"` の環境: `extraPaths = ["src"]` を設定し、`src/` 配下のモジュールを互いに import できるようにする
 - `root = "tests"` の環境: `extraPaths = ["src", "."]` を設定し、テストから本番コードにアクセスできるようにする
 
-テストパッケージの絶対 import（`from tests.unit.test_transform.fakes import ...`）は `__init__.py` によるパッケージ化と `"."` の追加で pyright が解決する。`"."` はプロジェクトルートを import パスに追加する設定であり、pytest の `pythonpath` 設定と対応する。ルート直下にプロダクション用モジュールは配置しないこと（プロダクションコードは `src/` 配下に限定する）。
+テストパッケージの絶対 import（`from tests.unit.test_transform.fake import ...`）は `__init__.py` によるパッケージ化と `"."` の追加で pyright が解決する。`"."` はプロジェクトルートを import パスに追加する設定であり、pytest の `pythonpath` 設定と対応する。ルート直下にプロダクション用モジュールは配置しないこと（プロダクションコードは `src/` 配下に限定する）。
 
 ### 診断レベルの設計思想
 

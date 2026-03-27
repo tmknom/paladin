@@ -3,7 +3,7 @@ import pytest
 from paladin.config import ProjectConfigLoader
 from paladin.config.project import ProjectConfig
 from paladin.foundation.fs import FileSystemError
-from tests.unit.fakes import ErrorFsReader, InMemoryFsReader
+from tests.fake import ErrorFsReader, InMemoryFsReader
 
 
 class TestProjectConfigLoader:

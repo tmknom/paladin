@@ -1,6 +1,6 @@
 """違反fixture: Fakeクラスに対するテスト（no-testing-test-code 違反）"""
 
-from tests.unit.fakes.fs import InMemoryFsReader
+from tests.unit.fake.fs import InMemoryFsReader
 
 
 class TestInMemoryFsReader:

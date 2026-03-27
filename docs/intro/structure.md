@@ -79,6 +79,9 @@ src/
 ```
 tests/
 ├── conftest.py                   # pytest 共通設定・フィクスチャ
+├── fake/                         # 共有 Fake 実装（複数パッケージから利用）
+│   ├── fs.py                     # InMemoryFsReader / ErrorFsReader
+│   └── rule.py                   # FakeRule / FakePreparableRule / FakeMultiFileRule
 ├── unit/                         # ユニットテスト
 │   ├── test_config/              # config パッケージのテスト
 │   │   ├── test_app.py
@@ -90,7 +93,7 @@ tests/
 │   │   ├── test_log/
 │   │   └── test_model/
 │   └── test_transform/           # transform パッケージのテスト
-│       ├── fakes.py              # テスト用 Fake 実装
+│       ├── fake.py               # テスト用 Fake 実装
 │       ├── test_context.py
 │       ├── test_orchestrator.py
 │       ├── test_provider.py

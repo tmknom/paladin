@@ -37,7 +37,7 @@ Fake クラスやテストヘルパーが複雑になっているなら、それ
 ### 違反コード
 
 ```python
-# tests/unit/fakes/fs.py — テスト用 Fake クラス
+# tests/fake/fs.py — テスト用 Fake クラス
 class InMemoryFsReader:
     def __init__(self, content: str = "") -> None:
         self.content = content
@@ -47,8 +47,8 @@ class InMemoryFsReader:
 ```
 
 ```python
-# tests/unit/test_fakes/test_fs.py — 違反: Fake クラスへのテスト
-from tests.unit.fakes.fs import InMemoryFsReader
+# tests/unit/test_fake/test_fs.py — 違反: Fake クラスへのテスト
+from tests.unit.fake.fs import InMemoryFsReader
 
 class TestInMemoryFsReader:
     def test_read_returns_content(self) -> None:  # 違反: tests/ 配下のクラスをテストしている
@@ -61,7 +61,7 @@ class TestInMemoryFsReader:
 ```python
 # tests/unit/test_check/test_orchestrator.py — 準拠: src/ 配下のコードをテスト
 from paladin.check.orchestrator import CheckOrchestrator
-from tests.unit.fakes.fs import InMemoryFsReader  # Fake はテストのセットアップに使う
+from tests.unit.fake.fs import InMemoryFsReader  # Fake はテストのセットアップに使う
 
 class TestCheckOrchestrator:
     def test_orchestrate(self) -> None:  # 準拠: プロダクションコードをテストしている
