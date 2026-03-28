@@ -2,7 +2,6 @@
 
 import subprocess
 import sys
-from collections.abc import Callable
 from pathlib import Path
 
 FIXTURES_DIR = Path(__file__).parent / "fixtures"
@@ -17,9 +16,9 @@ class TestE2ENoCrossPackageImport:
         # Arrange: violation ディレクトリに pyproject.toml を置いて allow-dirs を設定
         violation_dir = FIXTURES_DIR / "violation"
         target = violation_dir / "src" / "myapp" / "view" / "handler.py"
-        cmd = [sys.executable, "-m", "paladin.cli", "check", str(target)]
 
         # Act: cwd を violation_dir にして pyproject.toml を読み込ませる
+        cmd = [sys.executable, "-m", "paladin.cli", "check", str(target)]
         result = subprocess.run(
             cmd, capture_output=True, text=True, timeout=30, cwd=str(violation_dir)
         )
@@ -34,9 +33,9 @@ class TestE2ENoCrossPackageImport:
         # Arrange: compliant ディレクトリで consumer/app.py が rule パッケージをインポート
         compliant_dir = FIXTURES_DIR / "compliant"
         target = compliant_dir / "src" / "myapp" / "consumer" / "app.py"
-        cmd = [sys.executable, "-m", "paladin.cli", "check", str(target)]
 
         # Act: cwd を compliant_dir にして pyproject.toml を読み込ませる
+        cmd = [sys.executable, "-m", "paladin.cli", "check", str(target)]
         result = subprocess.run(
             cmd, capture_output=True, text=True, timeout=30, cwd=str(compliant_dir)
         )
@@ -46,14 +45,14 @@ class TestE2ENoCrossPackageImport:
 
     def test_check_違反検出_allow_dirs未設定で全ファイルの違反を検出すること(
         self,
-        run_paladin_check: Callable[[Path], subprocess.CompletedProcess[str]],
     ):
         # Arrange: プロジェクトルートの pyproject.toml には allow-dirs 設定がないため
         # クロスパッケージインポートはすべて違反として検出される
         target = FIXTURES_DIR / "violation" / "src" / "myapp" / "view" / "handler.py"
 
-        # Act: プロジェクトルートを cwd にして実行（conftest の run_paladin_check を使用）
-        result = run_paladin_check(target)
+        # Act: cwd 未指定でプロジェクトルートの pyproject.toml を読み込む
+        cmd = [sys.executable, "-m", "paladin.cli", "check", str(target)]
+        result = subprocess.run(cmd, capture_output=True, text=True, timeout=30)
 
         # Assert: allow-dirs 未設定なので no-cross-package-import ルールは全違反を報告する
         assert result.returncode == 1
