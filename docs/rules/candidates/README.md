@@ -9,3 +9,4 @@
 
 | ルール名 | 概要 |
 |------------|------|
+| [require-docstring](require-docstring.md) | モジュールおよびクラスに docstring の存在を要求する |
