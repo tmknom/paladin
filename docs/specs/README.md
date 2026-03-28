@@ -11,8 +11,6 @@
 
 | ファイル | 内容 |
 |---------|------|
-| [Transform要件定義](transform/requirements.md) | 変換機能の要件定義 |
-| [Transform設計](transform/design.md) | テキスト変換の基本設計 |
 | [Check要件定義](check/requirements.md) | checkモジュールの要件定義 |
 | [Check設計](check/design.md) | checkモジュールの基本設計 |
 | [List要件定義](list/requirements.md) | listモジュールの要件定義 |

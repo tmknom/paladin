@@ -7,10 +7,9 @@ Docs:
 """
 
 from paladin.foundation.fs.error import FileSystemError
-from paladin.foundation.fs.text import TextFileSystemReader, TextFileSystemWriter
+from paladin.foundation.fs.text import TextFileSystemReader
 
 __all__ = [
     "FileSystemError",
     "TextFileSystemReader",
-    "TextFileSystemWriter",
 ]

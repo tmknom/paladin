@@ -51,14 +51,6 @@ class EnvVarConfig(pydantic_settings.BaseSettings):
     log_level: str = "WARNING"
 ```
 
-```python
-# src/paladin/transform/types.py — 許可ディレクトリ外でサードパーティをインポート
-from pydantic import BaseModel  # 違反: allow-dirs に含まれないディレクトリ
-
-class TransformResult(BaseModel):
-    output: str
-```
-
 ### 準拠コード
 
 ```python

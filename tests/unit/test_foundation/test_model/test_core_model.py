@@ -3,7 +3,7 @@
 import pydantic
 import pytest
 
-from paladin.foundation.model import CoreModel
+from paladin.foundation.model.base import CoreModel
 
 
 class SampleCoreModel(CoreModel):

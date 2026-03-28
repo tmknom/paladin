@@ -20,11 +20,6 @@ Identify and read task-related sections below:
 
 ### Feature
 
-#### Transform feature
-
-- [Transform requirement](docs/specs/transform/requirements.md): Requirements for the transform package - Use when modifying `src/paladin/transform/` or understanding text file reading, line numbering, datetime header, and result statistics
-- [Transform design](docs/specs/transform/design.md): Design for the transform package - Use when modifying `src/paladin/transform/` or understanding component structure, processing flow, design decisions (thin wrappers, SrcText/DstText, Fake-based testing), and design rationale
-
 #### Check feature
 
 - [Check requirement](docs/specs/check/requirements.md): Requirements for the check package - Use when modifying `src/paladin/check/` or understanding the static analysis pipeline (file enumeration, AST parsing, rule application, violation filtering, report output)
@@ -58,7 +53,6 @@ Identify and read task-related sections below:
 
 ### Business Logic
 
-- [Transform feature](src/paladin/transform/): Reference feature package with Context, Orchestrator, OrchestratorProvider (Composition Root), Reader, Transformer, Writer, and Result types - Use when modifying `docs/specs/transform/`, adding new feature packages, understanding the Orchestrator-Provider-Context pattern, or reviewing the canonical package structure
 - [rule package](src/paladin/rule/): Rule domain package containing Rule Protocol, RuleSet (rule management and execution), RuleSetFactory (production rule set construction), SourceFile/SourceFiles types (representing Python source files as inspection targets with `is_init_py`/`is_test_file` properties and `init_files()`/`production_files()` iterators), Violation/Violations types, RuleMeta (with `create_violation()` for auto-populating rule_id/rule_name), AllExports/AllExportsExtractor (domain service for extracting `__all__` symbols), PackageResolver (with `extract_package_key()` static method for dotted-path key extraction), and all concrete rule implementations - Use when adding new rules, modifying rule logic, understanding the rule domain architecture, or working with source file representations
 - [check package](src/paladin/check/): Static analysis core with CheckOrchestrator, CheckOrchestratorProvider, CheckContext, FileCollector, AstParser, ViolationFilter, RuleFilter, PathExcluder, OverrideResolver, and CheckFormatterFactory - Use when modifying `docs/specs/check/`, understanding the analysis pipeline, or working with ignore/override/formatting logic
 - [list package](src/paladin/list/): Rule listing with ListOrchestrator, ListOrchestratorProvider, ListContext, and ListFormatterFactory - Use when modifying `docs/specs/list/` or understanding the `paladin list` command's business logic

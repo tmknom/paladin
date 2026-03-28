@@ -62,14 +62,6 @@ src/
     │   └── model/                # 基底モデル
     ├── protocol/                 # Protocol パッケージ（Shared Kernel・Port 定義）
     │   └── fs.py                 # ファイルシステム Protocol
-    └── transform/                # Transform 機能パッケージ（アーキテクチャパターンの雛形）
-        ├── context.py            # TransformContext（実行コンテキスト）
-        ├── orchestrator.py       # Orchestrator（処理フロー制御）
-        ├── provider.py           # OrchestratorProvider（Composition Root）
-        ├── reader.py             # Reader（テキストファイル読み込み）
-        ├── transformer.py        # Transformer（行番号付与・ヘッダー挿入）
-        ├── types.py              # SrcText / DstText / Result 型定義
-        └── writer.py             # Writer（テキストファイル書き出し）
 ```
 
 ## tests/
@@ -92,15 +84,6 @@ tests/
 │   │   ├── test_fs/
 │   │   ├── test_log/
 │   │   └── test_model/
-│   └── test_transform/           # transform パッケージのテスト
-│       ├── fake.py               # テスト用 Fake 実装
-│       ├── test_context.py
-│       ├── test_orchestrator.py
-│       ├── test_provider.py
-│       ├── test_reader.py
-│       ├── test_transformer.py
-│       ├── test_types.py
-│       └── test_writer.py
 └── integration/                  # インテグレーションテスト
     └── test_integration_cli.py   # CLI インテグレーションテスト
 ```
@@ -136,7 +119,6 @@ docs/
     ├── check/                    # check パッケージ仕様
     ├── config/                   # config パッケージ仕様
     ├── list/                     # list パッケージ仕様
-    ├── transform/                # transform パッケージ仕様
     └── view/                     # view パッケージ仕様
 ```
 

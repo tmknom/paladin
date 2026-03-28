@@ -198,10 +198,10 @@ param-name = value
 
 ```toml
 [tool.paladin.rule.no-third-party-import]
-allow-dirs = ["src/paladin/foundation/", "src/paladin/transform/", "tests/", "e2e-tests/"]
+allow-dirs = ["src/xxx/foundation/", "tests/"]
 
 [tool.paladin.rule.no-cross-package-import]
-allow-dirs = ["src/paladin/foundation/", "src/paladin/protocol/", "src/paladin/rule/"]
+allow-dirs = ["src/xxx/foundation/", "src/xxx/protocol/"]
 
 [tool.paladin.rule.max-method-length]
 max-lines = 100

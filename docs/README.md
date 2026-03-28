@@ -11,5 +11,5 @@
 |------------|------|
 | [intro/](intro/README.md) | プロジェクトの目的・設計思想・全体構造・用語（最初に読む） |
 | [design/](design/README.md) | アーキテクチャ・パッケージング・コーディング規約などの設計原則 |
-| [specs/](specs/README.md) | Feature モジュールの要件定義と設計仕様（check, transform, list, view, config） |
+| [specs/](specs/README.md) | Feature モジュールの要件定義と設計仕様（check, list, view, config） |
 | [internal/](internal/README.md) | 基盤モジュールの設計ドキュメント（error, fs, log, model, protocol, cli） |
