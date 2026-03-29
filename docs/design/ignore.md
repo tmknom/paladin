@@ -34,7 +34,7 @@ Ignore 機能は以下の方針に従って設計する。
 Paladin のルール ID はハイフン区切りの名前（例: `require-all-export`）であり、Ruff のような短い英数字コード（例: `E501`）ではない。この特性から以下の判断を行う。
 
 - コメント書式ではルール ID をそのまま使用する（別途短縮コードは設けない）
-- ルール ID が長いため、行末コメントは採用せず、直前コメントのみを採用する
+- 直前コメントと行末コメントの両方を採用する
 - 全ルール一括 Ignore はルール ID を省略する書式で実現する
 
 ## 3. インラインコメントによる Ignore
@@ -94,7 +94,59 @@ from . import utils
 from . import utils
 ```
 
-### 3.2 コメント接頭辞の選定理由
+### 3.2 行末コメント
+
+#### 書式
+
+```python
+violating_code_here  # paladin: ignore
+```
+
+特定ルールを指定する場合。
+
+```python
+violating_code_here  # paladin: ignore[rule-id]
+```
+
+複数ルールを指定する場合。
+
+```python
+violating_code_here  # paladin: ignore[rule-a, rule-b]
+```
+
+#### 仕様
+
+- コメントは Ignore 対象行の **末尾** に記述する
+- コメント直前に1つ以上の空白が必要である（空白なしは検出されない）
+- `# paladin: ignore` のみで、その行に対する全ルールの Ignore となる
+- `# paladin: ignore[rule-id]` で、その行に対する特定ルールのみを Ignore する
+- 角括弧内に複数ルール ID をカンマ区切りで列挙できる
+- 直前コメントと行末コメントが同一行を対象とする場合、**累積的**に適用される
+
+#### 具体例
+
+全ルール Ignore。
+
+```python
+from . import utils  # paladin: ignore
+```
+
+特定ルール Ignore。
+
+```python
+from . import utils  # paladin: ignore[no-relative-import]
+```
+
+直前コメントと行末コメントの累積適用。
+
+```python
+# paladin: ignore[no-local-import]
+from . import utils  # paladin: ignore[no-relative-import]
+```
+
+上記の例では、`no-local-import` と `no-relative-import` の両方が Ignore される。
+
+### 3.3 コメント接頭辞の選定理由
 
 `# paladin:` という接頭辞を採用した理由を示す。
 
@@ -250,7 +302,7 @@ CLI オプション（最優先）
 | CLI `--ignore-rule` | 全ファイル × 指定ルール | 実行全体で指定ルールの違反を無視する |
 | `per-file-ignores` | glob パターンに一致するファイル × 指定ルール | パターンに一致するファイルで指定ルールの違反を無視する |
 | `# paladin: ignore-file` | 単一ファイル × 指定ルール（または全ルール） | そのファイルで指定ルールの違反を無視する |
-| `# paladin: ignore` | 直後の1行 × 指定ルール（または全ルール） | その行で指定ルールの違反を無視する |
+| `# paladin: ignore` | 直後の1行または同一行末 × 指定ルール（または全ルール） | その行で指定ルールの違反を無視する |
 
 各レベルの Ignore は **累積的** に作用する。CLI で `--ignore-rule A` を指定し、設定ファイルで特定ファイルに対してルール B を Ignore し、インラインコメントでルール C を Ignore した場合、そのファイルのその行ではルール A、B、C のすべてが Ignore される。
 
@@ -265,9 +317,7 @@ CLI オプション（最優先）
 | Ruff | `# noqa: CODE` | （なし） | `# ruff: noqa` / `# ruff: noqa: CODE` |
 | Pylint | `# pylint: disable=name` | `# pylint: disable-next=name` | `# pylint: skip-file` |
 | ESLint | `// eslint-disable-line rule` | `// eslint-disable-next-line rule` | `/* eslint-disable */` |
-| **Paladin** | （未対応） | `# paladin: ignore[rule-id]` | `# paladin: ignore-file` |
-
-Paladin は行末コメントを採用しない。ルール ID が長いことと、AI が生成しやすい書式を優先した結果である。
+| **Paladin** | `code  # paladin: ignore[rule-id]` | `# paladin: ignore[rule-id]` | `# paladin: ignore-file` |
 
 ### 8.2 設定ファイルの per-file-ignores 比較
 

@@ -268,3 +268,40 @@ class TestIntegrationCheckIgnore:
         # Assert: 違反が除外されて exit_code=0
         assert result.returncode == 0
         assert "status: ok" in result.stdout
+
+    def test_check_正常系_行末ignoreコメントで違反が除外されること(self, tmp_dir: Path):
+        # Arrange: __init__.py に __all__ なし（require-all-export 違反）を行末コメントで ignore
+        src_dir = tmp_dir / "src"
+        src_dir.mkdir()
+        init_file = src_dir / "__init__.py"
+        init_file.write_text("x = 1  # paladin: ignore\n")
+
+        # Act
+        cmd = [sys.executable, "-m", "paladin.cli", "check", str(src_dir)]
+        result = subprocess.run(cmd, cwd=tmp_dir, capture_output=True, text=True, timeout=10)
+
+        # Assert: 行末コメントにより違反が除外されて exit_code=0
+        assert result.returncode == 0
+        assert "status: ok" in result.stdout
+
+    def test_check_正常系_直前コメントと行末コメントの累積適用で違反が除外されること(
+        self, tmp_dir: Path
+    ):
+        # Arrange: 同一行（line 3）に no-local-import と no-relative-import の2つの違反を発生させ、
+        #          直前コメントで no-local-import を、行末コメントで no-relative-import をそれぞれ ignore する
+        src_dir = tmp_dir / "src"
+        src_dir.mkdir()
+        py_file = src_dir / "main.py"
+        py_file.write_text(
+            "def foo():\n"
+            "    # paladin: ignore[no-local-import]\n"
+            "    from .foo import bar  # paladin: ignore[no-relative-import]\n"
+        )
+
+        # Act
+        cmd = [sys.executable, "-m", "paladin.cli", "check", str(src_dir)]
+        result = subprocess.run(cmd, cwd=tmp_dir, capture_output=True, text=True, timeout=10)
+
+        # Assert: 直前コメントと行末コメントが累積適用されて両違反が除外され exit_code=0
+        assert result.returncode == 0
+        assert "status: ok" in result.stdout
