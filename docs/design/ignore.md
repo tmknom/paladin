@@ -62,12 +62,21 @@ violating_code_here
 violating_code_here
 ```
 
+理由を付記する場合。
+
+```python
+# paladin: ignore -- 理由テキスト
+violating_code_here
+```
+
 #### 仕様
 
 - コメントは Ignore 対象行の **直前の行** に記述する
 - `# paladin: ignore` のみで、直後の1行に対する全ルールの Ignore となる
 - `# paladin: ignore[rule-id]` で、直後の1行に対する特定ルールのみを Ignore する
 - 角括弧内に複数ルール ID をカンマ区切りで列挙できる
+- `-- 理由テキスト` を末尾に付記できる。`--` の後には1つ以上の空白が必要である
+- 理由テキストはパーサーが除去するため、ディレクティブの解釈には影響しない
 - コメント行と対象行の間に空行を挟んではならない
 - 1つのコメントが影響する範囲は直後の1行のみである
 
@@ -94,6 +103,13 @@ from . import utils
 from . import utils
 ```
 
+理由付き Ignore。
+
+```python
+# paladin: ignore -- レガシーAPIとの互換性維持のため
+from . import utils
+```
+
 ### 3.2 行末コメント
 
 #### 書式
@@ -114,6 +130,12 @@ violating_code_here  # paladin: ignore[rule-id]
 violating_code_here  # paladin: ignore[rule-a, rule-b]
 ```
 
+理由を付記する場合。
+
+```python
+violating_code_here  # paladin: ignore -- 理由テキスト
+```
+
 #### 仕様
 
 - コメントは Ignore 対象行の **末尾** に記述する
@@ -121,6 +143,8 @@ violating_code_here  # paladin: ignore[rule-a, rule-b]
 - `# paladin: ignore` のみで、その行に対する全ルールの Ignore となる
 - `# paladin: ignore[rule-id]` で、その行に対する特定ルールのみを Ignore する
 - 角括弧内に複数ルール ID をカンマ区切りで列挙できる
+- `-- 理由テキスト` を末尾に付記できる。`--` の後には1つ以上の空白が必要である
+- 理由テキストはパーサーが除去するため、ディレクティブの解釈には影響しない
 - 直前コメントと行末コメントが同一行を対象とする場合、**累積的**に適用される
 
 #### 具体例
@@ -175,6 +199,12 @@ from . import utils  # paladin: ignore[no-relative-import]
 # paladin: ignore-file[rule-id]
 ```
 
+理由を付記する場合。
+
+```python
+# paladin: ignore-file -- 理由テキスト
+```
+
 #### 仕様
 
 - ファイルの先頭部分に記述する
@@ -182,6 +212,8 @@ from . import utils  # paladin: ignore[no-relative-import]
 - `# paladin: ignore-file` で、そのファイルの全ルール違反を無視する
 - `# paladin: ignore-file[rule-id]` で、特定ルールの違反のみを無視する
 - 角括弧内に複数ルール ID をカンマ区切りで列挙できる
+- `-- 理由テキスト` を末尾に付記できる。`--` の後には1つ以上の空白が必要である
+- 理由テキストはパーサーが除去するため、ディレクティブの解釈には影響しない
 
 #### 具体例
 
@@ -199,6 +231,14 @@ from . import legacy_utils
 # paladin: ignore-file[no-relative-import]
 """このモジュールは相対インポートを意図的に使用する"""
 from . import sibling_module
+```
+
+理由付き Ignore。
+
+```python
+# paladin: ignore-file -- 段階的移行中のレガシーモジュール
+"""レガシーモジュール（段階的に移行予定）"""
+from . import legacy_utils
 ```
 
 ### 4.2 設定ファイルによるファイル単位 Ignore
@@ -317,7 +357,7 @@ CLI オプション（最優先）
 | Ruff | `# noqa: CODE` | （なし） | `# ruff: noqa` / `# ruff: noqa: CODE` |
 | Pylint | `# pylint: disable=name` | `# pylint: disable-next=name` | `# pylint: skip-file` |
 | ESLint | `// eslint-disable-line rule` | `// eslint-disable-next-line rule` | `/* eslint-disable */` |
-| **Paladin** | `code  # paladin: ignore[rule-id]` | `# paladin: ignore[rule-id]` | `# paladin: ignore-file` |
+| **Paladin** | `code  # paladin: ignore[rule-id]` / `-- 理由` | `# paladin: ignore[rule-id]` / `-- 理由` | `# paladin: ignore-file` / `-- 理由` |
 
 ### 8.2 設定ファイルの per-file-ignores 比較
 

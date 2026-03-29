@@ -121,7 +121,6 @@ max-file-length = false
 | 機能 | 備考 |
 |---|---|
 | ブロック単位の disable/enable | `# paladin: disable` / `# paladin: enable` ペア |
-| 理由コメント | `-- 理由` 形式による Ignore 理由の記録 |
 | 未使用 Ignore 検出ルール | 不要な Ignore コメントを検出する `unused-ignore` ルール |
 
 ## 7. 各 Ignore 機能の詳細
@@ -139,15 +138,6 @@ from . import module_b
 
 `ignore` ではなく `disable` / `enable` を使うのは、行指向の `ignore` とブロック指向の制御を意味的に区別するためです。
 
-### 7.2 理由コメント
-
-ESLint の `-- 理由` 形式に相当する機能です。Ignore の理由をコメントとして記録できます。
-
-```python
-# paladin: ignore[no-relative-import] -- レガシーコードのため一時的に許可
-from . import legacy
-```
-
-### 7.3 未使用 Ignore 検出ルール
+### 7.2 未使用 Ignore 検出ルール
 
 実際には違反が発生していないルールに対する Ignore コメント（未使用 Ignore）を検出する機能です。Ruff の `RUF100` や ESLint の `reportUnusedDisableDirectives` に相当します。専用ルール（仮称: `unused-ignore`）として実装する想定です。
