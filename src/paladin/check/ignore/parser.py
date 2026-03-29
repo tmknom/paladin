@@ -23,7 +23,7 @@ class FileIgnoreParser:
     記述されるという規約を前提とする。
     """
 
-    _DIRECTIVE_PATTERN = re.compile(r"^# paladin: ignore-file(\[(.+)\])?$")
+    _DIRECTIVE_PATTERN = re.compile(r"^# paladin: ignore-file(\[(.+)\])?(\s+--\s.*)?$")
     _SHEBANG_PATTERN = re.compile(r"^#!")
     _ENCODING_PATTERN = re.compile(r"# -\*- coding:")
 
@@ -66,8 +66,8 @@ class FileIgnoreParser:
                 i += 1
                 continue
 
-            # ignore-file ディレクティブの検出
-            directive = self._parse_directive(file_path, stripped)
+            # ignore-file ディレクティブの検出（先頭空白を除去した行で照合する）
+            directive = self._parse_directive(file_path, lines[i].lstrip())
             if directive is not None:
                 return directive
 
@@ -86,7 +86,6 @@ class FileIgnoreParser:
         )
 
     def _is_header_skip_line(self, stripped: str) -> bool:
-        """ヘッダー領域でスキップすべき行かどうかを返す"""
         if stripped == "":
             return True
         if self._SHEBANG_PATTERN.match(stripped):
@@ -96,7 +95,6 @@ class FileIgnoreParser:
         return bool(stripped.startswith("#"))
 
     def _parse_directive(self, file_path: Path, stripped: str) -> FileIgnoreDirective | None:
-        """行テキストから ignore-file ディレクティブを解析する。該当しない場合は None を返す"""
         match = self._DIRECTIVE_PATTERN.match(stripped)
         if match is None:
             return None
@@ -136,8 +134,8 @@ class LineIgnoreParser:
     行番号は 1-indexed。
     """
 
-    _LINE_DIRECTIVE_PATTERN = re.compile(r"^# paladin: ignore(\[(.+)\])?$")
-    _TRAILING_DIRECTIVE_PATTERN = re.compile(r"\s+# paladin: ignore(\[(.+)\])?$")
+    _LINE_DIRECTIVE_PATTERN = re.compile(r"^# paladin: ignore(\[(.+)\])?(\s+--\s.*)?$")
+    _TRAILING_DIRECTIVE_PATTERN = re.compile(r"\s+# paladin: ignore(\[(.+)\])?(\s+--\s.*)?$")
 
     def parse(self, file_path: Path, source: str) -> tuple[LineIgnoreDirective, ...]:
         """ソーステキストから行単位 ignore ディレクティブを抽出する
@@ -173,8 +171,7 @@ class LineIgnoreParser:
         0 件になる条件: (1) どちらのパターンにもマッチしない、(2) 直前コメントにマッチしたが
         次行が存在しないまたは空行である。
         """
-        stripped = line.strip()
-        preceding_match = self._LINE_DIRECTIVE_PATTERN.match(stripped)
+        preceding_match = self._LINE_DIRECTIVE_PATTERN.match(line.lstrip())
         if preceding_match:
             directive = self._parse_preceding(file_path, lines, i, preceding_match)
             return [directive] if directive is not None else []
@@ -222,7 +219,7 @@ class LineIgnoreParser:
         i: int,
         match: re.Match[str],
     ) -> LineIgnoreDirective:
-        """行末コメント方式のディレクティブを生成する"""
+        """_parse_preceding と異なり、次行確認が不要なため常に LineIgnoreDirective を返す"""
         rule_spec = match.group(2)
         if rule_spec is None:
             return LineIgnoreDirective(

@@ -149,6 +149,71 @@ class TestFileIgnoreParserParse:
         # Assert
         assert result.ignore_all is True
 
+    def test_parse_正常系_理由コメント付きignore_fileで全ルールignoreを返すこと(self):
+        # Arrange
+        parser = FileIgnoreParser()
+        source = "# paladin: ignore-file -- レガシーコード\nimport os\n"
+
+        # Act
+        result = parser.parse(Path("example.py"), source)
+
+        # Assert
+        assert result.ignore_all is True
+        assert result.ignored_rules == frozenset()
+
+    def test_parse_正常系_理由コメント付きignore_file_with_rule_idで特定ルールignoreを返すこと(
+        self,
+    ):
+        # Arrange
+        parser = FileIgnoreParser()
+        source = "# paladin: ignore-file[rule-a] -- 理由テキスト\nimport os\n"
+
+        # Act
+        result = parser.parse(Path("example.py"), source)
+
+        # Assert
+        assert result.ignore_all is False
+        assert result.ignored_rules == frozenset({"rule-a"})
+
+    def test_parse_エッジケース_理由コメントの理由部分が空白のみでもignoreとして有効であること(
+        self,
+    ):
+        # Arrange
+        parser = FileIgnoreParser()
+        source = "# paladin: ignore-file -- \nimport os\n"
+
+        # Act
+        result = parser.parse(Path("example.py"), source)
+
+        # Assert
+        assert result.ignore_all is True
+
+    def test_parse_エッジケース_ダブルダッシュ直後にスペースがない場合はディレクティブとして認識されないこと(
+        self,
+    ):
+        # Arrange
+        parser = FileIgnoreParser()
+        source = "# paladin: ignore-file --理由\nimport os\n"
+
+        # Act
+        result = parser.parse(Path("example.py"), source)
+
+        # Assert
+        assert result.ignore_all is False
+
+    def test_parse_エッジケース_ダブルダッシュのみでスペースがない場合はディレクティブとして認識されないこと(
+        self,
+    ):
+        # Arrange
+        parser = FileIgnoreParser()
+        source = "# paladin: ignore-file--\nimport os\n"
+
+        # Act
+        result = parser.parse(Path("example.py"), source)
+
+        # Assert
+        assert result.ignore_all is False
+
 
 class TestFileIgnoreParserParseAll:
     """FileIgnoreParser.parse_all() のテスト"""
@@ -312,6 +377,59 @@ class TestLineIgnoreParserParse:
         # Assert
         assert result == ()
 
+    def test_parse_正常系_理由コメント付きignoreで全ルールignoreを返すこと(self):
+        # Arrange
+        parser = LineIgnoreParser()
+        source = "# paladin: ignore -- 理由テキスト\nviolating_code\n"
+
+        # Act
+        result = parser.parse(Path("example.py"), source)
+
+        # Assert
+        assert len(result) == 1
+        assert result[0].ignore_all is True
+        assert result[0].target_line == 2
+
+    def test_parse_正常系_理由コメント付きignore_with_rule_idで特定ルールignoreを返すこと(self):
+        # Arrange
+        parser = LineIgnoreParser()
+        source = "# paladin: ignore[rule-a] -- 理由\nviolating_code\n"
+
+        # Act
+        result = parser.parse(Path("example.py"), source)
+
+        # Assert
+        assert len(result) == 1
+        assert result[0].ignored_rules == frozenset({"rule-a"})
+        assert result[0].target_line == 2
+
+    def test_parse_エッジケース_直前コメントの理由部分が空白のみでもignoreとして有効であること(
+        self,
+    ):
+        # Arrange
+        parser = LineIgnoreParser()
+        source = "# paladin: ignore -- \ncode\n"
+
+        # Act
+        result = parser.parse(Path("example.py"), source)
+
+        # Assert
+        assert len(result) == 1
+        assert result[0].ignore_all is True
+
+    def test_parse_エッジケース_直前コメントのダブルダッシュ直後にスペースがない場合はディレクティブとして認識されないこと(
+        self,
+    ):
+        # Arrange
+        parser = LineIgnoreParser()
+        source = "# paladin: ignore --理由\ncode\n"
+
+        # Act
+        result = parser.parse(Path("example.py"), source)
+
+        # Assert
+        assert result == ()
+
 
 class TestLineIgnoreParserParseTrailing:
     """LineIgnoreParser.parse() 行末コメントのテスト"""
@@ -373,30 +491,6 @@ class TestLineIgnoreParserParseTrailing:
         trailing = next(d for d in result if d.ignored_rules == frozenset({"rule-b"}))
         assert trailing.target_line == 2
 
-    def test_parse_正常系_行末コメントのtarget_lineがその行自身であること(self):
-        # Arrange
-        parser = LineIgnoreParser()
-        source = "import os\nviolating_code  # paladin: ignore\n"
-
-        # Act
-        result = parser.parse(Path("example.py"), source)
-
-        # Assert
-        assert len(result) == 1
-        assert result[0].target_line == 2
-
-    def test_parse_エッジケース_コメント行自体は行末コメントとして検出されないこと(self):
-        # Arrange: 純粋な直前コメント行は行末コメントとして検出されない
-        parser = LineIgnoreParser()
-        source = "# paladin: ignore\ncode\n"
-
-        # Act
-        result = parser.parse(Path("example.py"), source)
-
-        # Assert: 直前コメントとして1つだけ検出される（行末コメントとしては検出されない）
-        assert len(result) == 1
-        assert result[0].target_line == 2
-
     def test_parse_エッジケース_接頭辞前に空白がない場合は行末コメントとして検出されないこと(self):
         # Arrange
         parser = LineIgnoreParser()
@@ -412,6 +506,59 @@ class TestLineIgnoreParserParseTrailing:
         # Arrange
         parser = LineIgnoreParser()
         source = "code  # paladin: ignore-file\n"
+
+        # Act
+        result = parser.parse(Path("example.py"), source)
+
+        # Assert
+        assert result == ()
+
+    def test_parse_正常系_行末理由コメント付きignoreで全ルールignoreを返すこと(self):
+        # Arrange
+        parser = LineIgnoreParser()
+        source = "violating_code  # paladin: ignore -- 理由テキスト\n"
+
+        # Act
+        result = parser.parse(Path("example.py"), source)
+
+        # Assert
+        assert len(result) == 1
+        assert result[0].ignore_all is True
+        assert result[0].target_line == 1
+
+    def test_parse_正常系_行末理由コメント付きignore_with_rule_idで特定ルールignoreを返すこと(self):
+        # Arrange
+        parser = LineIgnoreParser()
+        source = "violating_code  # paladin: ignore[rule-a] -- 理由\n"
+
+        # Act
+        result = parser.parse(Path("example.py"), source)
+
+        # Assert
+        assert len(result) == 1
+        assert result[0].ignored_rules == frozenset({"rule-a"})
+        assert result[0].target_line == 1
+
+    def test_parse_エッジケース_行末コメントの理由部分が空白のみでもignoreとして有効であること(
+        self,
+    ):
+        # Arrange
+        parser = LineIgnoreParser()
+        source = "code  # paladin: ignore -- \n"
+
+        # Act
+        result = parser.parse(Path("example.py"), source)
+
+        # Assert
+        assert len(result) == 1
+        assert result[0].ignore_all is True
+
+    def test_parse_エッジケース_行末コメントのダブルダッシュ直後にスペースがない場合はディレクティブとして認識されないこと(
+        self,
+    ):
+        # Arrange
+        parser = LineIgnoreParser()
+        source = "code  # paladin: ignore --理由\n"
 
         # Act
         result = parser.parse(Path("example.py"), source)
