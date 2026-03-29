@@ -17,13 +17,12 @@ Docs:
     - docs/internal/cli.md
 
 Usage:
-    uv run paladin transform xxxx.md
+    uv run paladin check
     uv run paladin --help
 """
 
 import logging
 import sys
-from datetime import datetime
 from pathlib import Path
 from typing import Annotated
 
@@ -41,7 +40,6 @@ from paladin.foundation.fs import TextFileSystemReader
 from paladin.foundation.log import LogConfigurator, log
 from paladin.foundation.output import OutputFormat
 from paladin.list import ListContext, ListOrchestratorProvider
-from paladin.transform import TransformContext, TransformOrchestratorProvider
 from paladin.version import VersionOrchestratorProvider
 from paladin.view import ViewContext, ViewOrchestratorProvider
 
@@ -116,35 +114,14 @@ def version() -> None:
     typer.echo(result)
 
 
-@app.command()
-def transform(
-    ctx: typer.Context,
-    target_file: Annotated[Path, typer.Argument(help="ファイルパス")],
-    tmp_dir: Annotated[
-        Path | None,
-        typer.Option("--tmp-dir", help="一時ディレクトリパス"),
-    ] = None,
-) -> None:
-    """テキストファイルを読み込み、行番号を付与して出力"""
-    config = _get_config(ctx)
-    context = TransformContext(
-        target_file=target_file,
-        tmp_dir=tmp_dir if tmp_dir is not None else config.tmp_dir,
-        current_datetime=datetime.now(),
-    )
-    orchestrator = TransformOrchestratorProvider().provide()
-    result = orchestrator.orchestrate(context)
-    print(result.to_json())
-
-
-@log
-def _get_config(ctx: typer.Context) -> AppConfig:
-    """Typer ContextからAppConfigを取得
-
-    @app.callback() でセットした値を取得する。
-    Typer依存のコードを分散させないため、プライベートメソッドとしてカプセル化する。
-    """
-    return ctx.obj
+# @log
+# def _get_config(ctx: typer.Context) -> AppConfig:
+#     """Typer ContextからAppConfigを取得
+#
+#     @app.callback() でセットした値を取得する。
+#     Typer依存のコードを分散させないため、プライベートメソッドとしてカプセル化する。
+#     """
+#     return ctx.obj
 
 
 @app.callback()
