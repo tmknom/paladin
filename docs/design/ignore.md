@@ -220,7 +220,6 @@ uv run paladin check src/ --ignore-rule no-relative-import --ignore-rule no-loca
 
 - 指定されたルール ID の違反を、全ファイルに対して無視する
 - 複数回指定することで、複数ルールを同時に除外できる
-- 存在しないルール ID を指定した場合は警告を出力し、無視する
 
 #### `--ignore-rule` を採用した理由
 
