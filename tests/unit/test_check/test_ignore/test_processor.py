@@ -105,3 +105,49 @@ class TestIgnoreProcessor:
 
         # Assert
         assert len(result) == 0
+
+    def test_apply_正常系_行末ignoreで違反が除外されること(self):
+        # Arrange
+        source = "violating_code  # paladin: ignore\n"
+        source_file = make_source_file(source)
+        source_files = SourceFiles(files=(source_file,))
+        violation = _make_violation(Path("example.py"), "rule-a", line=1)
+        violations = Violations(items=(violation,))
+        processor = IgnoreProcessor()
+
+        # Act
+        result = processor.apply(violations, source_files, (), frozenset())
+
+        # Assert
+        assert len(result) == 0
+
+    def test_apply_正常系_行末ignore_with_rule_idで特定ルール違反が除外されること(self):
+        # Arrange
+        source = "code  # paladin: ignore[rule-a]\n"
+        source_file = make_source_file(source)
+        source_files = SourceFiles(files=(source_file,))
+        violation = _make_violation(Path("example.py"), "rule-a", line=1)
+        violations = Violations(items=(violation,))
+        processor = IgnoreProcessor()
+
+        # Act
+        result = processor.apply(violations, source_files, (), frozenset())
+
+        # Assert
+        assert len(result) == 0
+
+    def test_apply_正常系_直前コメントと行末コメントの累積適用で両ルールが除外されること(self):
+        # Arrange
+        source = "# paladin: ignore[rule-a]\ncode  # paladin: ignore[rule-b]\n"
+        source_file = make_source_file(source)
+        source_files = SourceFiles(files=(source_file,))
+        violation_a = _make_violation(Path("example.py"), "rule-a", line=2)
+        violation_b = _make_violation(Path("example.py"), "rule-b", line=2)
+        violations = Violations(items=(violation_a, violation_b))
+        processor = IgnoreProcessor()
+
+        # Act
+        result = processor.apply(violations, source_files, (), frozenset())
+
+        # Assert
+        assert len(result) == 0

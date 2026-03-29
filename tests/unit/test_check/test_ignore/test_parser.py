@@ -313,6 +313,113 @@ class TestLineIgnoreParserParse:
         assert result == ()
 
 
+class TestLineIgnoreParserParseTrailing:
+    """LineIgnoreParser.parse() 行末コメントのテスト"""
+
+    def test_parse_正常系_行末ignoreディレクティブで全ルールignoreを返すこと(self):
+        # Arrange
+        parser = LineIgnoreParser()
+        source = "violating_code  # paladin: ignore\n"
+
+        # Act
+        result = parser.parse(Path("example.py"), source)
+
+        # Assert
+        assert len(result) == 1
+        assert result[0].target_line == 1
+        assert result[0].ignore_all is True
+        assert result[0].ignored_rules == frozenset()
+
+    def test_parse_正常系_行末ignore_with_rule_idで特定ルールignoreを返すこと(self):
+        # Arrange
+        parser = LineIgnoreParser()
+        source = "violating_code  # paladin: ignore[rule-a]\n"
+
+        # Act
+        result = parser.parse(Path("example.py"), source)
+
+        # Assert
+        assert len(result) == 1
+        assert result[0].target_line == 1
+        assert result[0].ignore_all is False
+        assert result[0].ignored_rules == frozenset({"rule-a"})
+
+    def test_parse_正常系_行末コメントで複数ルールIDをカンマ区切りで指定できること(self):
+        # Arrange
+        parser = LineIgnoreParser()
+        source = "code  # paladin: ignore[rule-a, rule-b]\n"
+
+        # Act
+        result = parser.parse(Path("example.py"), source)
+
+        # Assert
+        assert len(result) == 1
+        assert result[0].ignored_rules == frozenset({"rule-a", "rule-b"})
+
+    def test_parse_正常系_直前コメントと行末コメントが同一ファイルで共存できること(self):
+        # Arrange
+        parser = LineIgnoreParser()
+        source = "# paladin: ignore[rule-a]\ncode  # paladin: ignore[rule-b]\n"
+
+        # Act
+        result = parser.parse(Path("example.py"), source)
+
+        # Assert
+        assert len(result) == 2
+        # 直前コメントは2行目対象
+        preceding = next(d for d in result if d.ignored_rules == frozenset({"rule-a"}))
+        assert preceding.target_line == 2
+        # 行末コメントも2行目対象
+        trailing = next(d for d in result if d.ignored_rules == frozenset({"rule-b"}))
+        assert trailing.target_line == 2
+
+    def test_parse_正常系_行末コメントのtarget_lineがその行自身であること(self):
+        # Arrange
+        parser = LineIgnoreParser()
+        source = "import os\nviolating_code  # paladin: ignore\n"
+
+        # Act
+        result = parser.parse(Path("example.py"), source)
+
+        # Assert
+        assert len(result) == 1
+        assert result[0].target_line == 2
+
+    def test_parse_エッジケース_コメント行自体は行末コメントとして検出されないこと(self):
+        # Arrange: 純粋な直前コメント行は行末コメントとして検出されない
+        parser = LineIgnoreParser()
+        source = "# paladin: ignore\ncode\n"
+
+        # Act
+        result = parser.parse(Path("example.py"), source)
+
+        # Assert: 直前コメントとして1つだけ検出される（行末コメントとしては検出されない）
+        assert len(result) == 1
+        assert result[0].target_line == 2
+
+    def test_parse_エッジケース_接頭辞前に空白がない場合は行末コメントとして検出されないこと(self):
+        # Arrange
+        parser = LineIgnoreParser()
+        source = "code# paladin: ignore\n"
+
+        # Act
+        result = parser.parse(Path("example.py"), source)
+
+        # Assert
+        assert result == ()
+
+    def test_parse_エッジケース_ignore_fileディレクティブは行末コメントとして検出されないこと(self):
+        # Arrange
+        parser = LineIgnoreParser()
+        source = "code  # paladin: ignore-file\n"
+
+        # Act
+        result = parser.parse(Path("example.py"), source)
+
+        # Assert
+        assert result == ()
+
+
 class TestLineIgnoreParserParseAll:
     """LineIgnoreParser.parse_all() のテスト"""
 
