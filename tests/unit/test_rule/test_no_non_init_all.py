@@ -5,7 +5,7 @@ import pytest
 
 from paladin.rule.no_non_init_all import NonInitAllDetector, NoNonInitAllRule
 from paladin.rule.types import RuleMeta, SourceFile
-from tests.unit.test_rule.helpers import make_source_file
+from tests.unit.test_rule.helper import make_source_file
 
 
 class TestNoNonInitAllRuleMeta:

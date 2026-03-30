@@ -11,7 +11,7 @@ from paladin.rule.no_cross_package_import import (
     NoCrossPackageImportRule,
 )
 from paladin.rule.types import RuleMeta, SourceFiles
-from tests.unit.test_rule.helpers import make_source_files
+from tests.unit.test_rule.helper import make_source_files
 
 
 def _rule_with_prepare(

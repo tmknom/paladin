@@ -11,7 +11,7 @@ from paladin.rule.no_deep_nesting import (
     NoDeepNestingRule,
 )
 from paladin.rule.types import RuleMeta
-from tests.unit.test_rule.helpers import make_source_file
+from tests.unit.test_rule.helper import make_source_file
 
 
 class TestFunctionCollector:

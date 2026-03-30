@@ -4,7 +4,7 @@ from pathlib import Path
 
 from paladin.rule.package_resolver import PackageResolver
 from paladin.rule.types import SourceFiles
-from tests.unit.test_rule.helpers import make_source_file, make_source_files
+from tests.unit.test_rule.helper import make_source_file, make_source_files
 
 
 class TestPackageResolverResolvePackageKey:

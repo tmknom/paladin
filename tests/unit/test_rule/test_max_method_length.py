@@ -8,7 +8,7 @@ from paladin.rule.max_method_length import (
     MethodLengthDetector,
 )
 from paladin.rule.types import RuleMeta
-from tests.unit.test_rule.helpers import make_source_file, make_test_source_file
+from tests.unit.test_rule.helper import make_source_file, make_test_source_file
 
 
 def _make_func(num_lines: int, name: str = "foo") -> str:

@@ -10,7 +10,7 @@ from paladin.rule.no_testing_test_code import (
     TestTargetDetector,
 )
 from paladin.rule.types import RuleMeta, SourceFiles
-from tests.unit.test_rule.helpers import make_source_file, make_source_files
+from tests.unit.test_rule.helper import make_source_file, make_source_files
 
 
 class TestNoTestingTestCodeRuleMeta:

@@ -4,7 +4,7 @@ from pathlib import Path
 
 from paladin.check.ignore.parser import FileIgnoreParser, LineIgnoreParser
 from paladin.rule import SourceFiles
-from tests.unit.test_check.test_ignore.helpers import make_source_file
+from tests.unit.test_check.test_ignore.helper import make_source_file
 
 
 class TestFileIgnoreParserParse:

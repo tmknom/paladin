@@ -8,7 +8,7 @@ from paladin.rule.no_third_party_import import (
     ThirdPartyImportDetector,
 )
 from paladin.rule.types import RuleMeta, SourceFiles
-from tests.unit.test_rule.helpers import make_source_file, make_source_files
+from tests.unit.test_rule.helper import make_source_file, make_source_files
 
 _STDLIB = frozenset({"os", "sys"})
 _ROOT = ("myapp",)

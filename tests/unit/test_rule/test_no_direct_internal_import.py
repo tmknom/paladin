@@ -15,7 +15,7 @@ from paladin.rule.no_direct_internal_import import (
 )
 from paladin.rule.package_resolver import PackageResolver
 from paladin.rule.types import RuleMeta, SourceFile, SourceFiles
-from tests.unit.test_rule.helpers import make_source_file, make_source_files
+from tests.unit.test_rule.helper import make_source_file, make_source_files
 
 
 def _rule(root_packages: tuple[str, ...] = ("paladin",)) -> NoDirectInternalImportRule:

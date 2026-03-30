@@ -9,7 +9,7 @@ from paladin.rule.no_cross_package_reexport import (
     NoCrossPackageReexportRule,
 )
 from paladin.rule.types import RuleMeta, SourceFile
-from tests.unit.test_rule.helpers import make_source_file
+from tests.unit.test_rule.helper import make_source_file
 
 
 class TestNoCrossPackageReexportRuleMeta:
