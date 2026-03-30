@@ -11,5 +11,4 @@ import os
 # 明示的な呼び出しコードは存在しないが、デッドコードではない。
 def pytest_configure() -> None:
     """pytest設定フック: テスト実行前に環境変数を設定"""
-    # テスト用の環境変数を設定（モジュールimport前に実行される）
     os.environ["EXAMPLE_LOG_LEVEL"] = "WARNING"
