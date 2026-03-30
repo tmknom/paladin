@@ -25,3 +25,4 @@
 | [max-method-length](max-method-length.md) | 単一メソッド/関数の行数が設定された上限を超えた場合に違反を検出する |
 | [max-class-length](max-class-length.md) | 単一クラスの行数上限を超えた場合に違反を検出する |
 | [max-file-length](max-file-length.md) | 単一ファイルの行数上限を超えた場合に違反を検出する |
+| [require-docstring](require-docstring.md) | モジュールおよびクラスに docstring の存在を要求する |

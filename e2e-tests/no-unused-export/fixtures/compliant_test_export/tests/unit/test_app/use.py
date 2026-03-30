@@ -1,3 +1,5 @@
+"""TestApp のテスト（compliant_test_export フィクスチャ）"""
+
 from tests.unit.fake import FakeHelper
 
 

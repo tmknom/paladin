@@ -1,5 +1,3 @@
-"""check サブコマンドのインテグレーションテスト"""
-
 import json
 import subprocess
 import sys
@@ -14,7 +12,7 @@ class TestIntegrationCheck:
         src_dir = tmp_dir / "src"
         src_dir.mkdir()
         py_file = src_dir / "main.py"
-        py_file.write_text("x = 1\n")
+        py_file.write_text('"""メインモジュール"""\n\nx = 1\n')
 
         # Act
         cmd = [sys.executable, "-m", "paladin.cli", "check", str(src_dir)]
@@ -155,11 +153,13 @@ class TestIntegrationCheckConfig:
         self, tmp_dir: Path
     ):
         # Arrange: __init__.py に __all__ なし（require-all-export 違反）
-        # pyproject.toml で require-all-export = false に設定
+        # pyproject.toml で require-all-export = false / require-docstring = false に設定
         init_file = tmp_dir / "__init__.py"
         init_file.write_text("x = 1\n")
         pyproject = tmp_dir / "pyproject.toml"
-        pyproject.write_text("[tool.paladin.rules]\nrequire-all-export = false\n")
+        pyproject.write_text(
+            "[tool.paladin.rules]\nrequire-all-export = false\nrequire-docstring = false\n"
+        )
 
         # Act: cwd=tmp_dir で pyproject.toml が読まれる
         cmd = [sys.executable, "-m", "paladin.cli", "check", str(tmp_dir)]
@@ -174,7 +174,7 @@ class TestIntegrationCheckConfig:
         src_dir = tmp_dir / "src"
         src_dir.mkdir()
         src_file = src_dir / "main.py"
-        src_file.write_text("x = 1\n")
+        src_file.write_text('"""メインモジュール"""\n\nx = 1\n')
         pyproject = tmp_dir / "pyproject.toml"
         pyproject.write_text(f'[tool.paladin]\ninclude = ["{src_dir}"]\n')
 
@@ -251,9 +251,9 @@ class TestIntegrationCheckIgnore:
         src_dir = tmp_dir / "src"
         src_dir.mkdir()
         init_file = src_dir / "__init__.py"
-        init_file.write_text("x = 1\n")
+        init_file.write_text('"""パッケージ"""\n\nx = 1\n')
 
-        # Act
+        # Act: require-all-export を ignore
         cmd = [
             sys.executable,
             "-m",
@@ -265,7 +265,7 @@ class TestIntegrationCheckIgnore:
         ]
         result = subprocess.run(cmd, cwd=tmp_dir, capture_output=True, text=True, timeout=10)
 
-        # Assert: 違反が除外されて exit_code=0
+        # Assert: require-all-export が除外されて exit_code=0
         assert result.returncode == 0
         assert "status: ok" in result.stdout
 
@@ -293,6 +293,8 @@ class TestIntegrationCheckIgnore:
         src_dir.mkdir()
         py_file = src_dir / "main.py"
         py_file.write_text(
+            '"""メインモジュール"""\n'
+            "\n"
             "def foo():\n"
             "    # paladin: ignore[no-local-import]\n"
             "    from .foo import bar  # paladin: ignore[no-relative-import]\n"

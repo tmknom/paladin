@@ -1,3 +1,5 @@
+"""Mock をインポートする違反フィクスチャ"""
+
 from unittest.mock import Mock
 
 

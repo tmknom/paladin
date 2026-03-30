@@ -20,6 +20,7 @@ from paladin.rule.no_testing_test_code import NoTestingTestCodeRule
 from paladin.rule.no_third_party_import import NoThirdPartyImportRule
 from paladin.rule.no_unused_export import NoUnusedExportRule
 from paladin.rule.require_all_export import RequireAllExportRule
+from paladin.rule.require_docstring import RequireDocstringRule
 from paladin.rule.require_qualified_third_party import RequireQualifiedThirdPartyRule
 from paladin.rule.rule_set import RuleSet
 
@@ -55,6 +56,7 @@ class RuleSetFactory:
                 MaxMethodLengthRule(max_lines=max_lines, max_test_lines=max_test_lines),
                 MaxClassLengthRule(max_lines=class_max_lines, max_test_lines=class_max_test_lines),
                 MaxFileLengthRule(max_lines=file_max_lines, max_test_lines=file_max_test_lines),
+                RequireDocstringRule(),
             ),
             multi_file_rules=(
                 NoDirectInternalImportRule(),
