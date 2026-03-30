@@ -1,3 +1,6 @@
+"""深いネストの違反フィクスチャ"""
+
+
 def process(items: list[int]) -> list[int]:
     results = []
     for item in items:              # depth 1
