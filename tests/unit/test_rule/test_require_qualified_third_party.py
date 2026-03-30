@@ -7,7 +7,7 @@ from paladin.rule.require_qualified_third_party import (
     RequireQualifiedThirdPartyRule,
 )
 from paladin.rule.types import RuleMeta, SourceFiles
-from tests.unit.test_rule.helpers import make_source_file, make_source_files
+from tests.unit.test_rule.helper import make_source_file, make_source_files
 
 
 def _rule_with_prepare(source_files: SourceFiles) -> RequireQualifiedThirdPartyRule:

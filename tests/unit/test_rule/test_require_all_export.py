@@ -9,7 +9,7 @@ from paladin.rule.require_all_export import (
     RequireAllExportRule,
 )
 from paladin.rule.types import RuleMeta, SourceFile
-from tests.unit.test_rule.helpers import make_source_file
+from tests.unit.test_rule.helper import make_source_file
 
 
 class TestRequireAllExportRuleMeta:

@@ -3,7 +3,7 @@ from pathlib import Path
 from paladin.rule.rule_set import RuleSet
 from paladin.rule.types import RuleMeta, SourceFiles, Violation, Violations
 from tests.fake import FakeMultiFileRule, FakePreparableRule, FakeRule
-from tests.unit.test_rule.helpers import make_source_files
+from tests.unit.test_rule.helper import make_source_files
 
 
 def _make_violation(file: str = "src/paladin/__init__.py") -> Violation:

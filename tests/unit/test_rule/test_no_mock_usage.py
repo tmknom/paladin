@@ -4,7 +4,7 @@ import pytest
 
 from paladin.rule.no_mock_usage import MockUsageDetector, NoMockUsageRule
 from paladin.rule.types import RuleMeta
-from tests.unit.test_rule.helpers import make_source_file
+from tests.unit.test_rule.helper import make_source_file
 
 
 class TestNoMockUsageRuleMeta:

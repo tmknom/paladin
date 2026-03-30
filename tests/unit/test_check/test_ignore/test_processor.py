@@ -4,7 +4,7 @@ from pathlib import Path
 
 from paladin.check.ignore import IgnoreProcessor
 from paladin.rule import PerFileIgnoreEntry, SourceFiles, Violation, Violations
-from tests.unit.test_check.test_ignore.helpers import make_source_file
+from tests.unit.test_check.test_ignore.helper import make_source_file
 
 
 def _make_violation(

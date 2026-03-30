@@ -10,7 +10,7 @@ from paladin.rule.max_class_length import (
     MaxClassLengthRule,
 )
 from paladin.rule.types import RuleMeta
-from tests.unit.test_rule.helpers import make_source_file, make_test_source_file
+from tests.unit.test_rule.helper import make_source_file, make_test_source_file
 
 
 def _make_class(num_lines: int, name: str = "MyClass") -> str:

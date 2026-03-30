@@ -2,7 +2,7 @@ from pathlib import Path
 
 from paladin.rule.max_file_length import FileLengthCalculator, FileLengthDetector, MaxFileLengthRule
 from paladin.rule.types import RuleMeta
-from tests.unit.test_rule.helpers import make_source_file, make_test_source_file
+from tests.unit.test_rule.helper import make_source_file, make_test_source_file
 
 
 def _make_source(num_lines: int) -> str:

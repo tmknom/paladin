@@ -1,7 +1,7 @@
 from paladin.rule.rule_set import RuleSet
 from paladin.rule.rule_set_factory import RuleSetFactory
 from paladin.rule.types import SourceFiles
-from tests.unit.test_rule.helpers import make_source_file
+from tests.unit.test_rule.helper import make_source_file
 
 
 class TestRuleSetFactory:
