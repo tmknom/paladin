@@ -8,7 +8,7 @@
 # ==============================================================================
 
 .PHONY: all
-all: sync fmt lint typecheck paladin coverage test-e2e ## 一括実行
+all: sync fmt lint typecheck vulture paladin coverage test-e2e ## 一括実行
 
 .PHONY: sync-online
 sync-online:
@@ -53,6 +53,12 @@ lint: ## Ruffによる静的解析
 .PHONY: typecheck
 typecheck: ## Pyrightによる型チェック
 	uv run pyright --warnings
+
+# Vulture の confidence は 60（デフォルト）/90/100 の3段階のみ
+# 60% はフレームワーク規約（Typer/Pydantic/pytest）による誤検出が多いため除外
+.PHONY: vulture
+vulture: ## Vultureによるデッドコード検出
+		uv run vulture src/ tests/ --min-confidence 61
 
 .PHONY: paladin
 paladin: ## Paladinによる静的解析
