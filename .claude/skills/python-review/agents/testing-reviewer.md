@@ -66,7 +66,7 @@
 - [ ] テスト支援コードが適切な場所に配置されている
     - 共有 Fake クラス → `tests/fake/`
     - パッケージ固有の Fake クラス → `tests/unit/test_<package>/fake.py`
-    - パッケージ固有の値オブジェクトファクトリ → `tests/unit/test_<package>/helpers.py`
+    - パッケージ固有の値オブジェクトファクトリ → `tests/unit/test_<package>/helper.py`
     - pytest fixtures → `conftest.py`
 - [ ] 各テストケースに assert を直接記述している（ヘルパー関数で assert をラップしていない）
 - [ ] テストクラスにテスト対象クラスを示す1行 docstring がある（例: `"""TextReader クラスのテスト"""`）
