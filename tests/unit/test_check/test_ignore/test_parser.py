@@ -529,7 +529,8 @@ class TestLineIgnoreParserParseTrailing:
     def test_parse_正常系_行末理由コメント付きignore_with_rule_idで特定ルールignoreを返すこと(self):
         # Arrange
         parser = LineIgnoreParser()
-        source = "violating_code  # paladin: ignore[rule-a] -- 理由\n"
+        ignore_comment = "# paladin: ignore[rule-a] -- 理由"
+        source = f"violating_code  {ignore_comment}\n"
 
         # Act
         result = parser.parse(Path("example.py"), source)

@@ -40,7 +40,7 @@ class TestRuleSetFactory:
         # Assert: ルールが登録されていること
         assert "max-class-length" in result.rule_ids
 
-    def test_create_正常系_全ルールが登録されていること_16ルール(self):
+    def test_create_正常系_全ルールが登録されていること_17ルール(self):
         result = RuleSetFactory().create()
         rule_ids = result.rule_ids
         assert "require-all-export" in rule_ids
@@ -59,6 +59,8 @@ class TestRuleSetFactory:
         assert "max-method-length" in rule_ids
         assert "max-class-length" in rule_ids
         assert "max-file-length" in rule_ids
+        assert "require-docstring" in rule_ids
+        assert "unused-ignore" in rule_ids
 
     def test_create_正常系_rule_optionsでmax_file_lengthのmax_linesを指定できること(self):
         # Arrange

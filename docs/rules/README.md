@@ -26,3 +26,4 @@
 | [max-class-length](max-class-length.md) | 単一クラスの行数上限を超えた場合に違反を検出する |
 | [max-file-length](max-file-length.md) | 単一ファイルの行数上限を超えた場合に違反を検出する |
 | [require-docstring](require-docstring.md) | モジュールおよびクラスに docstring の存在を要求する |
+| [unused-ignore](unused-ignore.md) | 対応する違反が存在しない Ignore コメントを検出する |

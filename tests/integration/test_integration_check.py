@@ -307,3 +307,43 @@ class TestIntegrationCheckIgnore:
         # Assert: 直前コメントと行末コメントが累積適用されて両違反が除外され exit_code=0
         assert result.returncode == 0
         assert "status: ok" in result.stdout
+
+    def test_check_正常系_未使用ignoreコメントがunused_ignoreとして報告されること(
+        self, tmp_dir: Path
+    ):
+        # Arrange: 違反が存在しない行に ignore コメントを記述
+        src_dir = tmp_dir / "src"
+        src_dir.mkdir()
+        py_file = src_dir / "main.py"
+        py_file.write_text('"""メインモジュール"""\n\n# paladin: ignore[no-local-import]\nx = 1\n')
+
+        # Act
+        cmd = [sys.executable, "-m", "paladin.cli", "check", str(src_dir)]
+        result = subprocess.run(cmd, cwd=tmp_dir, capture_output=True, text=True, timeout=10)
+
+        # Assert: 未使用の ignore コメントが unused-ignore として報告される
+        assert result.returncode == 1
+        assert "unused-ignore" in result.stdout
+
+    def test_check_正常系_使用中のignoreコメントはunused_ignoreとして報告されないこと(
+        self, tmp_dir: Path
+    ):
+        # Arrange: no-local-import 違反のある行に対して ignore コメントを記述
+        src_dir = tmp_dir / "src"
+        src_dir.mkdir()
+        py_file = src_dir / "main.py"
+        py_file.write_text(
+            '"""メインモジュール"""\n'
+            "\n"
+            "def foo():\n"
+            "    import os  # paladin: ignore[no-local-import]\n"
+            "    return os.getcwd()\n"
+        )
+
+        # Act
+        cmd = [sys.executable, "-m", "paladin.cli", "check", str(src_dir)]
+        result = subprocess.run(cmd, cwd=tmp_dir, capture_output=True, text=True, timeout=10)
+
+        # Assert: 使用中の ignore コメントは unused-ignore として報告されない
+        assert result.returncode == 0
+        assert "unused-ignore" not in result.stdout

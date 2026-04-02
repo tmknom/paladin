@@ -14,7 +14,7 @@ from paladin.check.parser import AstParser
 from paladin.check.result import CheckReport, CheckResult
 from paladin.check.rule_filter import RuleFilter
 from paladin.foundation.log import log
-from paladin.rule import RuleSet, SourceFiles
+from paladin.rule import RuleSet, SourceFiles, Violations
 
 
 class CheckOrchestrator:
@@ -82,13 +82,22 @@ class CheckOrchestrator:
             context.rules, self.rule_set.rule_ids, context.select_rules
         )
         per_file_disabled = self._resolve_per_file_disabled(context, source_files, base_disabled)
-        violations = self.rule_set.run(
+        raw_violations = self.rule_set.run(
             source_files,
             disabled_rule_ids=base_disabled,
             per_file_disabled=per_file_disabled,
         )
+        unused_ignore_violations = self.rule_set.run_unused_ignore(
+            source_files,
+            raw_violations,
+            disabled_rule_ids=base_disabled,
+            per_file_disabled=per_file_disabled,
+        )
+        combined_violations = Violations(
+            items=tuple(raw_violations) + tuple(unused_ignore_violations)
+        )
         violations = self.ignore_processor.apply(
-            violations, source_files, context.per_file_ignores, context.ignore_rules
+            combined_violations, source_files, context.per_file_ignores, context.ignore_rules
         )
         result = CheckResult(
             target_files=target_files, source_files=source_files, violations=violations

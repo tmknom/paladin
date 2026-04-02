@@ -23,6 +23,7 @@ from paladin.rule.require_all_export import RequireAllExportRule
 from paladin.rule.require_docstring import RequireDocstringRule
 from paladin.rule.require_qualified_third_party import RequireQualifiedThirdPartyRule
 from paladin.rule.rule_set import RuleSet
+from paladin.rule.unused_ignore import UnusedIgnoreRule
 
 
 class RuleSetFactory:
@@ -63,6 +64,7 @@ class RuleSetFactory:
                 NoUnusedExportRule(),
                 NoTestingTestCodeRule(),
             ),
+            unused_ignore_rule=UnusedIgnoreRule(),
         )
 
     def _extract_allow_dirs(
