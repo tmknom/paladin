@@ -36,5 +36,6 @@ class TestViewOrchestratorProvider:
             "require-aaa-comment",
             "no-error-message-test",
             "no-frozen-instance-test",
+            "no-nested-test-class",
         }
         assert rule_ids == expected_ids

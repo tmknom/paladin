@@ -30,4 +30,5 @@
 | [require-aaa-comment](require-aaa-comment.md) | テストメソッドに AAA コメントの存在を要求する |
 | [no-error-message-test](no-error-message-test.md) | 例外メッセージの文言を検証するテストを禁止する |
 | [no-frozen-instance-test](no-frozen-instance-test.md) | `FrozenInstanceError` を検証するテストを禁止する |
+| [no-nested-test-class](no-nested-test-class.md) | テストクラス内へのクラスのネストを禁止する |
 | [unused-ignore](unused-ignore.md) | 対応する違反が存在しない Ignore コメントを検出する |
