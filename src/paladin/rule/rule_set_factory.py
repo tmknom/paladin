@@ -18,6 +18,7 @@ from paladin.rule.no_error_message_test import NoErrorMessageTestRule
 from paladin.rule.no_frozen_instance_test import NoFrozenInstanceTestRule
 from paladin.rule.no_local_import import NoLocalImportRule
 from paladin.rule.no_mock_usage import NoMockUsageRule
+from paladin.rule.no_nested_test_class import NoNestedTestClassRule
 from paladin.rule.no_non_init_all import NoNonInitAllRule
 from paladin.rule.no_relative_import import NoRelativeImportRule
 from paladin.rule.no_testing_test_code import NoTestingTestCodeRule
@@ -76,6 +77,7 @@ class RuleSetFactory:
                 RequireAaaCommentRule(),
                 NoErrorMessageTestRule(),
                 NoFrozenInstanceTestRule(),
+                NoNestedTestClassRule(),
             ),
             multi_file_rules=(
                 NoDirectInternalImportRule(),
