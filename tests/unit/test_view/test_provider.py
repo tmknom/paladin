@@ -33,3 +33,4 @@ class TestViewOrchestratorProvider:
         assert "require-docstring" in rule_ids
         assert "unused-ignore" in rule_ids
         assert "require-aaa-comment" in rule_ids
+        assert "no-error-message-test" in rule_ids
