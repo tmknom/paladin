@@ -27,4 +27,5 @@
 | [max-file-length](max-file-length.md) | 単一ファイルの行数上限を超えた場合に違反を検出する |
 | [require-docstring](require-docstring.md) | モジュールおよびクラスに docstring の存在を要求する |
 | [require-empty-test-init](require-empty-test-init.md) | テストパッケージの `__init__.py` が空ファイルであることを要求する |
+| [require-aaa-comment](require-aaa-comment.md) | テストメソッドに AAA コメントの存在を要求する |
 | [unused-ignore](unused-ignore.md) | 対応する違反が存在しない Ignore コメントを検出する |

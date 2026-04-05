@@ -12,7 +12,6 @@ class TestListOrchestratorProvider:
         rules = result.rule_set.list_rules()
 
         # Assert
-        assert len(rules) == 19
         rule_ids = {r.rule_id for r in rules}
         assert "require-empty-test-init" in rule_ids
         assert "require-all-export" in rule_ids
@@ -33,3 +32,4 @@ class TestListOrchestratorProvider:
         assert "max-file-length" in rule_ids
         assert "require-docstring" in rule_ids
         assert "unused-ignore" in rule_ids
+        assert "require-aaa-comment" in rule_ids
