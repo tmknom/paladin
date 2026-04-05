@@ -1,7 +1,4 @@
-"""Rule 層の Composition Root。
-
-具象ルールの組み立てとデフォルト設定の適用を担う。
-"""
+"""Rule 層の Composition Root。"""
 
 from typing import cast
 
@@ -12,6 +9,7 @@ from paladin.rule.no_cross_package_import import NoCrossPackageImportRule
 from paladin.rule.no_cross_package_reexport import NoCrossPackageReexportRule
 from paladin.rule.no_deep_nesting import NoDeepNestingRule
 from paladin.rule.no_direct_internal_import import NoDirectInternalImportRule
+from paladin.rule.no_error_message_test import NoErrorMessageTestRule
 from paladin.rule.no_local_import import NoLocalImportRule
 from paladin.rule.no_mock_usage import NoMockUsageRule
 from paladin.rule.no_non_init_all import NoNonInitAllRule
@@ -35,6 +33,9 @@ class RuleSetFactory:
         """プロダクションで使うデフォルトのルール一式を返す
 
         `rule_options` が `None` の場合は全ルールにデフォルト値を適用する。
+
+        Constraints:
+            rule_options: キーはルールID文字列、値は各ルールのオプション辞書。
         """
         third_party_allow_dirs = self._extract_allow_dirs(rule_options, "no-third-party-import")
         cross_package_allow_dirs = self._extract_allow_dirs(rule_options, "no-cross-package-import")
@@ -65,6 +66,7 @@ class RuleSetFactory:
                 RequireDocstringRule(),
                 RequireEmptyTestInitRule(),
                 RequireAaaCommentRule(),
+                NoErrorMessageTestRule(),
             ),
             multi_file_rules=(
                 NoDirectInternalImportRule(),
@@ -82,7 +84,7 @@ class RuleSetFactory:
         """rule_options から指定ルールの allow-dirs を取り出す
 
         `rule_options` が `None` の場合は空タプルを返す。
-        `allow-dirs` の値が `list` でない場合も空タプルを返す（型安全フォールバック）。
+        `allow-dirs` の値が `list` でない場合も空タプルを返す（設定値が期待する型でない場合に安全に無視する）。
         """
         if rule_options is None:
             return ()
@@ -102,8 +104,7 @@ class RuleSetFactory:
         """rule_options から指定ルールの max-lines / max-test-lines を取り出す
 
         `rule_options` が `None` の場合は `default_max` / `default_test` を返す。
-        値が存在しても `int` でない場合も同様に `default_max` / `default_test` を返す
-        （2段階フォールバック）。
+        値が存在しても `int` でない場合も同様に `default_max` / `default_test` を返す。
         """
         if rule_options is None:
             return default_max, default_test
