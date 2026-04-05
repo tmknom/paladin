@@ -2,6 +2,7 @@ from pathlib import Path
 
 from paladin.rule.rule_set import RuleSet
 from paladin.rule.types import RuleMeta, SourceFiles, Violation, Violations
+from paladin.rule.unused_ignore import UnusedIgnoreRule
 from tests.fake import FakeMultiFileRule, FakePreparableRule, FakeRule
 from tests.unit.test_rule.helper import make_source_files
 
@@ -467,3 +468,101 @@ class TestRuleSetPreparableRule:
         # Assert: 両ルールの prepare() が呼ばれていること
         assert rule_a.prepare_called_with is source_files
         assert rule_b.prepare_called_with is source_files
+
+
+class TestRuleSetUnusedIgnore:
+    """RuleSet の unused_ignore_rule パラメータと run_unused_ignore() のテスト"""
+
+    def _make_violation(self, file_path: Path, line: int, rule_id: str) -> Violation:
+        return Violation(
+            file=file_path,
+            line=line,
+            column=0,
+            rule_id=rule_id,
+            rule_name="Fake",
+            message="msg",
+            reason="reason",
+            suggestion="suggestion",
+        )
+
+    def test_run_unused_ignore_正常系_未使用Ignoreの違反をViolationsとして返すこと(self):
+        # Arrange: ignore コメントがあるが、対応する raw_violations が空
+        unused_ignore_rule = UnusedIgnoreRule()
+        rule_set = RuleSet(rules=(), unused_ignore_rule=unused_ignore_rule)
+        source_files = make_source_files(("# paladin: ignore[rule-a]\nx = 1\n", "f.py"))
+        raw_violations = Violations(items=())
+
+        # Act
+        result = rule_set.run_unused_ignore(source_files, raw_violations, frozenset())
+
+        # Assert
+        assert isinstance(result, Violations)
+        assert len(result) == 1
+        assert result.items[0].rule_id == "unused-ignore"
+
+    def test_run_unused_ignore_正常系_unused_ignore自身がdisabledの場合に空Violationsを返すこと(
+        self,
+    ):
+        # Arrange
+        unused_ignore_rule = UnusedIgnoreRule()
+        rule_set = RuleSet(rules=(), unused_ignore_rule=unused_ignore_rule)
+        source_files = make_source_files(("# paladin: ignore[rule-a]\nx = 1\n", "f.py"))
+        raw_violations = Violations(items=())
+
+        # Act
+        result = rule_set.run_unused_ignore(
+            source_files, raw_violations, frozenset({"unused-ignore"})
+        )
+
+        # Assert
+        assert len(result) == 0
+
+    def test_run_unused_ignore_エッジケース_unused_ignore_ruleがNoneの場合に空Violationsを返すこと(
+        self,
+    ):
+        # Arrange
+        rule_set = RuleSet(rules=(), unused_ignore_rule=None)
+        source_files = make_source_files(("# paladin: ignore[rule-a]\nx = 1\n", "f.py"))
+        raw_violations = Violations(items=())
+
+        # Act
+        result = rule_set.run_unused_ignore(source_files, raw_violations, frozenset())
+
+        # Assert
+        assert len(result) == 0
+
+    def test_rule_ids_正常系_unused_ignore_ruleのIDも含むこと(self):
+        # Arrange
+        unused_ignore_rule = UnusedIgnoreRule()
+        rule_set = RuleSet(rules=(), unused_ignore_rule=unused_ignore_rule)
+
+        # Act
+        result = rule_set.rule_ids
+
+        # Assert
+        assert "unused-ignore" in result
+
+    def test_list_rules_正常系_unused_ignore_ruleのメタ情報も含むこと(self):
+        # Arrange
+        unused_ignore_rule = UnusedIgnoreRule()
+        rule_set = RuleSet(rules=(), unused_ignore_rule=unused_ignore_rule)
+
+        # Act
+        result = rule_set.list_rules()
+
+        # Assert
+        rule_ids = [m.rule_id for m in result]
+        assert "unused-ignore" in rule_ids
+
+    def test_find_rule_正常系_unused_ignoreのrule_idで検索できること(self):
+        # Arrange
+        unused_ignore_rule = UnusedIgnoreRule()
+        rule_set = RuleSet(rules=(), unused_ignore_rule=unused_ignore_rule)
+
+        # Act
+        result = rule_set.find_rule("unused-ignore")
+
+        # Assert
+        assert result is not None
+        assert isinstance(result, RuleMeta)
+        assert result.rule_id == "unused-ignore"

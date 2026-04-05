@@ -3,11 +3,17 @@
 複数 Rule を束ねて管理し、実行・一覧・検索を提供する。
 """
 
+from __future__ import annotations
+
 from collections.abc import Mapping
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 from paladin.rule.protocol import MultiFileRule, PreparableRule, Rule
 from paladin.rule.types import RuleMeta, SourceFile, SourceFiles, Violation, Violations
+
+if TYPE_CHECKING:
+    from paladin.rule.unused_ignore import UnusedIgnoreRule
 
 
 class RuleSet:
@@ -17,14 +23,19 @@ class RuleSet:
         self,
         rules: tuple[Rule, ...],
         multi_file_rules: tuple[MultiFileRule, ...] = (),
+        unused_ignore_rule: UnusedIgnoreRule | None = None,
     ) -> None:
         """RuleSetを初期化"""
         self._rules = rules
         self._multi_file_rules = multi_file_rules
+        self._unused_ignore_rule = unused_ignore_rule
 
     @property
     def _all_metas(self) -> tuple[RuleMeta, ...]:
-        return tuple(r.meta for r in self._rules) + tuple(r.meta for r in self._multi_file_rules)
+        metas = tuple(r.meta for r in self._rules) + tuple(r.meta for r in self._multi_file_rules)
+        if self._unused_ignore_rule is not None:
+            metas = (*metas, self._unused_ignore_rule.meta)
+        return metas
 
     @property
     def rule_ids(self) -> frozenset[str]:
@@ -73,6 +84,37 @@ class RuleSet:
                 continue
             violations.extend(rule.check(source_file))
         return violations
+
+    def run_unused_ignore(
+        self,
+        source_files: SourceFiles,
+        raw_violations: Violations,
+        disabled_rule_ids: frozenset[str] = frozenset(),
+        per_file_disabled: Mapping[Path, frozenset[str]] | None = None,
+    ) -> Violations:
+        """未使用 Ignore コメントを検出して Violations として返す
+
+        Args:
+            source_files: 検査対象のソースファイル群
+            raw_violations: Ignore フィルタリング前の生の違反リスト
+            disabled_rule_ids: スキップするルール ID の frozenset
+            per_file_disabled: ファイルパスごとの disabled_rule_ids
+        """
+        if self._unused_ignore_rule is None:
+            return Violations(items=())
+        if "unused-ignore" in disabled_rule_ids:
+            return Violations(items=())
+        violations: list[Violation] = []
+        for source_file in source_files:
+            effective_disabled = (
+                per_file_disabled.get(source_file.file_path, disabled_rule_ids)
+                if per_file_disabled is not None
+                else disabled_rule_ids
+            )
+            violations.extend(
+                self._unused_ignore_rule.check(source_file, raw_violations, effective_disabled)
+            )
+        return Violations(items=tuple(violations))
 
     def list_rules(self) -> tuple[RuleMeta, ...]:
         """登録済みルールのメタ情報一覧を返す"""
