@@ -188,7 +188,7 @@ class TestIntegrationCheckConfig:
 
     def test_check_正常系_overridesでディレクトリ別にルールを無効化できること(self, tmp_dir: Path):
         # Arrange: tests/ の __init__.py は require-all-export 違反あり
-        # overrides で tests/** に require-all-export = false を設定
+        # overrides で tests/** に require-all-export = false と require-empty-test-init = false を設定
         tests_dir = tmp_dir / "tests"
         tests_dir.mkdir()
         init_file = tests_dir / "__init__.py"
@@ -200,6 +200,7 @@ class TestIntegrationCheckConfig:
             "\n"
             "[tool.paladin.overrides.rules]\n"
             "require-all-export = false\n"
+            "require-empty-test-init = false\n"
         )
 
         # Act: cwd=tmp_dir で pyproject.toml が読まれる
@@ -228,14 +229,14 @@ class TestIntegrationCheckIgnore:
         assert "status: ok" in result.stdout
 
     def test_check_正常系_per_file_ignoresで設定パターンの違反が無視されること(self, tmp_dir: Path):
-        # Arrange: tests/ 配下の require-all-export を per-file-ignores で ignore
+        # Arrange: tests/ 配下の require-all-export と require-empty-test-init を per-file-ignores で ignore
         tests_dir = tmp_dir / "tests"
         tests_dir.mkdir()
         init_file = tests_dir / "__init__.py"
         init_file.write_text("x = 1\n")
         pyproject = tmp_dir / "pyproject.toml"
         pyproject.write_text(
-            '[tool.paladin.per-file-ignores]\n"tests/**" = ["require-all-export"]\n'
+            '[tool.paladin.per-file-ignores]\n"tests/**" = ["require-all-export", "require-empty-test-init"]\n'
         )
 
         # Act: cwd=tmp_dir で pyproject.toml が読まれる

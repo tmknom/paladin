@@ -21,6 +21,7 @@ from paladin.rule.no_third_party_import import NoThirdPartyImportRule
 from paladin.rule.no_unused_export import NoUnusedExportRule
 from paladin.rule.require_all_export import RequireAllExportRule
 from paladin.rule.require_docstring import RequireDocstringRule
+from paladin.rule.require_empty_test_init import RequireEmptyTestInitRule
 from paladin.rule.require_qualified_third_party import RequireQualifiedThirdPartyRule
 from paladin.rule.rule_set import RuleSet
 from paladin.rule.unused_ignore import UnusedIgnoreRule
@@ -30,7 +31,12 @@ class RuleSetFactory:
     """プロダクション用のデフォルトルール一式を組み立てるファクトリー"""
 
     def create(self, rule_options: dict[str, dict[str, object]] | None = None) -> RuleSet:
-        """プロダクションで使うデフォルトのルール一式を返す"""
+        """プロダクションで使うデフォルトのルール一式を返す
+
+        `rule_options` が `None` の場合は全ルールにデフォルト値を適用する。
+        設定値の抽出は `_extract_allow_dirs` / `_extract_length_options` メソッドに委譲し、
+        抽出した値を各ルールのコンストラクタに渡して `RuleSet` を組み立てる。
+        """
         third_party_allow_dirs = self._extract_allow_dirs(rule_options, "no-third-party-import")
         cross_package_allow_dirs = self._extract_allow_dirs(rule_options, "no-cross-package-import")
         max_lines, max_test_lines = self._extract_length_options(
@@ -58,6 +64,7 @@ class RuleSetFactory:
                 MaxClassLengthRule(max_lines=class_max_lines, max_test_lines=class_max_test_lines),
                 MaxFileLengthRule(max_lines=file_max_lines, max_test_lines=file_max_test_lines),
                 RequireDocstringRule(),
+                RequireEmptyTestInitRule(),
             ),
             multi_file_rules=(
                 NoDirectInternalImportRule(),
@@ -72,7 +79,11 @@ class RuleSetFactory:
         rule_options: dict[str, dict[str, object]] | None,
         rule_id: str,
     ) -> tuple[str, ...]:
-        """rule_options から指定ルールの allow-dirs を取り出す"""
+        """rule_options から指定ルールの allow-dirs を取り出す
+
+        `rule_options` が `None` の場合は空タプルを返す。
+        `allow-dirs` の値が `list` でない場合も空タプルを返す（型安全フォールバック）。
+        """
         if rule_options is None:
             return ()
         opts = rule_options.get(rule_id, {})
@@ -88,7 +99,12 @@ class RuleSetFactory:
         default_max: int,
         default_test: int,
     ) -> tuple[int, int]:
-        """rule_options から指定ルールの max-lines / max-test-lines を取り出す"""
+        """rule_options から指定ルールの max-lines / max-test-lines を取り出す
+
+        `rule_options` が `None` の場合は `default_max` / `default_test` を返す。
+        値が存在しても `int` でない場合も同様に `default_max` / `default_test` を返す
+        （2段階フォールバック）。
+        """
         if rule_options is None:
             return default_max, default_test
         opts = rule_options.get(rule_id, {})

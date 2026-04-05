@@ -9,7 +9,6 @@
 
 | ルール名 | 概要 |
 |------------|------|
-| [require-empty-test-init](require-empty-test-init.md) | テストパッケージの `__init__.py` が空ファイルであることを要求する |
 | [no-nested-test-class](no-nested-test-class.md) | テストクラス内へのクラスのネストを禁止する |
 | [require-test-class-docstring](require-test-class-docstring.md) | テストクラスに docstring の存在を要求する |
 | [no-test-method-docstring](no-test-method-docstring.md) | テストメソッドへの docstring の記述を禁止する |
