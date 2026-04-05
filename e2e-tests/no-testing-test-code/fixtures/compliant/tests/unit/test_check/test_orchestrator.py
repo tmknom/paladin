@@ -5,5 +5,6 @@ from tests.unit.fake.fs import InMemoryFsReader
 
 class TestOrchestrator:
     def test_orchestrate(self) -> None:
+        # Act
         reader = InMemoryFsReader(content="# code")
         assert reader is not None

@@ -1,6 +1,6 @@
-"""プロダクション用ルール群の構築ファクトリー
+"""Rule 層の Composition Root。
 
-RuleSet のインスタンス生成と具象ルールの組み立てを担う。
+具象ルールの組み立てとデフォルト設定の適用を担う。
 """
 
 from typing import cast
@@ -19,6 +19,7 @@ from paladin.rule.no_relative_import import NoRelativeImportRule
 from paladin.rule.no_testing_test_code import NoTestingTestCodeRule
 from paladin.rule.no_third_party_import import NoThirdPartyImportRule
 from paladin.rule.no_unused_export import NoUnusedExportRule
+from paladin.rule.require_aaa_comment import RequireAaaCommentRule
 from paladin.rule.require_all_export import RequireAllExportRule
 from paladin.rule.require_docstring import RequireDocstringRule
 from paladin.rule.require_empty_test_init import RequireEmptyTestInitRule
@@ -34,8 +35,6 @@ class RuleSetFactory:
         """プロダクションで使うデフォルトのルール一式を返す
 
         `rule_options` が `None` の場合は全ルールにデフォルト値を適用する。
-        設定値の抽出は `_extract_allow_dirs` / `_extract_length_options` メソッドに委譲し、
-        抽出した値を各ルールのコンストラクタに渡して `RuleSet` を組み立てる。
         """
         third_party_allow_dirs = self._extract_allow_dirs(rule_options, "no-third-party-import")
         cross_package_allow_dirs = self._extract_allow_dirs(rule_options, "no-cross-package-import")
@@ -65,6 +64,7 @@ class RuleSetFactory:
                 MaxFileLengthRule(max_lines=file_max_lines, max_test_lines=file_max_test_lines),
                 RequireDocstringRule(),
                 RequireEmptyTestInitRule(),
+                RequireAaaCommentRule(),
             ),
             multi_file_rules=(
                 NoDirectInternalImportRule(),
