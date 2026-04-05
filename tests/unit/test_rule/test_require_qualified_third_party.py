@@ -177,21 +177,27 @@ class TestQualifiedThirdPartyDetector:
     """QualifiedThirdPartyDetector のテスト"""
 
     def test_detect_from_import_正常系_複数名で複数Violationを返すこと(self):
+        # Arrange
         source = "from requests import get, post\n"
         source_files = make_source_files((source, "src/paladin/example.py"))
         rule = _rule_with_prepare(source_files)
         source_file = source_files.files[0]
         imp = source_file.absolute_from_imports[0]
+
+        # Act / Assert
         result = QualifiedThirdPartyDetector.detect_from_import(imp, source_file, rule.meta)
         assert len(result) == 2
         assert result[0].rule_id == "require-qualified-third-party"
 
     def test_detect_import_as_正常系_Violationを返すこと(self):
+        # Arrange
         source = "import requests as req\n"
         source_files = make_source_files((source, "src/paladin/example.py"))
         rule = _rule_with_prepare(source_files)
         source_file = source_files.files[0]
         stmt = source_file.imports[0]
+
+        # Act / Assert
         result = QualifiedThirdPartyDetector.detect_import_as(
             stmt, "requests", "req", source_file, rule.meta
         )

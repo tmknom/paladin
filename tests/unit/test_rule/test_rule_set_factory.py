@@ -8,10 +8,12 @@ class TestRuleSetFactory:
     """RuleSetFactory.create() メソッドのテスト"""
 
     def test_create_正常系_RuleSetインスタンスを返すこと(self):
+        # Act / Assert
         result = RuleSetFactory().create()
         assert isinstance(result, RuleSet)
 
     def test_create_正常系_呼び出すたびに独立したインスタンスを返すこと(self):
+        # Act / Assert
         a = RuleSetFactory().create()
         b = RuleSetFactory().create()
         assert a is not b
@@ -41,7 +43,10 @@ class TestRuleSetFactory:
         assert "max-class-length" in result.rule_ids
 
     def test_create_正常系_全ルールが登録されていること_17ルール(self):
+        # Act
         result = RuleSetFactory().create()
+
+        # Assert
         rule_ids = result.rule_ids
         assert "require-all-export" in rule_ids
         assert "no-relative-import" in rule_ids
@@ -99,6 +104,7 @@ class TestRuleSetFactory:
         assert "no-cross-package-import" in result.rule_ids
 
     def test_create_正常系_引数なしで後方互換性を保つこと(self):
+        # Act / Assert
         # allow_dirs 未指定でもデフォルト引数で呼び出せる
         result = RuleSetFactory().create()
         assert "no-third-party-import" in result.rule_ids

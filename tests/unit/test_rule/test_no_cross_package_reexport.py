@@ -288,14 +288,20 @@ class TestImportMappingCollector:
     """ImportMappingCollector のテスト"""
 
     def test_collect_正常系_from_importのマッピングを返すこと(self):
+        # Arrange
         source = 'from paladin.rule import RuleMeta\n__all__ = ["RuleMeta"]\n'
         source_file = make_source_file(source, "src/paladin/check/__init__.py")
+
+        # Act / Assert
         result = ImportMappingCollector.collect(source_file)
         assert result == {"RuleMeta": "paladin.rule"}
 
     def test_collect_正常系_相対インポートはスキップすること(self):
+        # Arrange
         source = 'from .formatter import Formatter\n__all__ = ["Formatter"]\n'
         source_file = make_source_file(source, "src/paladin/check/__init__.py")
+
+        # Act / Assert
         result = ImportMappingCollector.collect(source_file)
         assert result == {}
 
@@ -304,9 +310,12 @@ class TestCrossPackageReexportDetector:
     """CrossPackageReexportDetector のテスト"""
 
     def test_detect_正常系_Violationを返すこと(self):
+        # Arrange
         source = 'from paladin.rule import RuleMeta\n__all__ = ["RuleMeta"]\n'
         source_file = make_source_file(source, "src/paladin/check/__init__.py")
         rule = NoCrossPackageReexportRule()
+
+        # Act / Assert
         result = CrossPackageReexportDetector.detect(
             source_file=source_file,
             line=2,

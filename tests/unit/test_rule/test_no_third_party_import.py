@@ -182,22 +182,29 @@ class TestThirdPartyChecker:
     """ThirdPartyChecker のテスト"""
 
     def test_is_third_party_正常系_サードパーティはTrueを返すこと(self):
+        # Act / Assert
         assert ThirdPartyChecker.is_third_party("requests", _STDLIB, _ROOT) is True
 
     def test_is_third_party_正常系_標準ライブラリはFalseを返すこと(self):
+        # Act / Assert
         assert ThirdPartyChecker.is_third_party("os", _STDLIB, _ROOT) is False
 
     def test_is_third_party_正常系_ルートパッケージはFalseを返すこと(self):
+        # Act / Assert
         assert ThirdPartyChecker.is_third_party("myapp", _STDLIB, _ROOT) is False
 
     def test_is_allowed_path_正常系_許可ディレクトリ配下はTrueを返すこと(self):
+        # Arrange
         path = Path("src/foundation/http.py")
         allow_dirs = ("src/foundation/",)
+        # Act / Assert
         assert ThirdPartyChecker.is_allowed_path(path, allow_dirs) is True
 
     def test_is_allowed_path_正常系_許可ディレクトリ外はFalseを返すこと(self):
+        # Arrange
         path = Path("src/app/main.py")
         allow_dirs = ("src/foundation/",)
+        # Act / Assert
         assert ThirdPartyChecker.is_allowed_path(path, allow_dirs) is False
 
 
@@ -205,24 +212,34 @@ class TestThirdPartyImportDetector:
     """ThirdPartyImportDetector のテスト"""
 
     def test_detect_from_import_正常系_複数名で複数Violationを返すこと(self):
+        # Arrange
         source = "from requests import get, post\n"
         source_file = make_source_file(source, "src/app/main.py")
         source_files = make_source_files((source, "src/app/main.py"))
         rule = NoThirdPartyImportRule(allow_dirs=())
         rule.prepare(source_files)
         stmt = source_file.imports[0]
+
+        # Act
         result = ThirdPartyImportDetector.detect_from_import(stmt, source_file, rule.meta)
+
+        # Assert
         assert len(result) == 2
         assert result[0].rule_id == "no-third-party-import"
 
     def test_detect_plain_import_正常系_Violationを返すこと(self):
+        # Arrange
         source = "import requests\n"
         source_file = make_source_file(source, "src/app/main.py")
         source_files = make_source_files((source, "src/app/main.py"))
         rule = NoThirdPartyImportRule(allow_dirs=())
         rule.prepare(source_files)
         stmt = source_file.imports[0]
+
+        # Act
         result = ThirdPartyImportDetector.detect_plain_import(
             stmt, "requests", source_file, rule.meta
         )
+
+        # Assert
         assert result.rule_id == "no-third-party-import"

@@ -176,8 +176,10 @@ class TestNoDirectInternalImportRuleCheck:
         source_files = SourceFiles(files=(source_file,))
         rule = _rule(("paladin",))
 
+        # Act
         result = rule.check(source_files)
 
+        # Assert
         assert len(result) == 0
 
     def test_check_エッジケース_3階層以上の外部パッケージインポートは検出しないこと(self):
