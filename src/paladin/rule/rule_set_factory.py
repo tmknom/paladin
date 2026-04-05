@@ -1,4 +1,9 @@
-"""Rule 層の Composition Root。"""
+"""Rule 層の Composition Root。
+
+ルールの追加・削除はこのファイルで一元管理する。
+新しいルールを実装した場合は `RuleSetFactory.create` の `rules` または `multi_file_rules` に追加すること。
+逆に、ここに登録されていないルールは静的解析の実行対象にならない。
+"""
 
 from typing import cast
 
@@ -10,6 +15,7 @@ from paladin.rule.no_cross_package_reexport import NoCrossPackageReexportRule
 from paladin.rule.no_deep_nesting import NoDeepNestingRule
 from paladin.rule.no_direct_internal_import import NoDirectInternalImportRule
 from paladin.rule.no_error_message_test import NoErrorMessageTestRule
+from paladin.rule.no_frozen_instance_test import NoFrozenInstanceTestRule
 from paladin.rule.no_local_import import NoLocalImportRule
 from paladin.rule.no_mock_usage import NoMockUsageRule
 from paladin.rule.no_non_init_all import NoNonInitAllRule
@@ -35,7 +41,9 @@ class RuleSetFactory:
         `rule_options` が `None` の場合は全ルールにデフォルト値を適用する。
 
         Constraints:
-            rule_options: キーはルールID文字列、値は各ルールのオプション辞書。
+            - `rule_options` のキーはルールID文字列、値は各ルールのオプション辞書。
+            - オプション値が期待する型と一致しない場合はデフォルト値にフォールバックする（例外を出さない）。
+              例: `max-lines` に文字列が渡されても `int` のデフォルト値を使用し処理を継続する。
         """
         third_party_allow_dirs = self._extract_allow_dirs(rule_options, "no-third-party-import")
         cross_package_allow_dirs = self._extract_allow_dirs(rule_options, "no-cross-package-import")
@@ -67,6 +75,7 @@ class RuleSetFactory:
                 RequireEmptyTestInitRule(),
                 RequireAaaCommentRule(),
                 NoErrorMessageTestRule(),
+                NoFrozenInstanceTestRule(),
             ),
             multi_file_rules=(
                 NoDirectInternalImportRule(),

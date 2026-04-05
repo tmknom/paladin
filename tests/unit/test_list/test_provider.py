@@ -13,24 +13,28 @@ class TestListOrchestratorProvider:
 
         # Assert
         rule_ids = {r.rule_id for r in rules}
-        assert "require-empty-test-init" in rule_ids
-        assert "require-all-export" in rule_ids
-        assert "no-relative-import" in rule_ids
-        assert "no-local-import" in rule_ids
-        assert "require-qualified-third-party" in rule_ids
-        assert "no-direct-internal-import" in rule_ids
-        assert "no-non-init-all" in rule_ids
-        assert "no-cross-package-reexport" in rule_ids
-        assert "no-mock-usage" in rule_ids
-        assert "no-unused-export" in rule_ids
-        assert "no-deep-nesting" in rule_ids
-        assert "no-third-party-import" in rule_ids
-        assert "no-cross-package-import" in rule_ids
-        assert "no-testing-test-code" in rule_ids
-        assert "max-method-length" in rule_ids
-        assert "max-class-length" in rule_ids
-        assert "max-file-length" in rule_ids
-        assert "require-docstring" in rule_ids
-        assert "unused-ignore" in rule_ids
-        assert "require-aaa-comment" in rule_ids
-        assert "no-error-message-test" in rule_ids
+        expected_ids = {
+            "require-empty-test-init",
+            "require-all-export",
+            "no-relative-import",
+            "no-local-import",
+            "require-qualified-third-party",
+            "no-direct-internal-import",
+            "no-non-init-all",
+            "no-cross-package-reexport",
+            "no-mock-usage",
+            "no-unused-export",
+            "no-deep-nesting",
+            "no-third-party-import",
+            "no-cross-package-import",
+            "no-testing-test-code",
+            "max-method-length",
+            "max-class-length",
+            "max-file-length",
+            "require-docstring",
+            "unused-ignore",
+            "require-aaa-comment",
+            "no-error-message-test",
+            "no-frozen-instance-test",
+        }
+        assert rule_ids == expected_ids
