@@ -173,14 +173,18 @@ class TestTestImportCollector:
     """TestImportCollector のテスト"""
 
     def test_collect_正常系_tests配下からのインポートを返すこと(self):
+        # Arrange
         source = "from tests.unit.fake.fs import InMemoryFsReader\n"
         source_file = make_source_file(source, "tests/test_foo.py")
+        # Act / Assert
         result = TestImportCollector.collect(source_file)
         assert result == {"InMemoryFsReader": "InMemoryFsReader"}
 
     def test_collect_正常系_tests以外のインポートは除外すること(self):
+        # Arrange
         source = "from paladin.rule import RuleMeta\n"
         source_file = make_source_file(source, "tests/test_foo.py")
+        # Act / Assert
         result = TestImportCollector.collect(source_file)
         assert result == {}
 
@@ -189,6 +193,7 @@ class TestTestTargetDetector:
     """TestTargetDetector のテスト"""
 
     def test_detect_class_正常系_名前一致でViolationを返すこと(self):
+        # Arrange
         rule = NoTestingTestCodeRule()
         source = (
             "from tests.unit.fake.fs import InMemoryFsReader\n"
@@ -198,11 +203,16 @@ class TestTestTargetDetector:
         source_file = make_source_file(source, "tests/test_fs.py")
         test_imports = TestImportCollector.collect(source_file)
         node = next(n for n in source_file.tree.body if isinstance(n, ast.ClassDef))
+
+        # Act
         result = TestTargetDetector.detect_class(source_file, node, test_imports, rule.meta)
+
+        # Assert
         assert result is not None
         assert result.rule_id == "no-testing-test-code"
 
     def test_detect_class_正常系_名前不一致でNoneを返すこと(self):
+        # Arrange
         rule = NoTestingTestCodeRule()
         source = (
             "from tests.unit.fake.fs import InMemoryFsReader\nclass TestOtherThing:\n    pass\n"
@@ -210,10 +220,15 @@ class TestTestTargetDetector:
         source_file = make_source_file(source, "tests/test_fs.py")
         test_imports = TestImportCollector.collect(source_file)
         node = next(n for n in source_file.tree.body if isinstance(n, ast.ClassDef))
+
+        # Act
         result = TestTargetDetector.detect_class(source_file, node, test_imports, rule.meta)
+
+        # Assert
         assert result is None
 
     def test_detect_func_正常系_名前一致でViolationを返すこと(self):
+        # Arrange
         rule = NoTestingTestCodeRule()
         source = (
             "from tests.unit.fake.fs import InMemoryFsReader\n"
@@ -223,6 +238,10 @@ class TestTestTargetDetector:
         source_file = make_source_file(source, "tests/test_fs.py")
         test_imports = TestImportCollector.collect(source_file)
         node = next(n for n in source_file.tree.body if isinstance(n, ast.FunctionDef))
+
+        # Act
         result = TestTargetDetector.detect_func(source_file, node, test_imports, rule.meta)
+
+        # Assert
         assert result is not None
         assert result.rule_id == "no-testing-test-code"

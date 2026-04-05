@@ -60,9 +60,12 @@ class TestRelativeImportDetector:
     """RelativeImportDetector のテスト"""
 
     def test_detect_正常系_Violationを返すこと(self):
+        # Arrange
         rule = NoRelativeImportRule()
         source = "from .module import Foo\n"
         source_file = make_source_file(source)
         stmt = source_file.imports[0]
+
+        # Act / Assert
         result = RelativeImportDetector.detect(stmt, source_file, rule.meta)
         assert result.rule_id == "no-relative-import"

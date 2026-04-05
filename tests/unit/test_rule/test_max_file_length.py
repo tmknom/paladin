@@ -134,20 +134,27 @@ class TestFileLengthCalculator:
     """FileLengthCalculator.calc のテスト"""
 
     def test_改行で終わるソースは行数を正しく返すこと(self):
+        # Arrange
         source = "a = 1\nb = 2\nc = 3\n"
+        # Act / Assert
         assert FileLengthCalculator.calc(source) == 3
 
     def test_改行なしで終わるソースは行数を正しく返すこと(self):
+        # Arrange
         source = "a = 1\nb = 2\nc = 3"
+        # Act / Assert
         assert FileLengthCalculator.calc(source) == 3
 
     def test_空文字列は0を返すこと(self):
+        # Act / Assert
         assert FileLengthCalculator.calc("") == 0
 
     def test_改行のみは1を返すこと(self):
+        # Act / Assert
         assert FileLengthCalculator.calc("\n") == 1
 
     def test_1行のソースは1を返すこと(self):
+        # Act / Assert
         assert FileLengthCalculator.calc("x = 1\n") == 1
 
 
@@ -155,23 +162,38 @@ class TestFileLengthDetector:
     """FileLengthDetector.detect のテスト"""
 
     def test_detect_正常系_超過していればViolationを返すこと(self):
+        # Arrange
         rule = MaxFileLengthRule(max_lines=5)
         source = _make_source(6)
         source_file = make_source_file(source)
+
+        # Act
         result = FileLengthDetector.detect(source_file, 6, 5, rule.meta)
+
+        # Assert
         assert result is not None
         assert result.rule_id == "max-file-length"
 
     def test_detect_正常系_超過していなければNoneを返すこと(self):
+        # Arrange
         rule = MaxFileLengthRule(max_lines=5)
         source = _make_source(5)
         source_file = make_source_file(source)
+
+        # Act
         result = FileLengthDetector.detect(source_file, 5, 5, rule.meta)
+
+        # Assert
         assert result is None
 
     def test_detect_正常系_ちょうど上限はNoneを返すこと(self):
+        # Arrange
         rule = MaxFileLengthRule(max_lines=5)
         source = _make_source(5)
         source_file = make_source_file(source)
+
+        # Act
         result = FileLengthDetector.detect(source_file, 5, 5, rule.meta)
+
+        # Assert
         assert result is None

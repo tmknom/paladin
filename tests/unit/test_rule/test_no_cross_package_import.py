@@ -328,11 +328,15 @@ class TestEntrypointChecker:
     """EntrypointChecker のテスト"""
 
     def test_is_entrypoint_正常系_main関数があればTrueを返すこと(self):
+        # Arrange
         tree = ast.parse("def main(): pass\n")
+        # Act / Assert
         assert EntrypointChecker.is_entrypoint(tree) is True
 
     def test_is_entrypoint_正常系_main関数がなければFalseを返すこと(self):
+        # Arrange
         tree = ast.parse("def foo(): pass\n")
+        # Act / Assert
         assert EntrypointChecker.is_entrypoint(tree) is False
 
 
@@ -344,7 +348,9 @@ class TestCrossPackageImportChecker:
     _ALLOW = ("src/myapp/rule/",)
 
     def test_is_cross_package_正常系_標準ライブラリはFalseを返すこと(self):
+        # Arrange
         module = ModulePath("os.path")
+        # Act / Assert
         assert (
             CrossPackageImportChecker.is_cross_package(
                 module, frozenset({"myapp.view"}), self._STDLIB, self._ROOT, self._ALLOW
@@ -353,7 +359,9 @@ class TestCrossPackageImportChecker:
         )
 
     def test_is_cross_package_正常系_ルートパッケージ外はFalseを返すこと(self):
+        # Arrange
         module = ModulePath("requests.auth")
+        # Act / Assert
         assert (
             CrossPackageImportChecker.is_cross_package(
                 module, frozenset({"myapp.view"}), self._STDLIB, self._ROOT, self._ALLOW
@@ -362,7 +370,9 @@ class TestCrossPackageImportChecker:
         )
 
     def test_is_cross_package_正常系_同一パッケージはFalseを返すこと(self):
+        # Arrange
         module = ModulePath("myapp.view.formatter")
+        # Act / Assert
         assert (
             CrossPackageImportChecker.is_cross_package(
                 module, frozenset({"myapp.view"}), self._STDLIB, self._ROOT, self._ALLOW
@@ -371,7 +381,9 @@ class TestCrossPackageImportChecker:
         )
 
     def test_is_cross_package_正常系_allow_dirsに含まれるパッケージはFalseを返すこと(self):
+        # Arrange
         module = ModulePath("myapp.rule.types")
+        # Act / Assert
         assert (
             CrossPackageImportChecker.is_cross_package(
                 module, frozenset({"myapp.view"}), self._STDLIB, self._ROOT, self._ALLOW
@@ -380,7 +392,9 @@ class TestCrossPackageImportChecker:
         )
 
     def test_is_cross_package_正常系_クロスパッケージはTrueを返すこと(self):
+        # Arrange
         module = ModulePath("myapp.check.formatter")
+        # Act / Assert
         assert (
             CrossPackageImportChecker.is_cross_package(
                 module, frozenset({"myapp.view"}), self._STDLIB, self._ROOT, self._ALLOW
@@ -393,6 +407,7 @@ class TestCrossPackageImportDetector:
     """CrossPackageImportDetector のテスト"""
 
     def test_detect_from_import_正常系_複数名で複数Violationを返すこと(self):
+        # Arrange
         source = "from myapp.check import OutputFormat, Rule\n"
         source_files = make_source_files(
             (source, "src/myapp/view/handler.py"),
@@ -403,13 +418,18 @@ class TestCrossPackageImportDetector:
         source_file = source_files.files[0]
         stmt = source_file.imports[0]
         import_module = ModulePath("myapp.check")
+
+        # Act
         result = CrossPackageImportDetector.detect_from_import(
             stmt, import_module, source_file, rule.meta
         )
+
+        # Assert
         assert len(result) == 2
         assert result[0].rule_id == "no-cross-package-import"
 
     def test_detect_plain_import_正常系_Violationを返すこと(self):
+        # Arrange
         source = "import myapp.check.context\n"
         source_files = make_source_files(
             (source, "src/myapp/view/handler.py"),
@@ -419,7 +439,11 @@ class TestCrossPackageImportDetector:
         rule = _rule_with_prepare(source_files, allow_dirs=("src/myapp/rule/",))
         source_file = source_files.files[0]
         stmt = source_file.imports[0]
+
+        # Act
         result = CrossPackageImportDetector.detect_plain_import(
             stmt, "myapp.check.context", source_file, rule.meta
         )
+
+        # Assert
         assert result.rule_id == "no-cross-package-import"

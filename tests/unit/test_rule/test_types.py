@@ -102,23 +102,35 @@ class TestSourceFileProperties:
     """SourceFile プロパティのテスト"""
 
     def test_is_init_py_正常系_init_pyのとき真を返すこと(self):
+        # Arrange
         tree = ast.parse("")
         sf = SourceFile(file_path=Path("src/paladin/__init__.py"), tree=tree, source="")
+
+        # Act / Assert
         assert sf.is_init_py is True
 
     def test_is_init_py_正常系_通常ファイルのとき偽を返すこと(self):
+        # Arrange
         tree = ast.parse("")
         sf = SourceFile(file_path=Path("src/paladin/foo.py"), tree=tree, source="")
+
+        # Act / Assert
         assert sf.is_init_py is False
 
     def test_is_test_file_正常系_tests配下のとき真を返すこと(self):
+        # Arrange
         tree = ast.parse("")
         sf = SourceFile(file_path=Path("tests/unit/test_foo.py"), tree=tree, source="")
+
+        # Act / Assert
         assert sf.is_test_file is True
 
     def test_is_test_file_正常系_src配下のとき偽を返すこと(self):
+        # Arrange
         tree = ast.parse("")
         sf = SourceFile(file_path=Path("src/paladin/foo.py"), tree=tree, source="")
+
+        # Act / Assert
         assert sf.is_test_file is False
 
 
@@ -129,24 +141,39 @@ class TestSourceFileGetLine:
         return SourceFile(file_path=Path("test.py"), tree=ast.parse(source), source=source)
 
     def test_正常系_1行目を返すこと(self):
+        # Arrange
         sf = self._sf("x = 1\ny = 2\n")
+
+        # Act / Assert
         assert sf.get_line(1) == "x = 1"
 
     def test_正常系_2行目を返すこと(self):
+        # Arrange
         sf = self._sf("x = 1\ny = 2\n")
+
+        # Act / Assert
         assert sf.get_line(2) == "y = 2"
 
     def test_正常系_前後空白をstripすること(self):
+        # Arrange
         # SourceFile を直接構築して source に空白付きの行を持たせる
         sf = SourceFile(file_path=Path("test.py"), tree=ast.parse(""), source="    x = 1\n")
+
+        # Act / Assert
         assert sf.get_line(1) == "x = 1"
 
     def test_エッジケース_行番号が範囲外のとき空文字を返すこと(self):
+        # Arrange
         sf = self._sf("x = 1\n")
+
+        # Act / Assert
         assert sf.get_line(99) == ""
 
     def test_エッジケース_行番号0のとき空文字を返すこと(self):
+        # Arrange
         sf = self._sf("x = 1\n")
+
+        # Act / Assert
         assert sf.get_line(0) == ""
 
 
@@ -158,27 +185,47 @@ class TestSourceFilesFilters:
         return SourceFile(file_path=Path(path), tree=tree, source="")
 
     def test_init_files_正常系_init_pyのみを返すこと(self):
+        # Arrange
         sf_init = self._sf("src/paladin/__init__.py")
         sf_other = self._sf("src/paladin/foo.py")
         source_files = SourceFiles(files=(sf_init, sf_other))
+
+        # Act
         result = list(source_files.init_files())
+
+        # Assert
         assert result == [sf_init]
 
     def test_production_files_正常系_tests配下を除外すること(self):
+        # Arrange
         sf_prod = self._sf("src/paladin/foo.py")
         sf_test = self._sf("tests/unit/test_foo.py")
         source_files = SourceFiles(files=(sf_prod, sf_test))
+
+        # Act
         result = list(source_files.production_files())
+
+        # Assert
         assert result == [sf_prod]
 
     def test_init_files_エッジケース_空の場合空を返すこと(self):
+        # Arrange
         source_files = SourceFiles(files=())
+
+        # Act
         result = list(source_files.init_files())
+
+        # Assert
         assert result == []
 
     def test_production_files_エッジケース_空の場合空を返すこと(self):
+        # Arrange
         source_files = SourceFiles(files=())
+
+        # Act
         result = list(source_files.production_files())
+
+        # Assert
         assert result == []
 
 
@@ -191,62 +238,103 @@ class TestSourceFileImports:
         )
 
     def test_imports_正常系_全インポートを返すこと(self):
+        # Arrange
         source = "import os\nfrom paladin import Foo\n"
         sf = self._sf(source)
+
+        # Act
         result = sf.imports
+
+        # Assert
         assert len(result) == 2
 
     def test_imports_正常系_ネストしたインポートも返すこと(self):
+        # Arrange
         source = "def f():\n    import os\n"
         sf = self._sf(source)
+
+        # Act
         result = sf.imports
+
+        # Assert
         assert len(result) == 1
 
     def test_top_level_imports_正常系_トップレベルのみ返すこと(self):
+        # Arrange
         source = "import os\ndef f():\n    import sys\n"
         sf = self._sf(source)
+
+        # Act
         result = sf.top_level_imports
+
+        # Assert
         assert len(result) == 1
         assert result[0].names[0].name == "os"
 
     def test_imports_エッジケース_インポートなしのとき空タプルを返すこと(self):
+        # Arrange
         sf = self._sf("x = 1\n")
+
+        # Act / Assert
         assert sf.imports == ()
 
     def test_top_level_imports_エッジケース_インポートなしのとき空タプルを返すこと(self):
+        # Arrange
         sf = self._sf("x = 1\n")
+
+        # Act / Assert
         assert sf.top_level_imports == ()
 
     def test_location_正常系_SourceLocationを返すこと(self):
+        # Arrange
         sf = self._sf("x = 1\n")
+
+        # Act
         loc = sf.location(line=5, column=2)
+
+        # Assert
         assert loc.file == Path("src/paladin/foo.py")
         assert loc.line == 5
         assert loc.column == 2
 
     def test_location_正常系_デフォルトcolumnは0であること(self):
+        # Arrange
         sf = self._sf("x = 1\n")
+
+        # Act
         loc = sf.location(line=3)
+
+        # Assert
         assert loc.column == 0
 
     def test_location_from_正常系_ImportStatementから位置を返すこと(self):
+        # Arrange
         source = "from paladin import Foo\n"
         tree = ast.parse(source)
         sf = SourceFile(file_path=Path("src/paladin/foo.py"), tree=tree, source=source)
         node = tree.body[0]
         assert isinstance(node, ast.ImportFrom)
         stmt = ImportStatement.from_import_from(node)
+
+        # Act
         loc = sf.location_from(stmt)
+
+        # Assert
         assert loc.file == Path("src/paladin/foo.py")
         assert loc.line == 1
         assert loc.column == 0
 
     def test_location_from_正常系_AbsoluteFromImportから位置を返すこと(self):
+        # Arrange
         source = "from paladin import Foo\n"
         sf = SourceFile(file_path=Path("src/paladin/foo.py"), tree=ast.parse(source), source=source)
         imps = sf.absolute_from_imports
         assert len(imps) == 1
+
+        # Act
         loc = sf.location_from(imps[0])
+
+        # Assert
         assert loc.file == Path("src/paladin/foo.py")
         assert loc.line == 1
         assert loc.column == 0
@@ -261,37 +349,59 @@ class TestSourceFileAbsoluteFromImports:
         )
 
     def test_正常系_絶対fromインポートを抽出すること(self):
+        # Arrange
         source = "from paladin.check import Foo\n"
         sf = self._sf(source)
+
+        # Act
         result = sf.absolute_from_imports
+
+        # Assert
         assert len(result) == 1
         assert result[0].module_str == "paladin.check"
         assert result[0].names[0].name == "Foo"
 
     def test_正常系_相対インポートを除外すること(self):
+        # Arrange
         source = "from .check import Foo\n"
         sf = self._sf(source)
+
+        # Act / Assert
         assert sf.absolute_from_imports == ()
 
     def test_正常系_通常importを除外すること(self):
+        # Arrange
         source = "import paladin\n"
         sf = self._sf(source)
+
+        # Act / Assert
         assert sf.absolute_from_imports == ()
 
     def test_正常系_moduleなしのfromインポートを除外すること(self):
+        # Arrange
         source = "from . import foo\n"
         sf = self._sf(source)
+
+        # Act / Assert
         assert sf.absolute_from_imports == ()
 
     def test_正常系_複数インポートが混在するとき絶対fromのみを返すこと(self):
+        # Arrange
         source = "from paladin.check import Foo\nfrom .rule import Bar\nimport os\n"
         sf = self._sf(source)
+
+        # Act
         result = sf.absolute_from_imports
+
+        # Assert
         assert len(result) == 1
         assert result[0].module_str == "paladin.check"
 
     def test_エッジケース_インポートなしのとき空タプルを返すこと(self):
+        # Arrange
         sf = self._sf("x = 1\n")
+
+        # Act / Assert
         assert sf.absolute_from_imports == ()
 
 
@@ -309,14 +419,19 @@ class TestRuleMetaCreateViolationAt:
         )
 
     def test_正常系_SourceLocationからViolationを生成すること(self):
+        # Arrange
         meta = self._meta()
         loc = SourceLocation(file=Path("src/paladin/foo.py"), line=10, column=4)
+
+        # Act
         result = meta.create_violation_at(
             location=loc,
             message="テストメッセージ",
             reason="テスト理由",
             suggestion="テスト提案",
         )
+
+        # Assert
         assert result.file == Path("src/paladin/foo.py")
         assert result.line == 10
         assert result.column == 4

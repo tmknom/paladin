@@ -111,8 +111,11 @@ class TestNonInitAllDetector:
     """NonInitAllDetector のテスト"""
 
     def test_detect_正常系_Violationを返すこと(self):
+        # Arrange
         rule = NoNonInitAllRule()
         source = '__all__ = ["Foo"]\n'
         source_file = make_source_file(source, "module.py")
+
+        # Act / Assert
         result = NonInitAllDetector.detect(rule.meta, source_file, 1)
         assert result.rule_id == "no-non-init-all"
