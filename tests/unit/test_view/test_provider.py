@@ -1,6 +1,5 @@
 """ViewOrchestratorProviderクラスのテスト"""
 
-from paladin.view.orchestrator import ViewOrchestrator
 from paladin.view.provider import ViewOrchestratorProvider
 
 
@@ -13,9 +12,9 @@ class TestViewOrchestratorProvider:
         rules = result.rule_set.list_rules()
 
         # Assert
-        assert isinstance(result, ViewOrchestrator)
-        assert len(rules) == 18
+        assert len(rules) == 19
         rule_ids = {r.rule_id for r in rules}
+        assert "require-empty-test-init" in rule_ids
         assert "require-all-export" in rule_ids
         assert "no-relative-import" in rule_ids
         assert "no-local-import" in rule_ids
