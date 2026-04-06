@@ -13,7 +13,6 @@ class TestLogDictConfigBuilder:
         self._builder = LogDictConfigBuilder()
 
     def test_build_console_only(self):
-        """file_output=False の場合 console ハンドラーのみ含む辞書を返す"""
         # Act
         result = self._builder.build(
             level="INFO",
@@ -30,7 +29,6 @@ class TestLogDictConfigBuilder:
         assert result["root"]["handlers"] == ["console"]
 
     def test_build_with_file_output(self):
-        """file_output=True の場合 file ハンドラーを追加する"""
         # Arrange
         log_path = Path("/tmp/test.log")
 
@@ -49,8 +47,6 @@ class TestLogDictConfigBuilder:
         assert "file" in result["formatters"]
 
     def test_build_with_json_formatter_class(self):
-        """json_formatter_class を渡すと formatters.console にクラスが設定される"""
-
         # Arrange
         class CustomFormatter(logging.Formatter):
             pass
@@ -69,7 +65,6 @@ class TestLogDictConfigBuilder:
         assert result["formatters"]["console"]["()"] is CustomFormatter
 
     def test_build_disable_existing_loggers_false(self):
-        """disable_existing_loggers は常に False"""
         # Act
         result = self._builder.build(
             level="INFO",

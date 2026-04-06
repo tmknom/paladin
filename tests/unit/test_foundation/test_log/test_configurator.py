@@ -38,13 +38,11 @@ class TestLogConfigurator:
         logger.setLevel(logging.NOTSET)
 
     def test_init_デフォルト値_app_nameを省略すると_logになる(self):
-        """app_name を省略すると self.app_name が "log" になる"""
         # Act / Assert
         configurator = LogConfigurator(level="INFO")
         assert configurator.app_name == "log"
 
     def test_configure_plain_正常系_Pathを返す(self):
-        """configure_plain はログファイルの Path を返す"""
         # Arrange
         logger = logging.getLogger()
         pytest_handlers = logger.handlers[:]
@@ -63,7 +61,6 @@ class TestLogConfigurator:
                 logger.addHandler(handler)
 
     def test_configure_plain_正常系_再初期化防止(self):
-        """同じロガーに2回 configure_plain を呼ぶと2回目は None を返す"""
         # Arrange
         logger = logging.getLogger()
         pytest_handlers = logger.handlers[:]
@@ -93,7 +90,6 @@ class TestLogConfigurator:
                 logger.addHandler(handler)
 
     def test_configure_json_正常系_Noneを返す(self):
-        """configure_json はファイル出力なしのため None を返す"""
         # Arrange
         logger = logging.getLogger()
         pytest_handlers = logger.handlers[:]
@@ -112,7 +108,6 @@ class TestLogConfigurator:
                 logger.addHandler(handler)
 
     def test_configure_json_with_custom_formatter_正常系_カスタムフォーマッターを使用(self):
-        """configure_json にカスタムフォーマッタークラスを渡すと None を返す"""
         # Arrange
         logger = logging.getLogger()
         pytest_handlers = logger.handlers[:]

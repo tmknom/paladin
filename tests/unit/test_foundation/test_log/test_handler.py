@@ -12,7 +12,6 @@ class TestLogHandler:
         self._handler = LogHandler()
 
     def test_create_console_handler(self):
-        """create_console_handler は StreamHandler の辞書を返す"""
         # Act
         result = self._handler.create_console_handler(stream="stderr", level="INFO")
 
@@ -23,7 +22,6 @@ class TestLogHandler:
         assert result["formatter"] == "console"
 
     def test_create_console_handler_stdout(self):
-        """stream="stdout" の場合 ext://sys.stdout を返す"""
         # Act
         result = self._handler.create_console_handler(stream="stdout", level="DEBUG")
 
@@ -32,7 +30,6 @@ class TestLogHandler:
         assert result["level"] == "DEBUG"
 
     def test_create_file_handler(self):
-        """create_file_handler は FileHandler の辞書を返す"""
         # Arrange
         log_path = Path("/tmp/test.log")
 
