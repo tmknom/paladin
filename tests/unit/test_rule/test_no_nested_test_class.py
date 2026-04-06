@@ -2,7 +2,11 @@
 
 import ast
 
-from paladin.rule.no_nested_test_class import NestedClassDetector, NoNestedTestClassRule
+from paladin.rule.no_nested_test_class import (
+    NestedClassDetector,
+    NestedTestClassCollector,
+    NoNestedTestClassRule,
+)
 from paladin.rule.types import RuleMeta
 from tests.unit.test_rule.helper import make_source_file, make_test_source_file
 
@@ -29,8 +33,94 @@ def _make_meta() -> RuleMeta:
     )
 
 
+class TestNestedTestClassCollector:
+    """NestedTestClassCollector.collect のテスト"""
+
+    def test_collect_正常系_ネストされたClassDefをペアで返すこと(self):
+        # Arrange
+        source = "class TestOuter:\n    class InnerClass:\n        pass\n"
+        tree = ast.parse(source)
+
+        # Act
+        result = NestedTestClassCollector.collect(tree)
+
+        # Assert
+        assert len(result) == 1
+        outer, inner = result[0]
+        assert outer.name == "TestOuter"
+        assert inner.name == "InnerClass"
+
+    def test_collect_正常系_複数のinnerクラスをすべて収集すること(self):
+        # Arrange
+        source = (
+            "class TestOuter:\n    class InnerA:\n        pass\n    class InnerB:\n        pass\n"
+        )
+        tree = ast.parse(source)
+
+        # Act
+        result = NestedTestClassCollector.collect(tree)
+
+        # Assert
+        assert len(result) == 2
+        inner_names = {inner.name for _, inner in result}
+        assert inner_names == {"InnerA", "InnerB"}
+
+    def test_collect_正常系_複数のouterクラスから収集すること(self):
+        # Arrange
+        source = (
+            "class TestFirst:\n"
+            "    class InnerA:\n"
+            "        pass\n"
+            "class TestSecond:\n"
+            "    class InnerB:\n"
+            "        pass\n"
+        )
+        tree = ast.parse(source)
+
+        # Act
+        result = NestedTestClassCollector.collect(tree)
+
+        # Assert
+        assert len(result) == 2
+        outer_names = {outer.name for outer, _ in result}
+        assert outer_names == {"TestFirst", "TestSecond"}
+
+    def test_collect_正常系_トップレベルがClassDef以外のノードはスキップすること(self):
+        # Arrange
+        source = "def top_level_func():\n    pass\nclass TestOuter:\n    pass\n"
+        tree = ast.parse(source)
+
+        # Act
+        result = NestedTestClassCollector.collect(tree)
+
+        # Assert
+        assert result == ()
+
+    def test_collect_正常系_innerがClassDef以外のノードはスキップすること(self):
+        # Arrange
+        source = "class TestOuter:\n    def test_something(self):\n        pass\n"
+        tree = ast.parse(source)
+
+        # Act
+        result = NestedTestClassCollector.collect(tree)
+
+        # Assert
+        assert result == ()
+
+    def test_collect_エッジケース_ネストなしで空タプルを返すこと(self):
+        # Arrange
+        source = "class TestOuter:\n    pass\n"
+        tree = ast.parse(source)
+
+        # Act
+        result = NestedTestClassCollector.collect(tree)
+
+        # Assert
+        assert result == ()
+
+
 class TestNestedClassDetector:
-    """NestedClassDetector のテスト"""
+    """NestedClassDetector.detect のテスト"""
 
     def test_detect_正常系_Violationが正しく生成されること(self):
         # Arrange
@@ -52,7 +142,7 @@ class TestNestedClassDetector:
 class TestNoNestedTestClassRuleCheck:
     """NoNestedTestClassRule.check のテスト"""
 
-    def test_check_正常系_ネストされたクラスを違反として検出すること(self):
+    def test_check_正常系_違反のフィールド値が正しいこと(self):
         # Arrange
         rule = NoNestedTestClassRule()
         source = "class TestOuter:\n    class InnerClass:\n        pass\n"
@@ -63,110 +153,15 @@ class TestNoNestedTestClassRuleCheck:
 
         # Assert
         assert len(result) == 1
-        assert result[0].rule_id == "no-nested-test-class"
-
-    def test_check_正常系_複数のネストクラスをすべて検出すること(self):
-        # Arrange
-        rule = NoNestedTestClassRule()
-        source = (
-            "class TestOuter:\n    class InnerA:\n        pass\n    class InnerB:\n        pass\n"
-        )
-        source_file = make_test_source_file(source)
-
-        # Act
-        result = rule.check(source_file)
-
-        # Assert
-        assert len(result) == 2
-
-    def test_check_正常系_複数のトップレベルクラスのネストをすべて検出すること(self):
-        # Arrange
-        rule = NoNestedTestClassRule()
-        source = (
-            "class TestFirst:\n"
-            "    class InnerA:\n"
-            "        pass\n"
-            "class TestSecond:\n"
-            "    class InnerB:\n"
-            "        pass\n"
-        )
-        source_file = make_test_source_file(source)
-
-        # Act
-        result = rule.check(source_file)
-
-        # Assert
-        assert len(result) == 2
+        violation = result[0]
+        assert "TestOuter" in violation.message
+        assert "InnerClass" in violation.message
 
     def test_check_正常系_非テストファイルは空タプルを返すこと(self):
         # Arrange
         rule = NoNestedTestClassRule()
         source = "class Outer:\n    class Inner:\n        pass\n"
         source_file = make_source_file(source)
-
-        # Act
-        result = rule.check(source_file)
-
-        # Assert
-        assert result == ()
-
-    def test_check_正常系_ネストなしのテストファイルは空タプルを返すこと(self):
-        # Arrange
-        rule = NoNestedTestClassRule()
-        source = "class TestFlat:\n    def test_something(self):\n        pass\n"
-        source_file = make_test_source_file(source)
-
-        # Act
-        result = rule.check(source_file)
-
-        # Assert
-        assert result == ()
-
-    def test_check_正常系_トップレベルClassDef以外のノードはスキップすること(self):
-        # Arrange
-        rule = NoNestedTestClassRule()
-        source = "def top_level_func():\n    pass\nclass TestOuter:\n    def test_something(self):\n        pass\n"
-        source_file = make_test_source_file(source)
-
-        # Act
-        result = rule.check(source_file)
-
-        # Assert
-        assert result == ()
-
-    def test_check_正常系_違反の行番号がネストされたclass文の行番号であること(self):
-        # Arrange
-        rule = NoNestedTestClassRule()
-        source = (
-            "class TestOuter:\n    class InnerA:\n        pass\n    class InnerB:\n        pass\n"
-        )
-        source_file = make_test_source_file(source)
-
-        # Act
-        result = rule.check(source_file)
-
-        # Assert
-        lines = {v.line for v in result}
-        assert 2 in lines
-        assert 4 in lines
-
-    def test_check_エッジケース_クラス内のメソッド定義は違反としないこと(self):
-        # Arrange
-        rule = NoNestedTestClassRule()
-        source = "class TestOuter:\n    def test_something(self):\n        pass\n"
-        source_file = make_test_source_file(source)
-
-        # Act
-        result = rule.check(source_file)
-
-        # Assert
-        assert result == ()
-
-    def test_check_エッジケース_空のクラスは違反としないこと(self):
-        # Arrange
-        rule = NoNestedTestClassRule()
-        source = "class TestOuter:\n    pass\n"
-        source_file = make_test_source_file(source)
 
         # Act
         result = rule.check(source_file)
