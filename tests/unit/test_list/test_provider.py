@@ -1,5 +1,3 @@
-"""ListOrchestratorProviderクラスのテスト"""
-
 from paladin.list.provider import ListOrchestratorProvider
 
 
@@ -38,5 +36,6 @@ class TestListOrchestratorProvider:
             "no-frozen-instance-test",
             "no-nested-test-class",
             "no-private-attr-in-test",
+            "no-test-method-docstring",
         }
         assert rule_ids == expected_ids

@@ -1,9 +1,4 @@
-"""Rule 層の Composition Root。ルール登録の唯一の変更点。
-
-ルールの追加・削除はこのファイルで一元管理する。
-新しいルールを実装した場合は `RuleSetFactory.create` の `rules` または `multi_file_rules` に追加すること。
-逆に、ここに登録されていないルールは静的解析の実行対象にならない。
-"""
+"""Rule 層の Composition Root。全ルールの登録を一元管理する唯一の変更点。"""
 
 from typing import cast
 
@@ -22,6 +17,7 @@ from paladin.rule.no_nested_test_class import NoNestedTestClassRule
 from paladin.rule.no_non_init_all import NoNonInitAllRule
 from paladin.rule.no_private_attr_in_test import NoPrivateAttrInTestRule
 from paladin.rule.no_relative_import import NoRelativeImportRule
+from paladin.rule.no_test_method_docstring import NoTestMethodDocstringRule
 from paladin.rule.no_testing_test_code import NoTestingTestCodeRule
 from paladin.rule.no_third_party_import import NoThirdPartyImportRule
 from paladin.rule.no_unused_export import NoUnusedExportRule
@@ -35,7 +31,7 @@ from paladin.rule.unused_ignore import UnusedIgnoreRule
 
 
 class RuleSetFactory:
-    """`create()` でプロダクション用ルール一式を返す。`rule_options` で各ルールのパラメータを上書き可能。"""
+    """静的解析で使用するルール一式を組み立てる Factory。オプション値の型変換とデフォルト値適用を一元管理する。"""
 
     def create(self, rule_options: dict[str, dict[str, object]] | None = None) -> RuleSet:
         """`rule_options` が `None` の場合は全ルールにデフォルト値を適用する。
@@ -78,6 +74,7 @@ class RuleSetFactory:
                 NoFrozenInstanceTestRule(),
                 NoNestedTestClassRule(),
                 NoPrivateAttrInTestRule(),
+                NoTestMethodDocstringRule(),
             ),
             multi_file_rules=(
                 NoDirectInternalImportRule(),
@@ -92,10 +89,11 @@ class RuleSetFactory:
         rule_options: dict[str, dict[str, object]] | None,
         rule_id: str,
     ) -> tuple[str, ...]:
-        """rule_options から指定ルールの allow-dirs を取り出す
+        """指定ルールの allow-dirs を取り出す。
 
-        `rule_options` が `None` の場合は空タプルを返す。
-        `allow-dirs` の値が `list` でない場合も空タプルを返す（設定値が期待する型でない場合に安全に無視する）。
+        Constraints:
+            - `rule_options` が `None`、または `allow-dirs` の値が `list` 以外の型の場合は空タプルを返す（型安全な無視）。
+              例外を出さずに空タプルにフォールバックすることで、設定値の型不一致を安全に読み飛ばす。
         """
         if rule_options is None:
             return ()
@@ -112,10 +110,11 @@ class RuleSetFactory:
         default_max: int,
         default_test: int,
     ) -> tuple[int, int]:
-        """rule_options から指定ルールの max-lines / max-test-lines を取り出す
+        """指定ルールの max-lines / max-test-lines を取り出す。
 
-        `rule_options` が `None` の場合は `default_max` / `default_test` を返す。
-        値が存在しても `int` でない場合も同様に `default_max` / `default_test` を返す。
+        Constraints:
+            - `rule_options` が `None`、または値が `int` 以外の型の場合は `default_max` / `default_test` にフォールバックする（型安全な無視）。
+              例外を出さずにデフォルト値を使うことで、設定値の型不一致が解析実行を妨げないようにする。
         """
         if rule_options is None:
             return default_max, default_test
