@@ -21,7 +21,7 @@ class NestedClassDetector:
         meta: RuleMeta,
         source_file: SourceFile,
     ) -> Violation:
-        """ネストされたクラスに対して Violation を返す。呼び出し側で ClassDef 確認済みのため、確定的に Violation を生成する"""
+        """ネストされたクラスに対して Violation を返す"""
         return meta.create_violation_at(
             location=source_file.location(line=inner_class.lineno),
             message=f"テストクラス `{outer_class.name}` の中にクラス `{inner_class.name}` がネストされています",
@@ -30,11 +30,34 @@ class NestedClassDetector:
         )
 
 
+class NestedTestClassCollector:
+    """トップレベルクラスの body を走査し、ネストされたクラス定義を収集するヘルパー"""
+
+    @staticmethod
+    def collect(tree: ast.Module) -> tuple[tuple[ast.ClassDef, ast.ClassDef], ...]:
+        """モジュールのトップレベルクラスからネストされたクラスを (outer, inner) ペアで返す"""
+        pairs: list[tuple[ast.ClassDef, ast.ClassDef]] = []
+        for outer_class in tree.body:
+            if not isinstance(outer_class, ast.ClassDef):
+                continue
+            pairs.extend(NestedTestClassCollector._collect_inner(outer_class))
+        return tuple(pairs)
+
+    @staticmethod
+    def _collect_inner(outer_class: ast.ClassDef) -> list[tuple[ast.ClassDef, ast.ClassDef]]:
+        """トップレベルクラスの body からネストされた ClassDef を収集する"""
+        return [
+            (outer_class, inner_node)
+            for inner_node in outer_class.body
+            if isinstance(inner_node, ast.ClassDef)
+        ]
+
+
 class NoNestedTestClassRule:
     """テストクラス内にネストされたクラス定義を禁止するルール"""
 
     def __init__(self) -> None:
-        """RuleMeta を初期化する"""
+        """ルールを初期化する"""
         self._meta = RuleMeta(
             rule_id="no-nested-test-class",
             rule_name="No Nested Test Class",
@@ -54,14 +77,8 @@ class NoNestedTestClassRule:
         if not source_file.is_test_file:
             return ()
         violations: list[Violation] = []
-        for outer_class in source_file.tree.body:
-            if not isinstance(outer_class, ast.ClassDef):
-                continue
-            for inner_node in outer_class.body:
-                if not isinstance(inner_node, ast.ClassDef):
-                    continue
-                violation = NestedClassDetector.detect(
-                    outer_class, inner_node, self._meta, source_file
-                )
-                violations.append(violation)
+        for outer_class, inner_class in NestedTestClassCollector.collect(source_file.tree):
+            violations.append(
+                NestedClassDetector.detect(outer_class, inner_class, self._meta, source_file)
+            )
         return tuple(violations)
