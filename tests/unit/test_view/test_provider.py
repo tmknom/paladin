@@ -37,5 +37,6 @@ class TestViewOrchestratorProvider:
             "no-error-message-test",
             "no-frozen-instance-test",
             "no-nested-test-class",
+            "no-private-attr-in-test",
         }
         assert rule_ids == expected_ids

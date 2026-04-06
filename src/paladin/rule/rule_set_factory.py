@@ -1,4 +1,4 @@
-"""Rule 層の Composition Root。
+"""Rule 層の Composition Root。ルール登録の唯一の変更点。
 
 ルールの追加・削除はこのファイルで一元管理する。
 新しいルールを実装した場合は `RuleSetFactory.create` の `rules` または `multi_file_rules` に追加すること。
@@ -20,6 +20,7 @@ from paladin.rule.no_local_import import NoLocalImportRule
 from paladin.rule.no_mock_usage import NoMockUsageRule
 from paladin.rule.no_nested_test_class import NoNestedTestClassRule
 from paladin.rule.no_non_init_all import NoNonInitAllRule
+from paladin.rule.no_private_attr_in_test import NoPrivateAttrInTestRule
 from paladin.rule.no_relative_import import NoRelativeImportRule
 from paladin.rule.no_testing_test_code import NoTestingTestCodeRule
 from paladin.rule.no_third_party_import import NoThirdPartyImportRule
@@ -34,12 +35,10 @@ from paladin.rule.unused_ignore import UnusedIgnoreRule
 
 
 class RuleSetFactory:
-    """プロダクション用のデフォルトルール一式を組み立てるファクトリー"""
+    """`create()` でプロダクション用ルール一式を返す。`rule_options` で各ルールのパラメータを上書き可能。"""
 
     def create(self, rule_options: dict[str, dict[str, object]] | None = None) -> RuleSet:
-        """プロダクションで使うデフォルトのルール一式を返す
-
-        `rule_options` が `None` の場合は全ルールにデフォルト値を適用する。
+        """`rule_options` が `None` の場合は全ルールにデフォルト値を適用する。
 
         Constraints:
             - `rule_options` のキーはルールID文字列、値は各ルールのオプション辞書。
@@ -78,6 +77,7 @@ class RuleSetFactory:
                 NoErrorMessageTestRule(),
                 NoFrozenInstanceTestRule(),
                 NoNestedTestClassRule(),
+                NoPrivateAttrInTestRule(),
             ),
             multi_file_rules=(
                 NoDirectInternalImportRule(),
