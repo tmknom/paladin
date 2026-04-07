@@ -31,6 +31,15 @@ packages = ["src/paladin"]
 requires = ["hatchling"]
 build-backend = "hatchling.build"
 
+[tool.uv]
+# セキュリティ: tool.uv.sources を無視し、standards-compliant な依存のみで解決する
+# Git/path 依存が release 用の lock に混入することを防ぐガードレール
+# 注意: [tool.uv.sources] を追加する場合、この設定が解決時にそれを無視するため、
+#        その時点でこの設定を外し、理由をコミットすること
+no-sources = true
+# 再現性: uv のバージョン範囲を固定し、lockfile 形式の互換性を担保する
+required-version = ">=0.11.0,<0.12"
+
 [tool.pytest.ini_options]
 asyncio_mode = "strict"
 asyncio_default_fixture_loop_scope = "function"
