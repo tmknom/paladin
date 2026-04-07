@@ -160,6 +160,12 @@ class UnusedIgnoreRule:
             intent="不要な Ignore コメントを削除してコードの意図を明確にする",
             guidance="各 Ignore コメントに対応する違反が存在することを確認する",
             suggestion="対応する違反がない Ignore コメントを削除してください",
+            background="コードを修正して違反が解消された後も Ignore コメントが残存するケースがあります。未使用の Ignore コメントはコードの可読性を低下させ、ルール ID のタイポ（誤記）の見落としにもつながります。",
+            steps=(
+                "不要になった Ignore コメントのルール ID を削除する",
+                "Ignore コメント自体が不要になった場合はコメント行を削除する",
+            ),
+            detection_example="# 違反: 対応する違反がないのに Ignore コメントがある\n# paladin: ignore[no-relative-import]  # 違反\nfrom mypackage import utils\n\n# 準拠: 対応する違反がある場合のみ Ignore コメントを使う\n# paladin: ignore[no-relative-import]  # 準拠\nfrom . import sibling",
         )
 
     @property

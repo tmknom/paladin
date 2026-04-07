@@ -122,6 +122,13 @@ class NoCrossPackageImportRule:
             intent="依存方向に制約を設けることで、アーキテクチャ境界の崩壊と変更影響範囲の拡大を防ぐ",
             guidance="allow-dirs 外のパッケージをインポートしている箇所を確認する",
             suggestion="インポート先パッケージを allow-dirs に追加するか、同一パッケージ内のモジュールを使うように変更してください",
+            background="依存方向に制約がない状態では、パッケージ間の参照が無秩序に増加します。allow-dirs に許可するパッケージを明示することで、依存方向のアーキテクチャ制約を設定ファイルで宣言し自動検証できます。",
+            steps=(
+                "依存したいパッケージが allow-dirs に含まれているか確認する",
+                "含まれていない場合は allow-dirs に追加するか、依存関係を整理して不要な参照を削除する",
+            ),
+            config_example='[tool.paladin.rule.no-cross-package-import]\nallow-dirs = ["src/myapp/foundation/", "src/myapp/models/"]',
+            detection_example="# 違反: allow-dirs に含まれないパッケージへのクロスパッケージインポート\nfrom myapp.services import UserService  # 違反\n\n# 準拠: allow-dirs に含まれるパッケージへのインポート\nfrom myapp.foundation import BaseModel  # 準拠",
         )
 
     @property

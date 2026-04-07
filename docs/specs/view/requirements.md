@@ -20,7 +20,9 @@
 
 ### ルール詳細の表示
 
-指定した RULE_ID に対応するルールの詳細情報を表示できる。表示される情報は以下の 6 項目。
+指定した RULE_ID に対応するルールの詳細情報を表示できる。表示される情報は以下の通り。
+
+必須項目（全ルールで表示される）。
 
 - Rule ID（ルール識別子）
 - Name（ルール名）
@@ -28,6 +30,13 @@
 - Intent（設計意図）
 - Guidance（違反の見方）
 - Suggestion（修正方向）
+
+任意項目（ルールに設定されている場合のみ表示される）。
+
+- 背景と意図（`background`）: ルールの背景と設計意図の詳細説明
+- 改善手順（`steps`）: 段階的な改善ステップのリスト
+- 設定例（`config_example`）: 設定ファイルの記述例
+- 検出パターン（`detection_example`）: ルールが検出する対象の具体例
 
 ### 出力形式の切り替え
 
@@ -37,10 +46,12 @@
 
 - 詳細情報は各項目をラベル付きで表示し、ラベルと値が揃えられた形式で出力できる
 - ラベル列の幅は最も長いラベルに合わせて自動調整される
+- 任意項目はルールに設定されている場合のみ、セクション見出しと内容を追記して出力できる
 
 ### JSON 出力形式
 
 - `rule_id`・`rule_name`・`summary`・`intent`・`guidance`・`suggestion` の 6 フィールドを含む JSON オブジェクトを出力できる
+- 任意項目（`background`・`steps`・`config_example`・`detection_example`）はルールに設定されている場合のみ JSON フィールドとして含まれる
 
 ### 存在しないルール ID への対応
 
@@ -73,7 +84,8 @@
 
 - Python 3.11 以上
 - paladin パッケージの rule モジュールにルールが登録されていること
-- 各ルールが Rule ID・Name・Summary・Intent・Guidance・Suggestion のメタ情報を持つこと
+- 各ルールが Rule ID・Name・Summary・Intent・Guidance・Suggestion の必須メタ情報を持つこと
+- 各ルールは任意で Background・Steps・Config Example・Detection Example のメタ情報を持てること
 
 ## 関連ドキュメント
 

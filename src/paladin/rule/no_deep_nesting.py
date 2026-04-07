@@ -240,6 +240,26 @@ class NoDeepNestingRule:
             intent="ネストを浅く保つことでテスタビリティと可読性を向上させる",
             guidance="関数・メソッド内のネスト深度が3段階以上の箇所を確認する",
             suggestion="ネストの深い処理をプライベートメソッドに切り出すか、クラス設計を見直してください",
+            background=(
+                "単一メソッドに深いネストが生じるのは、手続き的にロジックを持たせすぎているサインです。"
+                "ネストが深くなるほどテスタビリティが低下し、オブジェクトの責務が適切に分割されていないことの兆候でもあります。"
+            ),
+            steps=(
+                "クラス設計を見直し、処理の一部を別のクラスや型に委譲できないか検討する",
+                "深くなった部分をプライベートメソッドに抽出してネスト深度を下げる",
+                "ガード節（早期リターン）を活用してネストを浅くする",
+            ),
+            detection_example=(
+                "# 違反: ネストが3段階以上\n"
+                "for node in source_file.tree.body:    # depth 1\n"
+                "    if isinstance(node, ast.Assign):  # depth 2\n"
+                "        for target in node.targets:   # depth 3 ← 違反\n"
+                "            ...\n\n"
+                "# 準拠: プライベートメソッドに切り出してネストを浅くする\n"
+                "for node in source_file.tree.body:    # depth 1\n"
+                "    if isinstance(node, ast.Assign):  # depth 2\n"
+                "        self._check_assign(node, ...)"
+            ),
         )
 
     @property

@@ -144,6 +144,10 @@ class RuleMeta:
     intent: str
     guidance: str
     suggestion: str
+    background: str | None = None
+    steps: tuple[str, ...] | None = None
+    config_example: str | None = None
+    detection_example: str | None = None
 
     def create_violation_at(
         self,

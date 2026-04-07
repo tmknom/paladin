@@ -129,6 +129,26 @@ class MaxMethodLengthRule:
             intent="メソッド/関数の肥大化を防ぎ、単一責任原則を促進する",
             guidance="各メソッド/関数の行数を確認し、上限を超えていないか検査する",
             suggestion="メソッド/関数の処理を分割し、複数のプライベートメソッドや関数に分離することを検討してください",
+            background=(
+                "メソッド/関数の行数は、設計の健全性を示すシンプルかつ信頼性の高い指標です。"
+                "行数が増加するほど、責務の肥大化・変更容易性の低下・テスタビリティの低下・認知負荷の増大を招きます。"
+            ),
+            steps=(
+                "メソッド/関数の処理を論理的な単位で分割する",
+                "プライベートメソッドとして切り出す候補を特定する",
+                "切り出したメソッドに明確な責務を持たせ、命名で意図を表現する",
+            ),
+            config_example=(
+                "[tool.paladin.rule.max-method-length]\nmax-lines = 50\nmax-test-lines = 100"
+            ),
+            detection_example=(
+                "# 違反: メソッドの行数が上限を超えている\n"
+                "def execute(self, request: ServiceRequest) -> ServiceResponse:  # 80行のメソッド\n"
+                "    ...\n\n"
+                "# 準拠: メソッドの行数が上限内に収まっている\n"
+                "def execute(self, request: ServiceRequest) -> ServiceResponse:  # 40行のメソッド\n"
+                "    ..."
+            ),
         )
 
     @property

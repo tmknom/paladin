@@ -82,6 +82,12 @@ class RequireDocstringRule:
             intent="モジュールの設計意図やクラスの責務・契約を表明する手段を確保する",
             guidance="モジュール先頭の docstring とクラス定義直後の docstring を確認する",
             suggestion="docstring を追加して、モジュールやクラスの責務を記述してください",
+            background="docstring はコードの「何をするか」を表明する唯一の公式な手段です。型アノテーションや命名が正確であっても、設計上の位置づけ・制約・責務の境界はコードから読み取れないことがほとんどです。",
+            steps=(
+                "モジュール冒頭にモジュール docstring を追加する（そのモジュールの設計上の位置づけや責務を説明する）",
+                "クラス定義の直後にクラス docstring を追加する（そのクラスが何をするもので何をしないかの境界を説明する）",
+            ),
+            detection_example='# 違反: モジュール docstring がない\nimport ast\nclass AstParser:\n    def parse(self, source: str) -> ast.Module:\n        ...\n\n# 準拠: モジュールとクラスに docstring がある\n"""AST解析層の入力担当。ソースコードを構文木に変換する"""\nimport ast\nclass AstParser:\n    """Python ソースコードを ast.Module に変換するパーサー"""\n    def parse(self, source: str) -> ast.Module:\n        ...',
         )
 
     @property

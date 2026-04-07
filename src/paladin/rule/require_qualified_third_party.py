@@ -65,6 +65,12 @@ class RequireQualifiedThirdPartyRule:
             intent="外部依存の境界を明示し、サードパーティライブラリの使用箇所を追跡可能にする",
             guidance="from X import Y や import X as Y の形式でサードパーティが使われている箇所を確認する",
             suggestion="import X の完全修飾インポートに書き換え、使用箇所を X.Y 形式に修正する",
+            background="from requests import get のように名前を直接インポートすると、その名前がどのライブラリに由来するかがコード上から見えなくなります。完全修飾名で使用することで外部依存の境界をコード中で明示できます。",
+            steps=(
+                "`from X import Y` を `import X` に書き換える",
+                "使用箇所の `Y` を `X.Y` の完全修飾名に置換する",
+            ),
+            detection_example="# 違反: サードパーティを from ... import で直接インポート\nfrom requests import get  # 違反\nresponse = get(...)\n\n# 準拠: モジュール名でインポートし完全修飾名で使用\nimport requests\nresponse = requests.get(...)",
         )
 
     @property

@@ -63,6 +63,25 @@ class NoCrossPackageReexportRule:
             intent="__all__ には自パッケージ内で定義したシンボルのみを列挙することで、パッケージ境界を明確に保つ",
             guidance="__init__.py の __all__ に含まれる別パッケージ由来のシンボルを確認する",
             suggestion="別パッケージのシンボルを __all__ から削除し、利用者が各パッケージから直接インポートするよう誘導してください",
+            background=(
+                "__init__.py の __all__ はそのパッケージの公開インタフェースを定義するものです。"
+                "別パッケージのシンボルを __all__ に含めると、パッケージ利用者が実際の定義元を知らずに"
+                "誤ったパッケージに依存したり、依存関係グラフが不必要に複雑になります。"
+            ),
+            steps=(
+                "__all__ に含まれている別パッケージのシンボルを特定する",
+                "そのシンボルを __all__ から削除する",
+                "利用者が定義元パッケージから直接インポートするよう誘導する",
+            ),
+            detection_example=(
+                "# 違反: 別パッケージのシンボルを __all__ に含めている\n"
+                "# myapp/services/__init__.py\n"
+                "from myapp.models import UserModel  # 別パッケージからのインポート\n"
+                '__all__ = ["UserModel"]  # 違反\n'
+                "\n"
+                "# 準拠: 自パッケージのシンボルのみを __all__ に含める\n"
+                '__all__ = ["UserService", "OrderService"]'
+            ),
         )
 
     @property

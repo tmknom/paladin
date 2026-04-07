@@ -70,6 +70,13 @@ class RequireAaaCommentRule:
             intent="テストの構造を可視化し、AAA パターンの徹底を機械的に保証する",
             guidance="テストメソッドに '# Act' または '# Act & Assert' コメントが含まれているか確認する",
             suggestion=_SUGGESTION,
+            background="AAA（Arrange-Act-Assert）パターンをコメントで明示することで、テストの「準備」「実行」「検証」の境界が一目で分かります。コメントの存在がテストを書く前に「何を準備し、何を実行し、何を検証するか」を考えさせる設計の強制にもなります。",
+            steps=(
+                "テストメソッドに `# Arrange`、`# Act`、`# Assert` コメントを追加する",
+                "Act と Assert が同時の場合は `# Act & Assert` を使用する",
+                "前提条件がない場合は `# Arrange` を省略して `# Act` から書き始める",
+            ),
+            detection_example="# 違反: # Act コメントがない\ndef test_正常系_ユーザーを返す(self) -> None:\n    request = ServiceRequest(user_id=1)\n    result = service.execute(request)\n    assert result.is_success is True\n\n# 準拠: AAA コメントがある\ndef test_正常系_ユーザーを返す(self) -> None:\n    # Arrange\n    request = ServiceRequest(user_id=1)\n    # Act\n    result = service.execute(request)\n    # Assert\n    assert result.is_success is True",
         )
 
     @property

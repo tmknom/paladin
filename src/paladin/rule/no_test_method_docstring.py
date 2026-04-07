@@ -48,6 +48,12 @@ class NoTestMethodDocstringRule:
             intent="テストメソッドの目的はメソッド名で表現する。docstring があると名前との二重管理が発生する",
             guidance="テストファイル内の test_ プレフィックスを持つメソッドに docstring が存在する場合に違反を検出する",
             suggestion=_SUGGESTION,
+            background="テストメソッド名は `test_<対象>_<系統>_<期待する振る舞い>` の形式で自己説明的になるよう設計されます。docstring はメソッド名との二重管理になり、乖離が生じると読み手を混乱させます。",
+            steps=(
+                "テストメソッドの docstring を削除する",
+                "テストの目的がメソッド名だけで伝わるよう、必要に応じてメソッド名を改善する",
+            ),
+            detection_example='# 違反: テストメソッドに docstring がある\ndef test_正常系_violationsを返す(self) -> None:\n    """正常にファイルを解析し、違反を返すことを確認する"""  # 違反\n    ...\n\n# 準拠: docstring なし\ndef test_正常系_violationsを返す(self) -> None:\n    ...',
         )
 
     @property

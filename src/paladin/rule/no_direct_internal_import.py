@@ -147,6 +147,23 @@ class NoDirectInternalImportRule:
             intent="パッケージの公開 API を経由した依存を促し、内部実装への依存を排除する",
             guidance="from package.submodule.internal import Foo のような3階層以上のインポートを確認する",
             suggestion="パッケージの __init__.py を経由するインポートに書き換える",
+            background=(
+                "パッケージは __init__.py を通じて公開 API を定義します。"
+                "内部モジュールを直接インポートするとパッケージの内部実装に依存することになり、"
+                "パッケージ内部の構造変更が外部コードに直接影響します。"
+            ),
+            steps=(
+                "違反しているインポートの定義元パッケージを確認する",
+                "そのパッケージの __init__.py で公開されているシンボルを確認する",
+                "`from package import Symbol` の形式に書き換える",
+            ),
+            detection_example=(
+                "# 違反: 内部モジュールへの直接参照\n"
+                "from myapp.services.data.loader import DataLoader  # 違反\n"
+                "\n"
+                "# 準拠: __init__.py を経由してインポート\n"
+                "from myapp.services.data import DataLoader"
+            ),
         )
 
     @property

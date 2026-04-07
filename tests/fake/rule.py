@@ -14,6 +14,10 @@ class FakeRule:
         intent: str = "Fake intent",
         guidance: str = "Fake guidance",
         suggestion: str = "Fake suggestion",
+        background: str | None = None,
+        steps: tuple[str, ...] | None = None,
+        config_example: str | None = None,
+        detection_example: str | None = None,
         violations: tuple[Violation, ...] = (),
     ) -> None:
         self._meta = RuleMeta(
@@ -23,6 +27,10 @@ class FakeRule:
             intent=intent,
             guidance=guidance,
             suggestion=suggestion,
+            background=background,
+            steps=steps,
+            config_example=config_example,
+            detection_example=detection_example,
         )
         self._violations = violations
 
@@ -47,6 +55,10 @@ class FakePreparableRule:
         intent: str = "Fake intent",
         guidance: str = "Fake guidance",
         suggestion: str = "Fake suggestion",
+        background: str | None = None,
+        steps: tuple[str, ...] | None = None,
+        config_example: str | None = None,
+        detection_example: str | None = None,
         violations: tuple[Violation, ...] = (),
     ) -> None:
         self._meta = RuleMeta(
@@ -56,6 +68,10 @@ class FakePreparableRule:
             intent=intent,
             guidance=guidance,
             suggestion=suggestion,
+            background=background,
+            steps=steps,
+            config_example=config_example,
+            detection_example=detection_example,
         )
         self._violations = violations
         self.prepare_called_with: SourceFiles | None = None
@@ -85,6 +101,10 @@ class FakeMultiFileRule:
         intent: str = "Fake intent",
         guidance: str = "Fake guidance",
         suggestion: str = "Fake suggestion",
+        background: str | None = None,
+        steps: tuple[str, ...] | None = None,
+        config_example: str | None = None,
+        detection_example: str | None = None,
         violations: tuple[Violation, ...] = (),
     ) -> None:
         self._meta = RuleMeta(
@@ -94,6 +114,10 @@ class FakeMultiFileRule:
             intent=intent,
             guidance=guidance,
             suggestion=suggestion,
+            background=background,
+            steps=steps,
+            config_example=config_example,
+            detection_example=detection_example,
         )
         self._violations = violations
 

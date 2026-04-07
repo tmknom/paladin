@@ -65,6 +65,12 @@ class NoNestedTestClassRule:
             intent="テストクラスのネストは可読性を下げるため、フラットな構造を維持する",
             guidance="テストファイル内のトップレベルクラスの body に ClassDef が存在する場合に違反を検出する",
             suggestion=_SUGGESTION,
+            background="テストクラスのネストは認知負荷を増大させ、pytest との摩擦を生みます。テストクラスをフラットな構造にすることで、テストの所在が一目で把握でき、pytest との統合も単純になります。",
+            steps=(
+                "ネストされたクラスをトップレベルのテストクラスとして独立させる",
+                "クラス名で旧外側クラスとの関係を表現する（例: TestMyClassCreate, TestMyClassValidate）",
+            ),
+            detection_example="# 違反: テストクラスがネストされている\nclass TestUserService:\n    class TestExecute:  # 違反\n        def test_正常系(self) -> None:\n            ...\n\n# 準拠: テストクラスをフラットな構造にする\nclass TestUserServiceExecute:\n    def test_正常系(self) -> None:\n        ...",
         )
 
     @property
