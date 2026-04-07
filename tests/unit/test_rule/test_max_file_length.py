@@ -197,3 +197,29 @@ class TestFileLengthDetector:
 
         # Assert
         assert result is None
+
+    def test_detect_正常系_プロダクションファイルの場合は責務見直しを促すsuggestionを返すこと(self):
+        # Arrange
+        rule = MaxFileLengthRule(max_lines=5)
+        source = _make_source(6)
+        source_file = make_source_file(source)
+
+        # Act
+        result = FileLengthDetector.detect(source_file, 6, 5, rule.meta)
+
+        # Assert
+        assert result is not None
+        assert "クラスや関数の責務を見直したうえで" in result.suggestion
+
+    def test_detect_正常系_テストファイルの場合はparametrize活用を促すsuggestionを返すこと(self):
+        # Arrange
+        rule = MaxFileLengthRule(max_test_lines=5)
+        source = _make_source(6)
+        source_file = make_test_source_file(source)
+
+        # Act
+        result = FileLengthDetector.detect(source_file, 6, 5, rule.meta)
+
+        # Assert
+        assert result is not None
+        assert "parametrize やフィクスチャで重複を排除し" in result.suggestion
