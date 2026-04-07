@@ -124,6 +124,28 @@ class NoLocalImportRule:
             intent="import 文をモジュールのトップレベルに集約し、依存関係の一覧性を確保する",
             guidance="関数・メソッド・クラス内に import 文が書かれている箇所を確認する",
             suggestion="ファイル冒頭のインポートセクションに import 文を移動する",
+            background=(
+                "import 文をファイル冒頭のトップレベルに集約することで、依存関係が明示化され、"
+                "コードレビューや依存関係分析が容易になります。また、トップレベルにまとめることで"
+                "インポートのタイミングが明確になり、起動時に依存モジュールの不在を早期検出できます。"
+            ),
+            steps=(
+                "ローカルインポートが依存している理由（循環インポートなど）を確認する",
+                "循環インポートがある場合は型アノテーション専用の `if TYPE_CHECKING:` ブロックを利用する",
+                "問題がなければ import 文をファイル冒頭のインポートセクションに移動する",
+            ),
+            detection_example=(
+                "# 違反: 関数内に import 文がある\n"
+                "def some_function():\n"
+                "    import requests  # 違反\n"
+                "    response = requests.get(...)\n"
+                "\n"
+                "# 準拠: ファイルのトップレベルに import する\n"
+                "import requests\n"
+                "\n"
+                "def some_function():\n"
+                "    response = requests.get(...)"
+            ),
         )
 
     @property

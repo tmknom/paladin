@@ -58,6 +58,12 @@ class NoPrivateAttrInTestRule:
             intent="テストが実装の内部詳細に依存することを防止し、リファクタリング耐性を高める",
             guidance="テスト対象オブジェクトのシングルアンダースコア属性 (_xxx) へのアクセスを検出する",
             suggestion=_SUGGESTION,
+            background="プライベート属性（_ プレフィックス）は内部実装であり、外部から直接アクセスすることを想定していません。テストコードからアクセスするとリファクタリングのたびにテストが壊れ、テストの脆弱性が高まります。",
+            steps=(
+                "プライベート属性への直接アクセスを公開メソッドの戻り値での検証に置き換える",
+                "Fake クラスの呼び出し記録フィールドを通じて振る舞いを検証する",
+            ),
+            detection_example='# 違反: テストコード内でプライベート属性にアクセスしている\nassert parser._cache["x = 1"] is not None  # 違反\n\n# 準拠: 公開メソッドの戻り値を検証する\nresult = parser.parse(source)\nassert isinstance(result, ast.Module)',
         )
 
     @property

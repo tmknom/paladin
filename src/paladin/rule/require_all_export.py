@@ -84,6 +84,12 @@ class RequireAllExportRule:
             intent="パッケージの公開インターフェースを明示し、意図しないシンボルの露出を防ぐ",
             guidance="__init__.py に __all__ が定義されているかを確認する",
             suggestion="__all__ リストを定義し、公開するシンボルを明示的に列挙する",
+            background="__all__ を定義することでパッケージの公開インタフェースが明示的になり、意図しないシンボルの漏れ出しを防げます。__all__ が未定義の場合、from package import * によってプライベートな実装詳細が外部に露出するリスクがあります。",
+            steps=(
+                "公開すべきシンボルを洗い出す",
+                "__init__.py に `__all__ = [...]` を追加し、公開シンボルを明示的に列挙する",
+            ),
+            detection_example='# 違反: __init__.py に __all__ が定義されていない\nfrom myapp.services.data.loader import DataLoader\n# __all__ が定義されていない\n\n# 準拠: __all__ で公開シンボルを明示する\nfrom myapp.services.data.loader import DataLoader\n__all__ = ["DataLoader"]',
         )
 
     @property

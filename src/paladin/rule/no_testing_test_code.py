@@ -96,6 +96,13 @@ class NoTestingTestCodeRule:
             intent="テスト用コードをテストすることは無駄。複雑なら src/ に移動すべき",
             guidance="tests/ からインポートしたシンボルにテストクラスや関数を作成していないか確認する",
             suggestion="テストを削除するか、複雑なロジックを src/ に移動する",
+            background="テスト用コードをテストすることは無駄なメンテナンスコストを生みます。テストが必要なほど複雑なコードを tests/ 配下に置くこと自体が設計の誤りです。tests/ ディレクトリの責務は src/ 配下のプロダクションコードの品質を保証することです。",
+            steps=(
+                "tests/ 配下のコードに対するテストを削除する",
+                "テストが必要なほど複雑なロジックがある場合は、そのロジックを src/ 配下に移動して適切にテストする",
+                "Fake クラスやヘルパーはシンプルな設計を保ち、それ自体のテストが不要な状態を維持する",
+            ),
+            detection_example="# 違反: tests/ 配下の Fake クラスに対するテストを書いている\nfrom tests.fake.fs import InMemoryFsReader\nclass TestInMemoryFsReader:  # 違反: Fake クラスへのテスト\n    def test_read_returns_content(self) -> None:\n        ...\n\n# 準拠: src/ 配下のプロダクションコードをテストする\nfrom myapp.services.user import UserService\nclass TestUserService:\n    ...",
         )
 
     @property

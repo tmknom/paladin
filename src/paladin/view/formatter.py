@@ -30,6 +30,26 @@ class ViewTextFormatter:
             f"{_LABEL_GUIDANCE:<{_COL_WIDTH}}{rule.guidance}",
             f"{_LABEL_SUGGESTION:<{_COL_WIDTH}}{rule.suggestion}",
         ]
+        if rule.background is not None:
+            lines.append("")
+            lines.append("背景と意図:")
+            for line in rule.background.splitlines():
+                lines.append(f"  {line}")
+        if rule.steps is not None:
+            lines.append("")
+            lines.append("改善手順:")
+            for i, step in enumerate(rule.steps, start=1):
+                lines.append(f"  {i}. {step}")
+        if rule.config_example is not None:
+            lines.append("")
+            lines.append("設定例:")
+            for line in rule.config_example.splitlines():
+                lines.append(f"  {line}")
+        if rule.detection_example is not None:
+            lines.append("")
+            lines.append("検出パターン:")
+            for line in rule.detection_example.splitlines():
+                lines.append(f"  {line}")
         return "\n".join(lines)
 
 
@@ -38,7 +58,7 @@ class ViewJsonFormatter:
 
     def format(self, rule: RuleMeta) -> str:
         """RuleMeta の全フィールドを JSON オブジェクトに変換する"""
-        data = {
+        data: dict[str, str | list[str]] = {
             "rule_id": rule.rule_id,
             "rule_name": rule.rule_name,
             "summary": rule.summary,
@@ -46,6 +66,14 @@ class ViewJsonFormatter:
             "guidance": rule.guidance,
             "suggestion": rule.suggestion,
         }
+        if rule.background is not None:
+            data["background"] = rule.background
+        if rule.steps is not None:
+            data["steps"] = list(rule.steps)
+        if rule.config_example is not None:
+            data["config_example"] = rule.config_example
+        if rule.detection_example is not None:
+            data["detection_example"] = rule.detection_example
         return json.dumps(data, ensure_ascii=False, indent=2)
 
 

@@ -28,6 +28,13 @@ class RequireEmptyTestInitRule:
             intent="テストパッケージの `__init__.py` をマーカーファイルに限定し、意図しない副作用を防止する",
             guidance="`tests/` 配下の `__init__.py` にコードが記述されていないか確認する",
             suggestion=_SUGGESTION,
+            background="テストパッケージの __init__.py は Python にそのディレクトリをパッケージとして認識させるための空のマーカーファイルです。コードを記述するとパッケージのインポート時に実行されテスト環境を汚染したり、誤配置のサインとなります。",
+            steps=(
+                "__init__.py の内容を削除して空ファイルにする",
+                "フィクスチャは conftest.py へ移動する",
+                "共有 Fake クラスは tests/fake/ へ移動する",
+            ),
+            detection_example="# 違反: テストパッケージの __init__.py にコードがある\n# tests/unit/__init__.py\nimport logging\nlogging.basicConfig(level=logging.DEBUG)  # 違反\n\n# 準拠: __init__.py は空ファイル\n# tests/unit/__init__.py（空）",
         )
 
     @property

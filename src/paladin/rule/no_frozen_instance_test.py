@@ -67,6 +67,12 @@ class NoFrozenInstanceTestRule:
             intent="frozen dataclass の不変性は pyright が静的に保証するため、ランタイムテストでの重複検証を防止する",
             guidance="`pytest.raises(FrozenInstanceError)` および `pytest.raises(dataclasses.FrozenInstanceError)` のパターンを検出する",
             suggestion="このテストを削除してください。不変性の保証は pyright に委ねてください",
+            background="`@dataclass(frozen=True)` の不変性は型チェッカー（pyright）が静的に検出します。この静的検査が有効な状態でランタイムテストとして FrozenInstanceError の発生を確認することは二重検証の無駄であり、テストの肥大化とメンテナンスコストの増大を招きます。",
+            steps=(
+                "FrozenInstanceError を pytest.raises でキャッチしているテストを削除する",
+                "不変性の保証は pyright に委ねる",
+            ),
+            detection_example='# 違反: frozen 不変性をランタイムテストで確認している\nwith pytest.raises(dataclasses.FrozenInstanceError):  # 違反\n    source_file.file_path = Path("bar.py")\n\n# 準拠: pyright が静的に検証するためテスト不要',
         )
 
     @property

@@ -94,6 +94,13 @@ class NoErrorMessageTestRule:
             intent="例外メッセージの文言は実装の詳細であり、テストが実装に密結合することを防止する",
             guidance="`pytest.raises(match=...)` の使用と `str(exc_info.value)` の文字列比較を検出する",
             suggestion="例外の型のみを検証してください。メッセージ文言のテストを削除してください",
+            background="例外が発生することを確認するテストでは、例外の型を検証すれば十分です。例外メッセージの文言は実装の詳細であり、文言の改善があるたびに機能的には正しいコードに対してテストが失敗します。",
+            steps=(
+                "`pytest.raises(match=...)` の `match` 引数を削除する",
+                "`str(exc_info.value)` による文字列比較を削除する",
+                "例外の型のみを検証するテストに整理する",
+            ),
+            detection_example='# 違反: 例外メッセージの文言を検証している\nwith pytest.raises(ValueError, match="空文字列は無効です"):  # 違反\n    validate(invalid_value)\n\n# 準拠: 例外の型のみを検証する\nwith pytest.raises(ValueError):\n    validate(invalid_value)',
         )
 
     @property

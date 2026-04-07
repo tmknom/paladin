@@ -64,6 +64,25 @@ class NoMockUsageRule:
             intent="テストの型安全性を確保し、インターフェース変更への耐性を高める",
             guidance="from unittest.mock import Mock / MagicMock のインポート箇所を確認する",
             suggestion="Protocol を満たす Fake クラスを定義して代替してください",
+            background=(
+                "Mock/MagicMock は型チェッカーによる検証が効かず、インターフェース変更を見逃す可能性があります。"
+                "Protocol を満たす Fake クラスを定義する Fake パターンは、"
+                "型安全なテストとインターフェース変更への耐性を両立できます。"
+            ),
+            steps=(
+                "Mock/MagicMock が模倣している対象の Protocol またはクラスを特定する",
+                "Protocol を満たす Fake クラスを `tests/fake/` に定義する",
+                "テストコード内の Mock/MagicMock をFake クラスに置き換える",
+            ),
+            detection_example=(
+                "# 違反: Mock/MagicMock を使用している\n"
+                "from unittest.mock import Mock  # 違反\n"
+                "rule = Mock(spec=Rule)\n"
+                "\n"
+                "# 準拠: Protocol を満たす Fake クラスを使用する\n"
+                "from tests.fake.rule import FakeRule\n"
+                "rule = FakeRule(violations=())"
+            ),
         )
 
     @property

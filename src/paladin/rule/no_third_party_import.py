@@ -94,6 +94,14 @@ class NoThirdPartyImportRule:
             intent="サードパーティライブラリの利用を特定ディレクトリに集約し、外部依存の境界を明確にする",
             guidance="allow-dirs 外でサードパーティライブラリをインポートしている箇所を確認する",
             suggestion="サードパーティライブラリの利用を allow-dirs で指定されたディレクトリに移動するか、ラッパーモジュール経由でアクセスしてください",
+            background="サードパーティライブラリがプロジェクト全体に散在すると、依存関係の不透明化・ライブラリ置換の困難さ・アーキテクチャ境界の崩壊を招きます。特定のディレクトリ（基盤レイヤー等）に集約することで外部依存の境界が明確になります。",
+            steps=(
+                "許可ディレクトリ（allow-dirs）の設定を確認する",
+                "許可ディレクトリ外でのサードパーティインポートを特定する",
+                "サードパーティの利用を許可ディレクトリ配下のモジュールに移動するか、ラッパーモジュール経由でアクセスするよう修正する",
+            ),
+            config_example='[tool.paladin.rule.no-third-party-import]\nallow-dirs = ["src/myapp/foundation/"]',
+            detection_example="# 違反: 許可ディレクトリ外でサードパーティをインポート\n# src/myapp/services/user.py\nimport pydantic_settings  # 違反\n\n# 準拠: 許可ディレクトリ内でのインポート\n# src/myapp/foundation/model/base.py\nimport pydantic  # 準拠",
         )
 
     @property

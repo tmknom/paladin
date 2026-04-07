@@ -108,6 +108,26 @@ class MaxClassLengthRule:
             intent="クラスの肥大化を防ぎ、単一責任原則を促進する",
             guidance="各クラスの行数を確認し、上限を超えていないか検査する",
             suggestion="クラスの責務を分割し、複数のクラスに分離することを検討してください",
+            background=(
+                "クラスの行数は、設計の健全性を示すシンプルかつ信頼性の高い指標です。"
+                "行数が増加するほど、責務の肥大化・変更容易性の低下・テスタビリティの低下・認知負荷の増大を招きます。"
+            ),
+            steps=(
+                "クラスの責務を洗い出し、単一責任原則を満たしているか確認する",
+                "責務ごとに独立したクラスを作成し、元のクラスから処理を移行する",
+                "クラスの分割に合わせてファイルも分割する",
+            ),
+            config_example=(
+                "[tool.paladin.rule.max-class-length]\nmax-lines = 200\nmax-test-lines = 400"
+            ),
+            detection_example=(
+                "# 違反: クラスの行数が上限を超えている\n"
+                "class UserService:  # 250行のクラス\n"
+                "    ...\n\n"
+                "# 準拠: クラスの行数が上限内に収まっている\n"
+                "class UserService:  # 150行のクラス\n"
+                "    ..."
+            ),
         )
 
     @property

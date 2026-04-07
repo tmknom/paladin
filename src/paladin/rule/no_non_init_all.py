@@ -34,6 +34,12 @@ class NoNonInitAllRule:
             intent="__all__ はパッケージの公開インタフェース定義であり、__init__.py のみで管理すべき",
             guidance="__init__.py 以外のファイルに __all__ の代入文が存在する箇所を確認する",
             suggestion="__all__ を削除してください。このモジュールのシンボルを公開する場合は、パッケージの __init__.py の __all__ に追加してください",
+            background="__all__ はパッケージの公開インタフェースを制御するための仕組みです。__init__.py 以外で定義すると、公開APIの定義が一か所に集まらず、__init__.py の __all__ がパッケージの唯一の公開API定義であるという設計原則が崩れます。",
+            steps=(
+                "__init__.py 以外のファイルの __all__ を削除する",
+                "公開すべきシンボルをパッケージの __init__.py の __all__ に追加する",
+            ),
+            detection_example='# 違反: __init__.py 以外に __all__ が定義されている\n# myapp/services/user.py\n__all__ = ["UserService"]  # 違反\n\n# 準拠: __init__.py の __all__ で管理する\n# myapp/services/__init__.py\n__all__ = ["UserService"]',
         )
 
     @property

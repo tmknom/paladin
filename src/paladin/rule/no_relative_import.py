@@ -34,6 +34,12 @@ class NoRelativeImportRule:
             intent="依存関係を明示的にし、モジュール移動時の影響を局所化する",
             guidance="from .xxx import ... の形式が使われている箇所を確認する",
             suggestion="プロジェクトルートからの絶対インポートに書き換える",
+            background="相対インポートはモジュール間の依存関係を暗黙的にします。どのパッケージに依存しているかをファイル単体で把握できず、モジュールを別のパッケージへ移動した場合に相対インポートをすべて書き直す必要があります。絶対インポートを強制することで依存関係を明示的に保ちます。",
+            steps=(
+                "相対インポートのドット数とモジュール名からプロジェクトルートからの絶対パスを計算する",
+                "相対インポートを絶対インポートに書き換える",
+            ),
+            detection_example="# 違反: 相対インポートを使用している\nfrom . import DataLoader  # 違反\nfrom ..error import ApplicationError  # 違反\n\n# 準拠: 絶対インポートを使用する\nfrom myapp.services.data import DataLoader\nfrom myapp.services.error import ApplicationError",
         )
 
     @property
