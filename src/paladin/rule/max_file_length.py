@@ -32,11 +32,15 @@ class FileLengthDetector:
             return None
         file_path = source_file.file_path.name
         message = f"ファイル `{file_path}` は `{length}` 行です。上限は `{limit}` 行です"
+        if source_file.is_test_file:
+            suggestion = "parametrize やフィクスチャで重複を排除し、必要に応じてテストファイルを分割してください"
+        else:
+            suggestion = "不要なコードを削除し、クラスや関数の責務を見直したうえで、必要に応じてファイルを分割してください"
         return meta.create_violation_at(
             location=source_file.location(length),
             message=message,
             reason="ファイルが長すぎることは、責務の肥大化や設計上の問題を示す兆候です",
-            suggestion="ファイルを複数のモジュールに分割することを検討してください",
+            suggestion=suggestion,
         )
 
 
@@ -55,7 +59,7 @@ class MaxFileLengthRule:
             summary="単一ファイルの行数が設定された上限を超えた場合に違反を検出する",
             intent="ファイルの肥大化を防ぎ、単一責任原則を促進する",
             guidance="各ファイルの行数を確認し、上限を超えていないか検査する",
-            suggestion="ファイルを複数のモジュールに分割することを検討してください",
+            suggestion="不要なコードを削除し、責務を見直したうえで、必要に応じてファイルを分割してください",
         )
 
     @property

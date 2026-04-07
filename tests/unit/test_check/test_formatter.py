@@ -69,6 +69,7 @@ class TestCheckReportFormatter:
         assert "概要:" in report.text
         assert "理由:" in report.text
         assert "修正方向:" in report.text
+        assert "詳細:" in report.text
         assert "status: violations" in report.text
 
     def test_format_正常系_複数違反で全違反の診断ブロックが出力されること(self):
@@ -109,6 +110,7 @@ class TestCheckReportFormatter:
         assert "  概要: __init__.py に __all__ が定義されていない" in report.text
         assert "  理由: 理由テキスト" in report.text
         assert "  修正方向: 修正方向テキスト" in report.text
+        assert "  詳細: paladin view require-all-export" in report.text
 
     def test_format_正常系_サマリーのby_ruleとby_fileが正しくフォーマットされること(self):
         # Arrange
@@ -173,6 +175,8 @@ class TestCheckJsonFormatter:
         assert "message" in diag
         assert "reason" in diag
         assert "suggestion" in diag
+        assert "detail" in diag
+        assert diag["detail"] == "paladin view require-all-export"
 
     def test_json_format_正常系_summaryにby_ruleとby_fileが含まれること(self):
         # Arrange

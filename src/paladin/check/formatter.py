@@ -22,6 +22,7 @@ class CheckReportFormatter:
             lines.append(f"  概要: {v.message}")
             lines.append(f"  理由: {v.reason}")
             lines.append(f"  修正方向: {v.suggestion}")
+            lines.append(f"  詳細: paladin view {v.rule_id}")
             lines.append("")
 
         lines.append("Summary:")
@@ -56,6 +57,7 @@ class CheckJsonFormatter:
                 "message": v.message,
                 "reason": v.reason,
                 "suggestion": v.suggestion,
+                "detail": f"paladin view {v.rule_id}",
             }
             for v in result.violations
         ]
