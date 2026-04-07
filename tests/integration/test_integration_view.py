@@ -1,5 +1,6 @@
 """view サブコマンドのインテグレーションテスト"""
 
+import json
 import subprocess
 import sys
 
@@ -30,9 +31,6 @@ class TestIntegrationView:
         assert "検出パターン:" in result.stdout
 
     def test_view_正常系_JSON形式で新フィールドが含まれること(self):
-        # Arrange
-        import json
-
         # Act
         cmd = [sys.executable, "-m", "paladin.cli", "view", "max-file-length", "--format", "json"]
         result = subprocess.run(cmd, capture_output=True, text=True, timeout=10)
