@@ -1,5 +1,7 @@
 from pathlib import Path
 
+import pytest
+
 from paladin.rule.rule_set import RuleSet
 from paladin.rule.types import RuleMeta, SourceFiles, Violation, Violations
 from paladin.rule.unused_ignore import UnusedIgnoreRule
@@ -7,13 +9,17 @@ from tests.fake import FakeMultiFileRule, FakePreparableRule, FakeRule
 from tests.unit.test_rule.helper import make_source_files
 
 
-def _make_violation(file: str = "src/paladin/__init__.py") -> Violation:
+def _make_violation(
+    file: str = "src/paladin/__init__.py",
+    rule_id: str = "fake-rule",
+    rule_name: str = "Fake Rule",
+) -> Violation:
     return Violation(
         file=Path(file),
         line=1,
         column=0,
-        rule_id="fake-rule",
-        rule_name="Fake Rule",
+        rule_id=rule_id,
+        rule_name=rule_name,
         message="fake message",
         reason="fake reason",
         suggestion="fake suggestion",
@@ -82,26 +88,8 @@ class TestRuleSet:
 
     def test_run_正常系_disabled_rule_idsに該当するルールの違反をスキップすること(self):
         # Arrange
-        violation_a = Violation(
-            file=Path("src/__init__.py"),
-            line=1,
-            column=0,
-            rule_id="rule-a",
-            rule_name="Rule A",
-            message="msg",
-            reason="reason",
-            suggestion="suggestion",
-        )
-        violation_b = Violation(
-            file=Path("src/__init__.py"),
-            line=1,
-            column=0,
-            rule_id="rule-b",
-            rule_name="Rule B",
-            message="msg",
-            reason="reason",
-            suggestion="suggestion",
-        )
+        violation_a = _make_violation(rule_id="rule-a", rule_name="Rule A")
+        violation_b = _make_violation(rule_id="rule-b", rule_name="Rule B")
         rule_a = FakeRule(rule_id="rule-a", violations=(violation_a,))
         rule_b = FakeRule(rule_id="rule-b", violations=(violation_b,))
         rule_set = RuleSet(rules=(rule_a, rule_b))
@@ -113,20 +101,6 @@ class TestRuleSet:
         # Assert
         assert len(result) == 1
         assert result.items[0].rule_id == "rule-b"
-
-    def test_run_エッジケース_disabled_rule_idsが空の場合全ルール実行すること(self):
-        # Arrange
-        violation = _make_violation()
-        rule_a = FakeRule(rule_id="rule-a", violations=(violation,))
-        rule_b = FakeRule(rule_id="rule-b", violations=(violation,))
-        rule_set = RuleSet(rules=(rule_a, rule_b))
-        source_files = make_source_files(("x = 1\n", "__init__.py"))
-
-        # Act
-        result = rule_set.run(source_files, disabled_rule_ids=frozenset())
-
-        # Assert: 両ルールが実行される
-        assert len(result) == 2
 
     def test_run_正常系_disabled_rule_idsのデフォルト値で全ルール実行すること(self):
         # Arrange
@@ -211,16 +185,7 @@ class TestRuleSetPerFileDisabled:
         # FakeRule は全ファイルに violations を返すため、per_file_disabled によってファイル別に
         # ルールの実行自体がスキップされる（違反数 = ファイル数 - 無効化ファイル数）
         file_a = Path("file_a.py")
-        violation = Violation(
-            file=Path("any.py"),
-            line=1,
-            column=0,
-            rule_id="rule-a",
-            rule_name="Rule A",
-            message="msg",
-            reason="reason",
-            suggestion="suggestion",
-        )
+        violation = _make_violation(rule_id="rule-a", rule_name="Rule A")
         rule_a = FakeRule(rule_id="rule-a", violations=(violation,))
         rule_b = FakeRule(rule_id="rule-b", violations=(violation,))
         rule_set = RuleSet(rules=(rule_a, rule_b))
@@ -244,16 +209,7 @@ class TestRuleSetPerFileDisabled:
         # Arrange: file_a.py は per_file_disabled で全有効（frozenset()）、
         # file_b.py は per_file_disabled にエントリなし → disabled_rule_ids にフォールバック
         file_a = Path("file_a.py")
-        violation = Violation(
-            file=Path("any.py"),
-            line=1,
-            column=0,
-            rule_id="rule-a",
-            rule_name="Rule A",
-            message="msg",
-            reason="reason",
-            suggestion="suggestion",
-        )
+        violation = _make_violation(rule_id="rule-a", rule_name="Rule A")
         rule_a = FakeRule(rule_id="rule-a", violations=(violation,))
         rule_set = RuleSet(rules=(rule_a,))
         source_files = make_source_files(("x = 1\n", "file_a.py"), ("y = 2\n", "file_b.py"))
@@ -268,40 +224,30 @@ class TestRuleSetPerFileDisabled:
         # Assert: file_a.py の rule-a が実行されて1件、file_b.py はフォールバックで無効化されて0件
         assert len(result) == 1
 
-    def test_run_エッジケース_per_file_disabledがNoneの場合既存動作と同じこと(self):
+    @pytest.mark.parametrize(
+        "per_file_disabled",
+        [
+            pytest.param(None, id="None"),
+            pytest.param({}, id="空dict"),
+        ],
+    )
+    def test_run_エッジケース_per_file_disabledがNoneまたは空dictの場合disabled_rule_idsを使用すること(
+        self, per_file_disabled: dict[Path, frozenset[str]] | None
+    ):
         # Arrange
         violation = _make_violation()
         rule_a = FakeRule(rule_id="rule-a", violations=(violation,))
         rule_set = RuleSet(rules=(rule_a,))
         source_files = make_source_files(("x = 1\n", "__init__.py"))
 
-        # Act: per_file_disabled=None（デフォルト）
+        # Act
         result = rule_set.run(
             source_files,
             disabled_rule_ids=frozenset({"rule-a"}),
-            per_file_disabled=None,
+            per_file_disabled=per_file_disabled,
         )
 
         # Assert: rule-a が disabled されるため違反なし
-        assert len(result) == 0
-
-    def test_run_エッジケース_per_file_disabledが空dictの場合disabled_rule_idsを使用すること(
-        self,
-    ):
-        # Arrange: per_file_disabled が空 dict の場合、全ファイルが disabled_rule_ids にフォールバック
-        violation = _make_violation()
-        rule_a = FakeRule(rule_id="rule-a", violations=(violation,))
-        rule_set = RuleSet(rules=(rule_a,))
-        source_files = make_source_files(("x = 1\n", "__init__.py"))
-
-        # Act: 空 dict → フォールバックして disabled_rule_ids が使われる
-        result = rule_set.run(
-            source_files,
-            disabled_rule_ids=frozenset({"rule-a"}),
-            per_file_disabled={},
-        )
-
-        # Assert: フォールバックで rule-a が disabled されるため違反なし
         assert len(result) == 0
 
 
@@ -335,19 +281,6 @@ class TestRuleSetMultiFileRules:
 
         # Assert: 単一ファイルルール1件 + 複数ファイルルール1件 = 2件
         assert len(result) == 2
-
-    def test_run_エッジケース_multi_file_rulesが空タプルの場合に既存動作と同じこと(self):
-        # Arrange
-        violation = _make_violation()
-        rule = FakeRule(violations=(violation,))
-        rule_set = RuleSet(rules=(rule,), multi_file_rules=())
-        source_files = make_source_files(("x = 1\n", "__init__.py"))
-
-        # Act
-        result = rule_set.run(source_files)
-
-        # Assert: 単一ファイルルールのみ実行
-        assert len(result) == 1
 
     def test_run_正常系_multi_file_rulesがdisabled_rule_idsでスキップされること(self):
         # Arrange
@@ -472,18 +405,6 @@ class TestRuleSetPreparableRule:
 
 class TestRuleSetUnusedIgnore:
     """RuleSet の unused_ignore_rule パラメータと run_unused_ignore() のテスト"""
-
-    def _make_violation(self, file_path: Path, line: int, rule_id: str) -> Violation:
-        return Violation(
-            file=file_path,
-            line=line,
-            column=0,
-            rule_id=rule_id,
-            rule_name="Fake",
-            message="msg",
-            reason="reason",
-            suggestion="suggestion",
-        )
 
     def test_run_unused_ignore_正常系_未使用Ignoreの違反をViolationsとして返すこと(self):
         # Arrange: ignore コメントがあるが、対応する raw_violations が空
