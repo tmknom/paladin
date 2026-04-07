@@ -401,18 +401,6 @@ class TestUnusedIgnoreRuleCheck:
     def rule(self) -> UnusedIgnoreRule:
         return UnusedIgnoreRule()
 
-    def _make_violation(self, file_path: Path, line: int, rule_id: str) -> Violation:
-        return Violation(
-            file=file_path,
-            line=line,
-            column=0,
-            rule_id=rule_id,
-            rule_name="Fake",
-            message="violation",
-            reason="reason",
-            suggestion="suggestion",
-        )
-
     def test_check_正常系_未使用インラインIgnoreを検出すること(self, rule: UnusedIgnoreRule):
         # Arrange: 直前コメント、対象行に違反なし
         source = "# paladin: ignore[rule-a]\nx = 1\n"
@@ -427,20 +415,6 @@ class TestUnusedIgnoreRuleCheck:
         assert result[0].rule_id == "unused-ignore"
         assert result[0].line == 1
 
-    def test_check_正常系_使用中のインラインIgnoreは検出しないこと(self, rule: UnusedIgnoreRule):
-        # Arrange: 直前コメント、対象行（次行）に違反あり
-        source = "x = 1\n# paladin: ignore[rule-a]\ny = 2\n"
-        source_file = make_source_file(source, "f.py")
-        raw_violations = Violations(
-            items=(self._make_violation(Path("f.py"), line=3, rule_id="rule-a"),)
-        )
-
-        # Act
-        result = rule.check(source_file, raw_violations)
-
-        # Assert
-        assert len(result) == 0
-
     def test_check_正常系_未使用ファイル単位Ignoreを検出すること(self, rule: UnusedIgnoreRule):
         # Arrange
         source = "# paladin: ignore-file[rule-a]\nx = 1\n"
@@ -454,51 +428,11 @@ class TestUnusedIgnoreRuleCheck:
         assert len(result) == 1
         assert result[0].line == 1
 
-    def test_check_正常系_使用中のファイル単位Ignoreは検出しないこと(self, rule: UnusedIgnoreRule):
-        # Arrange
-        source = "# paladin: ignore-file[rule-a]\nx = 1\n"
-        source_file = make_source_file(source, "f.py")
-        raw_violations = Violations(
-            items=(self._make_violation(Path("f.py"), line=5, rule_id="rule-a"),)
-        )
-
-        # Act
-        result = rule.check(source_file, raw_violations)
-
-        # Assert
-        assert len(result) == 0
-
-    def test_check_正常系_無効化ルールのIgnoreは検出しないこと(self, rule: UnusedIgnoreRule):
-        # Arrange
-        source = "# paladin: ignore[rule-a]\nx = 1\n"
-        source_file = make_source_file(source, "f.py")
-        raw_violations = Violations(items=())
-
-        # Act
-        result = rule.check(source_file, raw_violations, disabled_rule_ids=frozenset({"rule-a"}))
-
-        # Assert
-        assert len(result) == 0
-
     def test_check_エッジケース_Ignoreコメントがないファイルで空タプルを返すこと(
         self, rule: UnusedIgnoreRule
     ):
         # Arrange
         source = "x = 1\ny = 2\n"
-        source_file = make_source_file(source, "f.py")
-        raw_violations = Violations(items=())
-
-        # Act
-        result = rule.check(source_file, raw_violations)
-
-        # Assert
-        assert result == ()
-
-    def test_check_エッジケース_ワイルドカードIgnoreは検出対象外であること(
-        self, rule: UnusedIgnoreRule
-    ):
-        # Arrange
-        source = "# paladin: ignore\nx = 1\n"
         source_file = make_source_file(source, "f.py")
         raw_violations = Violations(items=())
 

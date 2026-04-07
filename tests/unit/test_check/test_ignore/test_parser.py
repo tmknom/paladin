@@ -2,6 +2,8 @@
 
 from pathlib import Path
 
+import pytest
+
 from paladin.check.ignore.parser import FileIgnoreParser, LineIgnoreParser
 from paladin.rule import SourceFiles
 from tests.unit.test_check.test_ignore.helper import make_source_file
@@ -47,10 +49,22 @@ class TestFileIgnoreParserParse:
         assert result.ignore_all is False
         assert result.ignored_rules == frozenset({"rule-a", "rule-b"})
 
-    def test_parse_正常系_shebang行の後にディレクティブを検出できること(self):
+    @pytest.mark.parametrize(
+        "source",
+        [
+            pytest.param("#!/usr/bin/env python3\n# paladin: ignore-file\n", id="shebang後"),
+            pytest.param("# -*- coding: utf-8 -*-\n# paladin: ignore-file\n", id="encoding宣言後"),
+            pytest.param("# some comment\n# paladin: ignore-file\n", id="通常コメント後"),
+            pytest.param("\n\n# paladin: ignore-file\n", id="空行後"),
+            pytest.param('"""module docstring"""\n# paladin: ignore-file\n', id="docstring後"),
+            pytest.param(
+                '"""module\ndocstring\n"""\n# paladin: ignore-file\n', id="複数行docstring後"
+            ),
+        ],
+    )
+    def test_parse_正常系_ヘッダー行の後にディレクティブを検出できること(self, source: str):
         # Arrange
         parser = FileIgnoreParser()
-        source = "#!/usr/bin/env python3\n# paladin: ignore-file\n"
 
         # Act
         result = parser.parse(Path("example.py"), source)
@@ -58,32 +72,17 @@ class TestFileIgnoreParserParse:
         # Assert
         assert result.ignore_all is True
 
-    def test_parse_正常系_エンコーディング宣言の後にディレクティブを検出できること(self):
+    @pytest.mark.parametrize(
+        "source",
+        [
+            pytest.param("import os\n", id="ディレクティブなし"),
+            pytest.param("", id="空ファイル"),
+            pytest.param("import os\n# paladin: ignore-file\n", id="import文の後"),
+        ],
+    )
+    def test_parse_エッジケース_ディレクティブが無効でignore無しを返すこと(self, source: str):
         # Arrange
         parser = FileIgnoreParser()
-        source = "# -*- coding: utf-8 -*-\n# paladin: ignore-file\n"
-
-        # Act
-        result = parser.parse(Path("example.py"), source)
-
-        # Assert
-        assert result.ignore_all is True
-
-    def test_parse_正常系_通常コメントの後にディレクティブを検出できること(self):
-        # Arrange
-        parser = FileIgnoreParser()
-        source = "# some comment\n# paladin: ignore-file\n"
-
-        # Act
-        result = parser.parse(Path("example.py"), source)
-
-        # Assert
-        assert result.ignore_all is True
-
-    def test_parse_エッジケース_ディレクティブなしでignore無しを返すこと(self):
-        # Arrange
-        parser = FileIgnoreParser()
-        source = "import os\n"
 
         # Act
         result = parser.parse(Path("example.py"), source)
@@ -91,63 +90,6 @@ class TestFileIgnoreParserParse:
         # Assert
         assert result.ignore_all is False
         assert result.ignored_rules == frozenset()
-
-    def test_parse_エッジケース_空ファイルでignore無しを返すこと(self):
-        # Arrange
-        parser = FileIgnoreParser()
-        source = ""
-
-        # Act
-        result = parser.parse(Path("example.py"), source)
-
-        # Assert
-        assert result.ignore_all is False
-        assert result.ignored_rules == frozenset()
-
-    def test_parse_エッジケース_import文の後のディレクティブは無視されること(self):
-        # Arrange
-        parser = FileIgnoreParser()
-        source = "import os\n# paladin: ignore-file\n"
-
-        # Act
-        result = parser.parse(Path("example.py"), source)
-
-        # Assert
-        assert result.ignore_all is False
-        assert result.ignored_rules == frozenset()
-
-    def test_parse_エッジケース_空行の後にディレクティブを検出できること(self):
-        # Arrange
-        parser = FileIgnoreParser()
-        source = "\n\n# paladin: ignore-file\n"
-
-        # Act
-        result = parser.parse(Path("example.py"), source)
-
-        # Assert
-        assert result.ignore_all is True
-
-    def test_parse_エッジケース_docstringの後にディレクティブを検出できること(self):
-        # Arrange
-        parser = FileIgnoreParser()
-        source = '"""module docstring"""\n# paladin: ignore-file\n'
-
-        # Act
-        result = parser.parse(Path("example.py"), source)
-
-        # Assert
-        assert result.ignore_all is True
-
-    def test_parse_エッジケース_複数行docstringの後にディレクティブを検出できること(self):
-        # Arrange: 複数行 docstring（閉じタグが別行）の後にディレクティブが続くケース
-        parser = FileIgnoreParser()
-        source = '"""module\ndocstring\n"""\n# paladin: ignore-file\n'
-
-        # Act
-        result = parser.parse(Path("example.py"), source)
-
-        # Assert
-        assert result.ignore_all is True
 
     def test_parse_正常系_理由コメント付きignore_fileで全ルールignoreを返すこと(self):
         # Arrange
@@ -311,65 +253,20 @@ class TestLineIgnoreParserParse:
         assert len(result) == 1
         assert result[0].target_line == 3
 
-    def test_parse_エッジケース_ディレクティブなしで空タプルを返すこと(self):
+    @pytest.mark.parametrize(
+        "source",
+        [
+            pytest.param("import os\n", id="ディレクティブなし"),
+            pytest.param("", id="空ファイル"),
+            pytest.param("# paladin: ignore\n\nviolating_code\n", id="直後が空行"),
+            pytest.param("import os\n# paladin: ignore\n", id="ファイル末尾"),
+            pytest.param("import os\n# paladin: ignore", id="ファイル末尾改行なし"),
+            pytest.param("# paladin: ignore-file\nimport os\n", id="ignore-fileディレクティブ"),
+        ],
+    )
+    def test_parse_エッジケース_無効なディレクティブで空タプルを返すこと(self, source: str):
         # Arrange
         parser = LineIgnoreParser()
-        source = "import os\n"
-
-        # Act
-        result = parser.parse(Path("example.py"), source)
-
-        # Assert
-        assert result == ()
-
-    def test_parse_エッジケース_空ファイルで空タプルを返すこと(self):
-        # Arrange
-        parser = LineIgnoreParser()
-        source = ""
-
-        # Act
-        result = parser.parse(Path("example.py"), source)
-
-        # Assert
-        assert result == ()
-
-    def test_parse_エッジケース_直後が空行の場合はディレクティブ無効となること(self):
-        # Arrange
-        parser = LineIgnoreParser()
-        source = "# paladin: ignore\n\nviolating_code\n"
-
-        # Act
-        result = parser.parse(Path("example.py"), source)
-
-        # Assert
-        assert result == ()
-
-    def test_parse_エッジケース_ファイル末尾のディレクティブは無視されること(self):
-        # Arrange
-        parser = LineIgnoreParser()
-        source = "import os\n# paladin: ignore\n"
-
-        # Act
-        result = parser.parse(Path("example.py"), source)
-
-        # Assert
-        assert result == ()
-
-    def test_parse_エッジケース_ファイル末尾改行なしのディレクティブは無視されること(self):
-        # Arrange
-        parser = LineIgnoreParser()
-        source = "import os\n# paladin: ignore"
-
-        # Act
-        result = parser.parse(Path("example.py"), source)
-
-        # Assert
-        assert result == ()
-
-    def test_parse_エッジケース_ignore_fileディレクティブは行単位ignoreとして検出しないこと(self):
-        # Arrange
-        parser = LineIgnoreParser()
-        source = "# paladin: ignore-file\nimport os\n"
 
         # Act
         result = parser.parse(Path("example.py"), source)
@@ -491,21 +388,16 @@ class TestLineIgnoreParserParseTrailing:
         trailing = next(d for d in result if d.ignored_rules == frozenset({"rule-b"}))
         assert trailing.target_line == 2
 
-    def test_parse_エッジケース_接頭辞前に空白がない場合は行末コメントとして検出されないこと(self):
+    @pytest.mark.parametrize(
+        "source",
+        [
+            pytest.param("code# paladin: ignore\n", id="接頭辞前に空白なし"),
+            pytest.param("code  # paladin: ignore-file\n", id="ignore-fileディレクティブ"),
+        ],
+    )
+    def test_parse_エッジケース_行末コメントとして検出されないこと(self, source: str):
         # Arrange
         parser = LineIgnoreParser()
-        source = "code# paladin: ignore\n"
-
-        # Act
-        result = parser.parse(Path("example.py"), source)
-
-        # Assert
-        assert result == ()
-
-    def test_parse_エッジケース_ignore_fileディレクティブは行末コメントとして検出されないこと(self):
-        # Arrange
-        parser = LineIgnoreParser()
-        source = "code  # paladin: ignore-file\n"
 
         # Act
         result = parser.parse(Path("example.py"), source)
