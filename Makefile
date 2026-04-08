@@ -20,7 +20,15 @@ sync:
 
 .PHONY: upgrade
 upgrade: ## 依存パッケージを最新版に更新（uv.lockを更新）
-	uv sync --upgrade
+	uv sync --upgrade --exclude-newer "1 week"
+
+.PHONY: lock-check
+lock-check: ## uv.lockとpyproject.tomlの同期を確認
+	uv lock --check
+
+.PHONY: audit
+audit: ## 既知の脆弱性をスキャン（pip-audit）
+	uv tool run pip-audit
 
 .PHONY: test
 test: ## テスト実行
