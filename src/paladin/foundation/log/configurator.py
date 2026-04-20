@@ -104,7 +104,7 @@ class LogConfigurator:
         # ログファイルパスの設定（ファイル出力ありの場合のみ）
         log_path = None
         if file_output:
-            log_dir = Path("tmp/logs")
+            log_dir = Path("tmp/logs/paladin")
             log_dir.mkdir(parents=True, exist_ok=True)
             ts = datetime.now(ZoneInfo("Asia/Tokyo")).strftime("%Y%m%d_%H%M%S")
             log_path = (log_dir / f"{self.app_name}_{ts}.log").resolve()  # 絶対パスに変換
