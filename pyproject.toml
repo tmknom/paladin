@@ -7,7 +7,7 @@ dependencies = [
     "colorlog>=6.10.1",
     "pydantic>=2.12.5",
     "pydantic-settings>=2.13.0",
-    "typer>=0.21.1",
+    "typer>=0.25.1",
 ]
 
 [dependency-groups]
