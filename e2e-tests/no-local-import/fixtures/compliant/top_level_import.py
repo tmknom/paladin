@@ -4,5 +4,5 @@ import json
 import os
 
 
-def greet() -> str:
+def greet() -> str:  # paladin: ignore[no-module-level-function]
     return json.dumps({"message": os.getcwd()})

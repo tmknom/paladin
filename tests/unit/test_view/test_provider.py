@@ -37,5 +37,6 @@ class TestViewOrchestratorProvider:
             "no-nested-test-class",
             "no-private-attr-in-test",
             "no-test-method-docstring",
+            "no-module-level-function",
         }
         assert rule_ids == expected_ids

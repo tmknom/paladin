@@ -3,5 +3,5 @@
 import os
 
 
-def get_cwd() -> str:
+def get_cwd() -> str:  # paladin: ignore[no-module-level-function]
     return os.getcwd()
