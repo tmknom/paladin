@@ -10,3 +10,4 @@
 | ルール名 | 概要 |
 |------------|------|
 | [require-test-class-docstring](require-test-class-docstring.md) | テストクラスに docstring の存在を要求する |
+| [no-module-level-function](no-module-level-function.md) | モジュールレベル関数を禁止し、クラスのメソッドとしての実装を要求する |
