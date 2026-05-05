@@ -1,7 +1,7 @@
 """短いメソッドの準拠フィクスチャ"""
 
 # 準拠: 10行の関数（デフォルト上限50行以内）
-def short_function() -> None:
+def short_function() -> None:  # paladin: ignore[no-module-level-function]
     x_0 = 0
     x_1 = 1
     x_2 = 2

@@ -288,15 +288,16 @@ class TestIntegrationCheckIgnore:
     def test_check_正常系_直前コメントと行末コメントの累積適用で違反が除外されること(
         self, tmp_dir: Path
     ):
-        # Arrange: 同一行（line 3）に no-local-import と no-relative-import の2つの違反を発生させ、
-        #          直前コメントで no-local-import を、行末コメントで no-relative-import をそれぞれ ignore する
+        # Arrange: 同一行（line 4）に no-local-import と no-relative-import の2つの違反を発生させ、
+        #          no-module-level-function を行末コメントで、no-local-import を直前コメントで、
+        #          no-relative-import を行末コメントで、それぞれ3つの ignore コメントで除外する
         src_dir = tmp_dir / "src"
         src_dir.mkdir()
         py_file = src_dir / "main.py"
         py_file.write_text(
             '"""メインモジュール"""\n'
             "\n"
-            "def foo():\n"
+            "def foo():  # paladin: ignore[no-module-level-function]\n"
             "    # paladin: ignore[no-local-import]\n"
             "    from .foo import bar  # paladin: ignore[no-relative-import]\n"
         )
@@ -336,7 +337,7 @@ class TestIntegrationCheckIgnore:
         py_file.write_text(
             '"""メインモジュール"""\n'
             "\n"
-            "def foo():\n"
+            "def foo():  # paladin: ignore[no-module-level-function]\n"
             "    import os  # paladin: ignore[no-local-import]\n"
             "    return os.getcwd()\n"
         )

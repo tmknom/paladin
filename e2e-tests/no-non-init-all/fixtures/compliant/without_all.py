@@ -3,5 +3,5 @@
 import os
 
 
-def greet() -> str:
+def greet() -> str:  # paladin: ignore[no-module-level-function]
     return os.getcwd()

@@ -1,4 +1,4 @@
-"""Rule 層の Composition Root。全ルールの登録を一元管理する唯一の変更点。"""
+"""Rule 層の Composition Root。全ルールの登録と依存オプションの解決を一元管理する。"""
 
 from typing import cast
 
@@ -13,6 +13,7 @@ from paladin.rule.no_error_message_test import NoErrorMessageTestRule
 from paladin.rule.no_frozen_instance_test import NoFrozenInstanceTestRule
 from paladin.rule.no_local_import import NoLocalImportRule
 from paladin.rule.no_mock_usage import NoMockUsageRule
+from paladin.rule.no_module_level_function import NoModuleLevelFunctionRule
 from paladin.rule.no_nested_test_class import NoNestedTestClassRule
 from paladin.rule.no_non_init_all import NoNonInitAllRule
 from paladin.rule.no_private_attr_in_test import NoPrivateAttrInTestRule
@@ -31,7 +32,13 @@ from paladin.rule.unused_ignore import UnusedIgnoreRule
 
 
 class RuleSetFactory:
-    """静的解析で使用するルール一式を組み立てる Factory。オプション値の型変換とデフォルト値適用を一元管理する。"""
+    """静的解析で使用するルール一式を組み立てる Factory。
+
+    `rule_options` を受け取り、各ルールに渡すオプション値を抽出・型変換してから
+    `RuleSet` を返す。主要メソッドは `create()`。
+    """
+
+    _DEFAULT_ALLOW_DECORATORS: tuple[str, ...] = ("pytest.fixture", "fixture")
 
     def create(self, rule_options: dict[str, dict[str, object]] | None = None) -> RuleSet:
         """`rule_options` が `None` の場合は全ルールにデフォルト値を適用する。
@@ -40,17 +47,38 @@ class RuleSetFactory:
             - `rule_options` のキーはルールID文字列、値は各ルールのオプション辞書。
             - オプション値が期待する型と一致しない場合はデフォルト値にフォールバックする（例外を出さない）。
               例: `max-lines` に文字列が渡されても `int` のデフォルト値を使用し処理を継続する。
+
+        Returns:
+            全ルールを格納した `RuleSet` インスタンス。単ファイルルール・複数ファイルルール・
+            未使用 ignore ルールをそれぞれ対応するフィールドに保持する。
         """
-        third_party_allow_dirs = self._extract_allow_dirs(rule_options, "no-third-party-import")
-        cross_package_allow_dirs = self._extract_allow_dirs(rule_options, "no-cross-package-import")
+        third_party_allow_dirs = self._extract_allow_dirs(
+            rule_options, "no-third-party-import"
+        )  # [tool.paladin.rule.no-third-party-import].allow-dirs
+        cross_package_allow_dirs = self._extract_allow_dirs(
+            rule_options, "no-cross-package-import"
+        )  # [tool.paladin.rule.no-cross-package-import].allow-dirs
+        nmlf_allow_decorators = self._extract_allow_decorators(
+            rule_options,
+            "no-module-level-function",  # [tool.paladin.rule.no-module-level-function].allow-decorators
+        )
         max_lines, max_test_lines = self._extract_length_options(
-            rule_options, "max-method-length", 50, 100
+            rule_options,
+            "max-method-length",
+            50,
+            100,  # [tool.paladin.rule.max-method-length].max-lines / max-test-lines
         )
         class_max_lines, class_max_test_lines = self._extract_length_options(
-            rule_options, "max-class-length", 200, 400
+            rule_options,
+            "max-class-length",
+            200,
+            400,  # [tool.paladin.rule.max-class-length].max-lines / max-test-lines
         )
         file_max_lines, file_max_test_lines = self._extract_length_options(
-            rule_options, "max-file-length", 300, 500
+            rule_options,
+            "max-file-length",
+            300,
+            500,  # [tool.paladin.rule.max-file-length].max-lines / max-test-lines
         )
         return RuleSet(
             rules=(
@@ -75,6 +103,7 @@ class RuleSetFactory:
                 NoNestedTestClassRule(),
                 NoPrivateAttrInTestRule(),
                 NoTestMethodDocstringRule(),
+                NoModuleLevelFunctionRule(allow_decorators=nmlf_allow_decorators),
             ),
             multi_file_rules=(
                 NoDirectInternalImportRule(),
@@ -84,12 +113,31 @@ class RuleSetFactory:
             unused_ignore_rule=UnusedIgnoreRule(),
         )
 
+    def _extract_allow_decorators(
+        self,
+        rule_options: dict[str, dict[str, object]] | None,
+        rule_id: str,
+    ) -> tuple[str, ...]:
+        """指定ルールの allow-decorators を取り出す。設定が存在しない場合はデフォルト値を使用する。
+
+        Constraints:
+            - `rule_options` が `None`、または `allow-decorators` の値が `list` 以外の型の場合はデフォルト値を返す（型安全な無視）。
+              例外を出さずにデフォルト値にフォールバックすることで、設定値の型不一致を安全に読み飛ばす。
+        """
+        if rule_options is None:
+            return self._DEFAULT_ALLOW_DECORATORS
+        opts = rule_options.get(rule_id, {})
+        raw: object = opts.get("allow-decorators", list(self._DEFAULT_ALLOW_DECORATORS))
+        if not isinstance(raw, list):
+            return self._DEFAULT_ALLOW_DECORATORS
+        return tuple(str(item) for item in cast(list[object], raw))
+
     def _extract_allow_dirs(
         self,
         rule_options: dict[str, dict[str, object]] | None,
         rule_id: str,
     ) -> tuple[str, ...]:
-        """指定ルールの allow-dirs を取り出す。
+        """指定ルールの allow-dirs を取り出す。設定が存在しない場合はデフォルト値（空タプル）を使用する。
 
         Constraints:
             - `rule_options` が `None`、または `allow-dirs` の値が `list` 以外の型の場合は空タプルを返す（型安全な無視）。

@@ -8,12 +8,12 @@ class TestRuleSetFactory:
     """RuleSetFactory.create() メソッドのテスト"""
 
     def test_create_正常系_RuleSetインスタンスを返すこと(self):
-        # Act / Assert
+        # Act & Assert
         result = RuleSetFactory().create()
         assert isinstance(result, RuleSet)
 
     def test_create_正常系_呼び出すたびに独立したインスタンスを返すこと(self):
-        # Act / Assert
+        # Act & Assert
         a = RuleSetFactory().create()
         b = RuleSetFactory().create()
         assert a is not b
@@ -42,7 +42,7 @@ class TestRuleSetFactory:
         # Assert: ルールが登録されていること
         assert "max-class-length" in result.rule_ids
 
-    def test_create_正常系_全ルールが登録されていること_17ルール(self):
+    def test_create_正常系_全ルールが登録されていること_26ルール(self):
         # Act
         result = RuleSetFactory().create()
 
@@ -66,6 +66,35 @@ class TestRuleSetFactory:
         assert "max-file-length" in rule_ids
         assert "require-docstring" in rule_ids
         assert "unused-ignore" in rule_ids
+        assert "no-module-level-function" in rule_ids
+
+    def test_create_正常系_rule_optionsでno_module_level_functionのallow_decoratorsを指定できること(
+        self,
+    ):
+        # Arrange
+        rule_options: dict[str, dict[str, object]] = {
+            "no-module-level-function": {"allow-decorators": ["staticmethod"]}
+        }
+
+        # Act
+        result = RuleSetFactory().create(rule_options=rule_options)
+
+        # Assert: ルールが登録されていること
+        assert "no-module-level-function" in result.rule_ids
+
+    def test_create_正常系_no_module_level_functionでallow_decoratorsがlist以外でもデフォルトにフォールバックすること(
+        self,
+    ):
+        # Arrange
+        rule_options: dict[str, dict[str, object]] = {
+            "no-module-level-function": {"allow-decorators": "pytest.fixture"}
+        }
+
+        # Act
+        result = RuleSetFactory().create(rule_options=rule_options)
+
+        # Assert: 不正な型でも例外なく動作する
+        assert "no-module-level-function" in result.rule_ids
 
     def test_create_正常系_rule_optionsでmax_file_lengthのmax_linesを指定できること(self):
         # Arrange
@@ -104,7 +133,7 @@ class TestRuleSetFactory:
         assert "no-cross-package-import" in result.rule_ids
 
     def test_create_正常系_引数なしで後方互換性を保つこと(self):
-        # Act / Assert
+        # Act & Assert
         # allow_dirs 未指定でもデフォルト引数で呼び出せる
         result = RuleSetFactory().create()
         assert "no-third-party-import" in result.rule_ids
