@@ -9,4 +9,5 @@
 
 | ルール名 | 概要 |
 |------------|------|
+| [max-function-parameter](max-function-parameter.md) | メソッド/関数の引数の数を制限する |
 | [require-test-class-docstring](require-test-class-docstring.md) | テストクラスに docstring の存在を要求する |
