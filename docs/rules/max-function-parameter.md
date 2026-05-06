@@ -119,11 +119,13 @@ def user_service(
 ```toml
 [tool.paladin.rule.max-function-parameter]
 max-parameters = 3
+allow-decorators = ["pytest.fixture", "fixture"]
 ```
 
 | パラメータ | 説明 | デフォルト値 |
 |-----------|------|------------|
 | `max-parameters` | `self` / `cls` を除いた引数数の上限 | `3` |
+| `allow-decorators` | 検査対象から除外するデコレータ名 | `["pytest.fixture", "fixture"]` |
 
 ### max-method-length との関係
 
