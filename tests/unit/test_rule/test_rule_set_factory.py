@@ -42,7 +42,7 @@ class TestRuleSetFactory:
         # Assert: ルールが登録されていること
         assert "max-class-length" in result.rule_ids
 
-    def test_create_正常系_全ルールが登録されていること_26ルール(self):
+    def test_create_正常系_全ルールが登録されていること_27ルール(self):
         # Act
         result = RuleSetFactory().create()
 
@@ -67,6 +67,14 @@ class TestRuleSetFactory:
         assert "require-docstring" in rule_ids
         assert "unused-ignore" in rule_ids
         assert "no-module-level-function" in rule_ids
+        assert "max-function-parameter" in rule_ids
+        assert "require-empty-test-init" in rule_ids
+        assert "require-aaa-comment" in rule_ids
+        assert "no-error-message-test" in rule_ids
+        assert "no-frozen-instance-test" in rule_ids
+        assert "no-nested-test-class" in rule_ids
+        assert "no-private-attr-in-test" in rule_ids
+        assert "no-test-method-docstring" in rule_ids
 
     def test_create_正常系_rule_optionsでno_module_level_functionのallow_decoratorsを指定できること(
         self,
@@ -175,3 +183,45 @@ class TestRuleSetFactory:
         # Assert: myapp が自動導出されるため require-qualified-third-party の違反なし
         rqtp_violations = [v for v in result.items if v.rule_id == "require-qualified-third-party"]
         assert len(rqtp_violations) == 0
+
+    def test_create_正常系_rule_optionsでmax_function_parameterのmax_parametersを指定できること(
+        self,
+    ):
+        # Arrange
+        rule_options: dict[str, dict[str, object]] = {
+            "max-function-parameter": {"max-parameters": 5}
+        }
+
+        # Act
+        result = RuleSetFactory().create(rule_options=rule_options)
+
+        # Assert: ルールが登録されていること
+        assert "max-function-parameter" in result.rule_ids
+
+    def test_create_正常系_max_function_parameterでmax_parametersがint以外でもデフォルトにフォールバックすること(
+        self,
+    ):
+        # Arrange
+        rule_options: dict[str, dict[str, object]] = {
+            "max-function-parameter": {"max-parameters": "five"}
+        }
+
+        # Act
+        result = RuleSetFactory().create(rule_options=rule_options)
+
+        # Assert: 不正な型でも例外なく動作する
+        assert "max-function-parameter" in result.rule_ids
+
+    def test_create_正常系_rule_optionsでmax_function_parameterのallow_decoratorsを指定できること(
+        self,
+    ):
+        # Arrange
+        rule_options: dict[str, dict[str, object]] = {
+            "max-function-parameter": {"allow-decorators": ["staticmethod"]}
+        }
+
+        # Act
+        result = RuleSetFactory().create(rule_options=rule_options)
+
+        # Assert: ルールが登録されていること
+        assert "max-function-parameter" in result.rule_ids

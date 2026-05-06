@@ -35,3 +35,4 @@
 | [no-test-method-docstring](no-test-method-docstring.md) | テストメソッドへの docstring の記述を禁止する |
 | [unused-ignore](unused-ignore.md) | 対応する違反が存在しない Ignore コメントを検出する |
 | [no-module-level-function](no-module-level-function.md) | モジュールの直下に定義された関数（モジュールレベル関数）を禁止する |
+| [max-function-parameter](max-function-parameter.md) | メソッド/関数の引数の数が設定された上限を超えた場合に違反を検出する |

@@ -4,6 +4,7 @@ from typing import cast
 
 from paladin.rule.max_class_length import MaxClassLengthRule
 from paladin.rule.max_file_length import MaxFileLengthRule
+from paladin.rule.max_function_parameter import MaxFunctionParameterRule
 from paladin.rule.max_method_length import MaxMethodLengthRule
 from paladin.rule.no_cross_package_import import NoCrossPackageImportRule
 from paladin.rule.no_cross_package_reexport import NoCrossPackageReexportRule
@@ -49,8 +50,7 @@ class RuleSetFactory:
               例: `max-lines` に文字列が渡されても `int` のデフォルト値を使用し処理を継続する。
 
         Returns:
-            全ルールを格納した `RuleSet` インスタンス。単ファイルルール・複数ファイルルール・
-            未使用 ignore ルールをそれぞれ対応するフィールドに保持する。
+            全ルールを格納した `RuleSet` インスタンス。
         """
         third_party_allow_dirs = self._extract_allow_dirs(
             rule_options, "no-third-party-import"
@@ -61,6 +61,15 @@ class RuleSetFactory:
         nmlf_allow_decorators = self._extract_allow_decorators(
             rule_options,
             "no-module-level-function",  # [tool.paladin.rule.no-module-level-function].allow-decorators
+        )
+        mfp_max = self._extract_max_parameters(
+            rule_options,
+            "max-function-parameter",
+            3,  # [tool.paladin.rule.max-function-parameter].max-parameters
+        )
+        mfp_allow_decorators = self._extract_allow_decorators(
+            rule_options,
+            "max-function-parameter",  # [tool.paladin.rule.max-function-parameter].allow-decorators
         )
         max_lines, max_test_lines = self._extract_length_options(
             rule_options,
@@ -104,6 +113,9 @@ class RuleSetFactory:
                 NoPrivateAttrInTestRule(),
                 NoTestMethodDocstringRule(),
                 NoModuleLevelFunctionRule(allow_decorators=nmlf_allow_decorators),
+                MaxFunctionParameterRule(
+                    max_parameters=mfp_max, allow_decorators=mfp_allow_decorators
+                ),
             ),
             multi_file_rules=(
                 NoDirectInternalImportRule(),
@@ -112,6 +124,25 @@ class RuleSetFactory:
             ),
             unused_ignore_rule=UnusedIgnoreRule(),
         )
+
+    def _extract_max_parameters(
+        self,
+        rule_options: dict[str, dict[str, object]] | None,
+        rule_id: str,
+        default: int,
+    ) -> int:
+        """指定ルールの max-parameters を取り出す。
+
+        Constraints:
+            - `rule_options` が `None`、または指定ルールIDのキーが存在しない場合も `default` にフォールバックする。
+            - 値が `int` 以外の型の場合は `default` にフォールバックする（型安全な無視）。
+              例外を出さずにデフォルト値を使うことで、設定値の型不一致が解析実行を妨げないようにする。
+        """
+        if rule_options is None:
+            return default
+        opts = rule_options.get(rule_id, {})
+        raw = opts.get("max-parameters", default)
+        return raw if isinstance(raw, int) else default
 
     def _extract_allow_decorators(
         self,
