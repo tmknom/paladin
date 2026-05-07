@@ -7,7 +7,7 @@ from paladin.rule.no_local_import import (
     NoLocalImportRule,
 )
 from paladin.rule.types import RuleMeta
-from tests.unit.test_rule.helper import make_source_file
+from tests.unit.test_rule.helper import SourceFileFactory
 
 
 class TestLocalImportCollector:
@@ -107,7 +107,7 @@ class TestLocalImportDetector:
         # Arrange
         rule = NoLocalImportRule()
         source = "def foo():\n    import os\n"
-        source_file = make_source_file(source)
+        source_file = SourceFileFactory.make(source)
         tree = ast.parse(source)
         local_imports = LocalImportCollector.collect(tree)
         assert len(local_imports) == 1
@@ -122,7 +122,7 @@ class TestLocalImportDetector:
         # Arrange
         rule = NoLocalImportRule()
         source = "def foo():\n    import os\n"
-        source_file = make_source_file(source)
+        source_file = SourceFileFactory.make(source)
         tree = ast.parse(source)
         local_imports = LocalImportCollector.collect(tree)
 
@@ -156,7 +156,7 @@ class TestNoLocalImportRuleCheck:
         # Arrange
         rule = NoLocalImportRule()
         source = "def foo():\n    import os\n"
-        source_file = make_source_file(source)
+        source_file = SourceFileFactory.make(source)
 
         # Act
         result = rule.check(source_file)
@@ -174,7 +174,7 @@ class TestNoLocalImportRuleCheck:
         # Arrange
         rule = NoLocalImportRule()
         source = "def foo():\n    import os\ndef bar():\n    from sys import argv\n"
-        source_file = make_source_file(source)
+        source_file = SourceFileFactory.make(source)
 
         # Act
         result = rule.check(source_file)

@@ -6,16 +6,7 @@ from paladin.rule.no_test_method_docstring import (
     NoTestMethodDocstringRule,
     TestMethodDocstringDetector,
 )
-from tests.unit.test_rule.helper import make_source_file, make_test_source_file
-
-
-def _make_function_node(source: str) -> ast.FunctionDef:
-    """ソースコードから最初の ast.FunctionDef を取り出す"""
-    tree = ast.parse(source)
-    for node in ast.walk(tree):
-        if isinstance(node, ast.FunctionDef):
-            return node
-    raise AssertionError(f"ast.FunctionDef が見つかりません: {source!r}")
+from tests.unit.test_rule.helper import AstNodeExtractor, SourceFileFactory
 
 
 class TestTestMethodDocstringDetector:
@@ -24,9 +15,9 @@ class TestTestMethodDocstringDetector:
     def test_detect_正常系_違反のフィールド値が正しいこと(self):
         # Arrange
         source = 'def test_something():\n    """docstring"""\n    pass\n'
-        node = _make_function_node(source)
+        node = AstNodeExtractor.first_function(source)
         meta = NoTestMethodDocstringRule().meta
-        source_file = make_test_source_file(source)
+        source_file = SourceFileFactory.make_test(source)
 
         # Act
         result = TestMethodDocstringDetector.detect(node, meta, source_file)
@@ -39,9 +30,9 @@ class TestTestMethodDocstringDetector:
     def test_detect_正常系_docstringなしのテストメソッドでNoneを返すこと(self):
         # Arrange
         source = "def test_something():\n    pass\n"
-        node = _make_function_node(source)
+        node = AstNodeExtractor.first_function(source)
         meta = NoTestMethodDocstringRule().meta
-        source_file = make_test_source_file(source)
+        source_file = SourceFileFactory.make_test(source)
 
         # Act
         result = TestMethodDocstringDetector.detect(node, meta, source_file)
@@ -70,7 +61,7 @@ class TestTestMethodDocstringDetector:
             col_offset=0,
         )
         meta = NoTestMethodDocstringRule().meta
-        source_file = make_test_source_file("")
+        source_file = SourceFileFactory.make_test("")
 
         # Act
         result = TestMethodDocstringDetector.detect(node, meta, source_file)
@@ -82,9 +73,9 @@ class TestTestMethodDocstringDetector:
         # Arrange
         # body[0] が ast.Expr だが value が ast.Name（変数参照）の場合
         source = "def test_something():\n    some_var\n"
-        node = _make_function_node(source)
+        node = AstNodeExtractor.first_function(source)
         meta = NoTestMethodDocstringRule().meta
-        source_file = make_test_source_file(source)
+        source_file = SourceFileFactory.make_test(source)
 
         # Act
         result = TestMethodDocstringDetector.detect(node, meta, source_file)
@@ -95,9 +86,9 @@ class TestTestMethodDocstringDetector:
     def test_detect_エッジケース_Exprだが文字列定数でない場合にNoneを返すこと(self):
         # Arrange
         source = "def test_something():\n    42\n"
-        node = _make_function_node(source)
+        node = AstNodeExtractor.first_function(source)
         meta = NoTestMethodDocstringRule().meta
-        source_file = make_test_source_file(source)
+        source_file = SourceFileFactory.make_test(source)
 
         # Act
         result = TestMethodDocstringDetector.detect(node, meta, source_file)
@@ -113,7 +104,7 @@ class TestNoTestMethodDocstringRuleCheck:
         # Arrange
         rule = NoTestMethodDocstringRule()
         source = 'def test_something():\n    """docstring"""\n    pass\n'
-        source_file = make_test_source_file(source)
+        source_file = SourceFileFactory.make_test(source)
 
         # Act
         result = rule.check(source_file)
@@ -134,7 +125,7 @@ class TestNoTestMethodDocstringRuleCheck:
             '    """second docstring"""\n'
             "    pass\n"
         )
-        source_file = make_test_source_file(source)
+        source_file = SourceFileFactory.make_test(source)
 
         # Act
         result = rule.check(source_file)
@@ -146,7 +137,7 @@ class TestNoTestMethodDocstringRuleCheck:
         # Arrange
         rule = NoTestMethodDocstringRule()
         source = 'def test_something():\n    """docstring"""\n    pass\n'
-        source_file = make_source_file(source)
+        source_file = SourceFileFactory.make(source)
 
         # Act
         result = rule.check(source_file)
@@ -158,7 +149,7 @@ class TestNoTestMethodDocstringRuleCheck:
         # Arrange
         rule = NoTestMethodDocstringRule()
         source = "def test_something():\n    pass\n"
-        source_file = make_test_source_file(source)
+        source_file = SourceFileFactory.make_test(source)
 
         # Act
         result = rule.check(source_file)
@@ -178,7 +169,7 @@ class TestNoTestMethodDocstringRuleCheck:
             '    """helper docstring"""\n'
             "    pass\n"
         )
-        source_file = make_test_source_file(source)
+        source_file = SourceFileFactory.make_test(source)
 
         # Act
         result = rule.check(source_file)
@@ -196,7 +187,7 @@ class TestNoTestMethodDocstringRuleCheck:
             "    def test_method(self):\n"
             "        pass\n"
         )
-        source_file = make_test_source_file(source)
+        source_file = SourceFileFactory.make_test(source)
 
         # Act
         result = rule.check(source_file)
@@ -208,7 +199,7 @@ class TestNoTestMethodDocstringRuleCheck:
         # Arrange
         rule = NoTestMethodDocstringRule()
         source = 'x = 1\n\ndef test_something():\n    """docstring"""\n    pass\n'
-        source_file = make_test_source_file(source)
+        source_file = SourceFileFactory.make_test(source)
 
         # Act
         result = rule.check(source_file)

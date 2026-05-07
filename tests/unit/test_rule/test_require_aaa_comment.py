@@ -10,7 +10,7 @@ from paladin.rule.require_aaa_comment import (
     TargetMethod,
     TargetMethodCollector,
 )
-from tests.unit.test_rule.helper import make_source_file, make_test_source_file
+from tests.unit.test_rule.helper import SourceFileFactory
 
 
 class TestTargetMethodCollector:
@@ -100,7 +100,7 @@ class TestAaaCommentDetector:
             "        x = 1\n"
             "        assert x == 1\n"
         )
-        source_file = make_test_source_file(source)
+        source_file = SourceFileFactory.make_test(source)
         method = TargetMethod(name="test_正常系_何かをすること", lineno=2, end_lineno=4)
 
         # Act
@@ -119,7 +119,7 @@ class TestAaaCommentDetector:
             "        x = 1\n"
             "        assert x == 1\n"
         )
-        source_file = make_test_source_file(source)
+        source_file = SourceFileFactory.make_test(source)
         method = TargetMethod(name="test_正常系_何かをすること", lineno=2, end_lineno=5)
 
         # Act
@@ -136,7 +136,7 @@ class TestAaaCommentDetector:
             "        # Act & Assert\n"
             "        assert 1 == 1\n"
         )
-        source_file = make_test_source_file(source)
+        source_file = SourceFileFactory.make_test(source)
         method = TargetMethod(name="test_正常系_何かをすること", lineno=2, end_lineno=4)
 
         # Act
@@ -163,7 +163,7 @@ class TestRequireAaaCommentRuleCheck:
             "        x = 1\n"
             "        assert x == 1\n"
         )
-        source_file = make_test_source_file(source)
+        source_file = SourceFileFactory.make_test(source)
 
         # Act
         result = rule.check(source_file)
@@ -183,7 +183,7 @@ class TestRequireAaaCommentRuleCheck:
             "        x = 1\n"
             "        assert x == 1\n"
         )
-        source_file = make_test_source_file(source)
+        source_file = SourceFileFactory.make_test(source)
 
         # Act
         result = rule.check(source_file)
@@ -201,7 +201,7 @@ class TestRequireAaaCommentRuleCheck:
             "        # Act & Assert\n"
             "        assert 1 == 1\n"
         )
-        source_file = make_test_source_file(source)
+        source_file = SourceFileFactory.make_test(source)
 
         # Act
         result = rule.check(source_file)
@@ -223,7 +223,7 @@ class TestRequireAaaCommentRuleCheck:
             "    def test_正常系_Cをすること(self) -> None:\n"
             "        assert 3 == 3\n"
         )
-        source_file = make_test_source_file(source)
+        source_file = SourceFileFactory.make_test(source)
 
         # Act
         result = rule.check(source_file)
@@ -236,7 +236,7 @@ class TestRequireAaaCommentRuleCheck:
     ):
         # Arrange
         source = "class Foo:\n    def test_正常系_何かをすること(self) -> None:\n        pass\n"
-        source_file = make_source_file(source)
+        source_file = SourceFileFactory.make(source)
 
         # Act
         result = rule.check(source_file)
@@ -255,7 +255,7 @@ class TestRequireAaaCommentRuleCheck:
             "    def helper_method(self) -> None:\n"
             "        pass\n"
         )
-        source_file = make_test_source_file(source)
+        source_file = SourceFileFactory.make_test(source)
 
         # Act
         result = rule.check(source_file)
@@ -274,7 +274,7 @@ class TestRequireAaaCommentRuleCheck:
             "        x = 1\n"
             "        assert x == 1\n"
         )
-        source_file = make_test_source_file(source)
+        source_file = SourceFileFactory.make_test(source)
 
         # Act
         result = rule.check(source_file)
@@ -293,7 +293,7 @@ class TestRequireAaaCommentRuleCheck:
             "        y = 2\n"
             "        assert x + y == 3\n"
         )
-        source_file = make_test_source_file(source)
+        source_file = SourceFileFactory.make_test(source)
 
         # Act
         result = rule.check(source_file)

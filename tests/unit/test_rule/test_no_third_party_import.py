@@ -8,19 +8,20 @@ from paladin.rule.no_third_party_import import (
     ThirdPartyImportDetector,
 )
 from paladin.rule.types import RuleMeta, SourceFiles
-from tests.unit.test_rule.helper import make_source_file, make_source_files
+from tests.unit.test_rule.helper import SourceFileFactory
 
 _STDLIB = frozenset({"os", "sys"})
 _ROOT = ("myapp",)
 
 
-def _rule_with_prepare(
-    source_files: SourceFiles, allow_dirs: tuple[str, ...] = ("src/foundation/",)
-) -> NoThirdPartyImportRule:
-    """prepare() を呼んで root_packages を自動導出したルールを返す"""
-    rule = NoThirdPartyImportRule(allow_dirs=allow_dirs)
-    rule.prepare(source_files)
-    return rule
+class RuleFactory:
+    @staticmethod
+    def with_prepare(
+        source_files: SourceFiles, allow_dirs: tuple[str, ...] = ("src/foundation/",)
+    ) -> NoThirdPartyImportRule:
+        rule = NoThirdPartyImportRule(allow_dirs=allow_dirs)
+        rule.prepare(source_files)
+        return rule
 
 
 class TestNoThirdPartyImportRuleMeta:
@@ -54,8 +55,8 @@ class TestNoThirdPartyImportRuleCheck:
     )
     def test_check_違反なしのケースで空を返すこと(self, source: str) -> None:
         # Arrange
-        source_files = make_source_files((source, "src/app/main.py"))
-        rule = _rule_with_prepare(source_files, allow_dirs=("src/foundation/",))
+        source_files = SourceFileFactory.make_many((source, "src/app/main.py"))
+        rule = RuleFactory.with_prepare(source_files, allow_dirs=("src/foundation/",))
 
         # Act
         result = rule.check(source_files.files[0])
@@ -65,11 +66,11 @@ class TestNoThirdPartyImportRuleCheck:
 
     def test_check_正常系_ルートパッケージのimportは違反なしを返すこと(self):
         # Arrange: src/myapp/ がルートパッケージとして自動導出される
-        source_files = make_source_files(
+        source_files = SourceFileFactory.make_many(
             ("import myapp\n", "src/app/main.py"),
             ("x = 1\n", "src/myapp/core.py"),
         )
-        rule = _rule_with_prepare(source_files, allow_dirs=("src/foundation/",))
+        rule = RuleFactory.with_prepare(source_files, allow_dirs=("src/foundation/",))
 
         # Act
         result = rule.check(source_files.files[0])
@@ -79,11 +80,11 @@ class TestNoThirdPartyImportRuleCheck:
 
     def test_check_正常系_ルートパッケージのfrom_importは違反なしを返すこと(self):
         # Arrange
-        source_files = make_source_files(
+        source_files = SourceFileFactory.make_many(
             ("from myapp.utils import helper\n", "src/app/main.py"),
             ("x = 1\n", "src/myapp/utils.py"),
         )
-        rule = _rule_with_prepare(source_files, allow_dirs=("src/foundation/",))
+        rule = RuleFactory.with_prepare(source_files, allow_dirs=("src/foundation/",))
 
         # Act
         result = rule.check(source_files.files[0])
@@ -103,8 +104,8 @@ class TestNoThirdPartyImportRuleCheck:
     )
     def test_check_違反ありのケースで1件返すこと(self, source: str) -> None:
         # Arrange
-        source_files = make_source_files((source, "src/app/main.py"))
-        rule = _rule_with_prepare(source_files, allow_dirs=("src/foundation/",))
+        source_files = SourceFileFactory.make_many((source, "src/app/main.py"))
+        rule = RuleFactory.with_prepare(source_files, allow_dirs=("src/foundation/",))
 
         # Act
         result = rule.check(source_files.files[0])
@@ -114,10 +115,10 @@ class TestNoThirdPartyImportRuleCheck:
 
     def test_check_正常系_allow_dirs未設定の場合は全ファイルで違反を検出すること(self):
         # Arrange
-        source_files = make_source_files(
+        source_files = SourceFileFactory.make_many(
             ("import requests\n", "src/app/main.py"),
         )
-        rule = _rule_with_prepare(source_files, allow_dirs=())
+        rule = RuleFactory.with_prepare(source_files, allow_dirs=())
 
         # Act
         result = rule.check(source_files.files[0])
@@ -127,10 +128,10 @@ class TestNoThirdPartyImportRuleCheck:
 
     def test_check_正常系_許可ディレクトリ内のファイルは違反なしを返すこと(self):
         # Arrange
-        source_files = make_source_files(
+        source_files = SourceFileFactory.make_many(
             ("import requests\n", "src/foundation/http.py"),
         )
-        rule = _rule_with_prepare(source_files, allow_dirs=("src/foundation/",))
+        rule = RuleFactory.with_prepare(source_files, allow_dirs=("src/foundation/",))
 
         # Act
         result = rule.check(source_files.files[0])
@@ -140,10 +141,10 @@ class TestNoThirdPartyImportRuleCheck:
 
     def test_check_正常系_末尾スラッシュなしのallow_dirsが正規化されて機能すること(self):
         # Arrange: 末尾スラッシュなしで指定
-        source_files = make_source_files(
+        source_files = SourceFileFactory.make_many(
             ("import requests\n", "src/foundation/http.py"),
         )
-        rule = _rule_with_prepare(source_files, allow_dirs=("src/foundation",))
+        rule = RuleFactory.with_prepare(source_files, allow_dirs=("src/foundation",))
 
         # Act
         result = rule.check(source_files.files[0])
@@ -153,10 +154,10 @@ class TestNoThirdPartyImportRuleCheck:
 
     def test_check_正常系_末尾スラッシュなしのallow_dirsで誤判定しないこと(self):
         # Arrange: "src/found" を allow_dirs に指定しても "src/foundation/" は許可されない
-        source_files = make_source_files(
+        source_files = SourceFileFactory.make_many(
             ("import requests\n", "src/foundation/http.py"),
         )
-        rule = _rule_with_prepare(source_files, allow_dirs=("src/found",))
+        rule = RuleFactory.with_prepare(source_files, allow_dirs=("src/found",))
 
         # Act
         result = rule.check(source_files.files[0])
@@ -166,10 +167,10 @@ class TestNoThirdPartyImportRuleCheck:
 
     def test_check_正常系_複数のallow_dirsが機能すること(self):
         # Arrange: 2つの許可ディレクトリ
-        source_files = make_source_files(
+        source_files = SourceFileFactory.make_many(
             ("import requests\n", "src/infra/client.py"),
         )
-        rule = _rule_with_prepare(source_files, allow_dirs=("src/foundation/", "src/infra/"))
+        rule = RuleFactory.with_prepare(source_files, allow_dirs=("src/foundation/", "src/infra/"))
 
         # Act
         result = rule.check(source_files.files[0])
@@ -214,8 +215,8 @@ class TestThirdPartyImportDetector:
     def test_detect_from_import_正常系_複数名で複数Violationを返すこと(self):
         # Arrange
         source = "from requests import get, post\n"
-        source_file = make_source_file(source, "src/app/main.py")
-        source_files = make_source_files((source, "src/app/main.py"))
+        source_file = SourceFileFactory.make(source, "src/app/main.py")
+        source_files = SourceFileFactory.make_many((source, "src/app/main.py"))
         rule = NoThirdPartyImportRule(allow_dirs=())
         rule.prepare(source_files)
         stmt = source_file.imports[0]
@@ -230,8 +231,8 @@ class TestThirdPartyImportDetector:
     def test_detect_plain_import_正常系_Violationを返すこと(self):
         # Arrange
         source = "import requests\n"
-        source_file = make_source_file(source, "src/app/main.py")
-        source_files = make_source_files((source, "src/app/main.py"))
+        source_file = SourceFileFactory.make(source, "src/app/main.py")
+        source_files = SourceFileFactory.make_many((source, "src/app/main.py"))
         rule = NoThirdPartyImportRule(allow_dirs=())
         rule.prepare(source_files)
         stmt = source_file.imports[0]

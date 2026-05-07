@@ -3,6 +3,10 @@
 テスト全体で使用される共通のフィクスチャ、設定を定義します。
 """
 
+# pytest_configure は pytest が関数名で発見するフック関数であり、クラスメソッドとして定義すると
+# pytest が認識できない。そのため、モジュールレベル関数として定義する必要がある。
+# paladin: ignore-file[no-module-level-function]
+
 import os
 
 

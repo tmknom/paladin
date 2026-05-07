@@ -6,6 +6,9 @@ from pathlib import Path
 from paladin.rule import SourceFile
 
 
-def make_source_file(source: str, filename: str = "example.py") -> SourceFile:
-    """テスト用の SourceFile を生成する"""
-    return SourceFile(file_path=Path(filename), tree=ast.parse(source), source=source)
+class SourceFileFactory:
+    """テスト用 SourceFile 生成ファクトリ"""
+
+    @staticmethod
+    def make(source: str, filename: str = "example.py") -> SourceFile:
+        return SourceFile(file_path=Path(filename), tree=ast.parse(source), source=source)

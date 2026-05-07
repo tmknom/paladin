@@ -4,25 +4,7 @@ import json
 
 from paladin.foundation.output import OutputFormat
 from paladin.list.formatter import ListFormatterFactory, ListJsonFormatter, ListTextFormatter
-from paladin.rule import RuleMeta
-
-
-def _make_rule_meta(
-    rule_id: str = "PAL001",
-    rule_name: str = "rule-name",
-    summary: str = "概要テキスト",
-    intent: str = "意図",
-    guidance: str = "見方",
-    suggestion: str = "修正方向",
-) -> RuleMeta:
-    return RuleMeta(
-        rule_id=rule_id,
-        rule_name=rule_name,
-        summary=summary,
-        intent=intent,
-        guidance=guidance,
-        suggestion=suggestion,
-    )
+from tests.unit.test_list.helper import RuleMetaFactory
 
 
 class TestListTextFormatter:
@@ -30,7 +12,9 @@ class TestListTextFormatter:
 
     def test_format_正常系_単一ルールのID名前概要をタブ区切り風に返すこと(self):
         # Arrange
-        rules = (_make_rule_meta(rule_id="PAL001", rule_name="rule-name", summary="概要テキスト"),)
+        rules = (
+            RuleMetaFactory.make(rule_id="PAL001", rule_name="rule-name", summary="概要テキスト"),
+        )
 
         # Act
         result = ListTextFormatter().format(rules)
@@ -43,8 +27,8 @@ class TestListTextFormatter:
     def test_format_正常系_複数ルールで各行が整列されること(self):
         # Arrange
         rules = (
-            _make_rule_meta(rule_id="PAL001", rule_name="short", summary="概要1"),
-            _make_rule_meta(rule_id="PAL002", rule_name="longer-rule-name", summary="概要2"),
+            RuleMetaFactory.make(rule_id="PAL001", rule_name="short", summary="概要1"),
+            RuleMetaFactory.make(rule_id="PAL002", rule_name="longer-rule-name", summary="概要2"),
         )
 
         # Act
@@ -74,7 +58,9 @@ class TestListJsonFormatter:
 
     def test_format_正常系_単一ルールのrule_idとrule_nameとsummaryがJSONに含まれること(self):
         # Arrange
-        rules = (_make_rule_meta(rule_id="PAL001", rule_name="rule-name", summary="概要テキスト"),)
+        rules = (
+            RuleMetaFactory.make(rule_id="PAL001", rule_name="rule-name", summary="概要テキスト"),
+        )
 
         # Act
         result = ListJsonFormatter().format(rules)
@@ -88,8 +74,8 @@ class TestListJsonFormatter:
     def test_format_正常系_複数ルールでrulesキー配下に全ルールが含まれること(self):
         # Arrange
         rules = (
-            _make_rule_meta(rule_id="PAL001", rule_name="rule-one", summary="概要1"),
-            _make_rule_meta(rule_id="PAL002", rule_name="rule-two", summary="概要2"),
+            RuleMetaFactory.make(rule_id="PAL001", rule_name="rule-one", summary="概要1"),
+            RuleMetaFactory.make(rule_id="PAL002", rule_name="rule-two", summary="概要2"),
         )
 
         # Act
@@ -103,7 +89,7 @@ class TestListJsonFormatter:
 
     def test_format_正常系_日本語を含むフィールドがエスケープされずに出力されること(self):
         # Arrange
-        rules = (_make_rule_meta(summary="日本語の概要"),)
+        rules = (RuleMetaFactory.make(summary="日本語の概要"),)
 
         # Act
         result = ListJsonFormatter().format(rules)
@@ -128,7 +114,9 @@ class TestListFormatterFactory:
 
     def test_format_正常系_TEXT指定で列幅揃えテキスト形式を返すこと(self):
         # Arrange
-        rules = (_make_rule_meta(rule_id="PAL001", rule_name="rule-name", summary="概要テキスト"),)
+        rules = (
+            RuleMetaFactory.make(rule_id="PAL001", rule_name="rule-name", summary="概要テキスト"),
+        )
 
         # Act
         result = ListFormatterFactory().format(rules, OutputFormat.TEXT)
@@ -140,7 +128,9 @@ class TestListFormatterFactory:
 
     def test_format_正常系_JSON指定でrulesキーを含むJSON形式を返すこと(self):
         # Arrange
-        rules = (_make_rule_meta(rule_id="PAL001", rule_name="rule-name", summary="概要テキスト"),)
+        rules = (
+            RuleMetaFactory.make(rule_id="PAL001", rule_name="rule-name", summary="概要テキスト"),
+        )
 
         # Act
         result = ListFormatterFactory().format(rules, OutputFormat.JSON)

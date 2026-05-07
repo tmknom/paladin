@@ -8,40 +8,34 @@ from paladin.rule.max_method_length import (
     MethodLengthDetector,
 )
 from paladin.rule.types import RuleMeta
-from tests.unit.test_rule.helper import make_source_file, make_test_source_file
+from tests.unit.test_rule.helper import SourceFileFactory
 
 
-def _make_func(num_lines: int, name: str = "foo") -> str:
-    """指定行数のトップレベル関数ソースを生成する（def 行 + body 行）"""
-    body_lines = num_lines - 1  # def 行を除いた本体の行数
-    lines = [f"def {name}():"]
-    for i in range(body_lines - 1):
-        lines.append(f"    x_{i} = {i}")
-    lines.append("    pass")
-    return "\n".join(lines) + "\n"
+class MethodSourceBuilder:
+    @staticmethod
+    def lines(num_lines: int, name: str = "foo") -> str:
+        body_lines = num_lines - 1
+        lines = [f"def {name}():"]
+        for i in range(body_lines - 1):
+            lines.append(f"    x_{i} = {i}")
+        lines.append("    pass")
+        return "\n".join(lines) + "\n"
 
-
-def _make_func_with_docstring(num_lines: int, docstring_lines: int, name: str = "foo") -> str:
-    """指定の物理行数・docstring行数を持つトップレベル関数ソースを生成する
-
-    num_lines: def行を含む物理総行数
-    docstring_lines: docstringの行数（1以上）
-    """
-    lines = [f"def {name}():"]
-    # docstring を生成
-    if docstring_lines == 1:
-        lines.append('    """docstring"""')
-    else:
-        lines.append('    """')
-        for i in range(docstring_lines - 2):
-            lines.append(f"    docstring line {i}")
-        lines.append('    """')
-    # 残りの本体行を埋める（def行 + docstring行 + body行 = num_lines）
-    body_lines = num_lines - 1 - docstring_lines
-    for i in range(body_lines - 1):
-        lines.append(f"    x_{i} = {i}")
-    lines.append("    pass")
-    return "\n".join(lines) + "\n"
+    @staticmethod
+    def with_docstring(num_lines: int, docstring_lines: int, name: str = "foo") -> str:
+        lines = [f"def {name}():"]
+        if docstring_lines == 1:
+            lines.append('    """docstring"""')
+        else:
+            lines.append('    """')
+            for i in range(docstring_lines - 2):
+                lines.append(f"    docstring line {i}")
+            lines.append('    """')
+        body_lines = num_lines - 1 - docstring_lines
+        for i in range(body_lines - 1):
+            lines.append(f"    x_{i} = {i}")
+        lines.append("    pass")
+        return "\n".join(lines) + "\n"
 
 
 class TestMaxMethodLengthRuleMeta:
@@ -66,8 +60,8 @@ class TestMaxMethodLengthRuleCheck:
     def test_check_正常系_違反のフィールド値が正しいこと(self):
         # Arrange
         rule = MaxMethodLengthRule()
-        source = _make_func(51, name="long_func")
-        source_file = make_source_file(source)
+        source = MethodSourceBuilder.lines(51, name="long_func")
+        source_file = SourceFileFactory.make(source)
 
         # Act
         result = rule.check(source_file)
@@ -89,7 +83,7 @@ class TestMaxMethodLengthRuleCheck:
                 lines.append(f"    x_{i} = {i}")
             lines.append("    pass")
         source = "\n".join(lines) + "\n"
-        source_file = make_source_file(source)
+        source_file = SourceFileFactory.make(source)
 
         # Act
         result = rule.check(source_file)
@@ -100,8 +94,8 @@ class TestMaxMethodLengthRuleCheck:
     def test_check_違反なしのケースで空を返すこと_docstring除外で上限以下(self) -> None:
         # Arrange
         rule = MaxMethodLengthRule()
-        source = _make_func_with_docstring(num_lines=55, docstring_lines=5)
-        source_file = make_source_file(source)
+        source = MethodSourceBuilder.with_docstring(num_lines=55, docstring_lines=5)
+        source_file = SourceFileFactory.make(source)
 
         # Act
         result = rule.check(source_file)
@@ -112,8 +106,8 @@ class TestMaxMethodLengthRuleCheck:
     def test_check_違反ありのケースで1件返すこと_docstring除外しても上限超過(self) -> None:
         # Arrange
         rule = MaxMethodLengthRule()
-        source = _make_func_with_docstring(num_lines=61, docstring_lines=10)
-        source_file = make_source_file(source)
+        source = MethodSourceBuilder.with_docstring(num_lines=61, docstring_lines=10)
+        source_file = SourceFileFactory.make(source)
 
         # Act
         result = rule.check(source_file)
@@ -124,8 +118,8 @@ class TestMaxMethodLengthRuleCheck:
     def test_check_正常系_テストファイルはmax_test_linesが適用されること(self):
         # Arrange: テストファイルのデフォルト上限100行に対して101行の関数
         rule = MaxMethodLengthRule()
-        source = _make_func(101)
-        source_file = make_test_source_file(source)
+        source = MethodSourceBuilder.lines(101)
+        source_file = SourceFileFactory.make_test(source)
 
         # Act
         result = rule.check(source_file)
@@ -136,8 +130,8 @@ class TestMaxMethodLengthRuleCheck:
     def test_check_正常系_テストファイルでmax_lines超過でも違反なしを返すこと(self):
         # Arrange: プロダクション上限50行超えだがテスト上限100行以内の51行
         rule = MaxMethodLengthRule()
-        source = _make_func(51)
-        source_file = make_test_source_file(source)
+        source = MethodSourceBuilder.lines(51)
+        source_file = SourceFileFactory.make_test(source)
 
         # Act
         result = rule.check(source_file)
@@ -148,8 +142,8 @@ class TestMaxMethodLengthRuleCheck:
     def test_check_正常系_カスタムmax_linesが適用されること(self):
         # Arrange: max_lines=10 で11行の関数
         rule = MaxMethodLengthRule(max_lines=10)
-        source = _make_func(11)
-        source_file = make_source_file(source)
+        source = MethodSourceBuilder.lines(11)
+        source_file = SourceFileFactory.make(source)
 
         # Act
         result = rule.check(source_file)
@@ -160,8 +154,8 @@ class TestMaxMethodLengthRuleCheck:
     def test_check_正常系_カスタムmax_test_linesが適用されること(self):
         # Arrange: max_test_lines=20 でテストファイルに21行の関数
         rule = MaxMethodLengthRule(max_test_lines=20)
-        source = _make_func(21)
-        source_file = make_test_source_file(source)
+        source = MethodSourceBuilder.lines(21)
+        source_file = SourceFileFactory.make_test(source)
 
         # Act
         result = rule.check(source_file)
@@ -183,7 +177,7 @@ class TestMaxMethodLengthRuleCheck:
             lines.append(f"        x_{i} = {i}")
         lines.append("        pass")
         source = "\n".join(lines) + "\n"
-        source_file = make_source_file(source)
+        source_file = SourceFileFactory.make(source)
 
         # Act
         result = rule.check(source_file)
@@ -199,7 +193,7 @@ class TestMaxMethodLengthRuleCheck:
         for i in range(49):
             lines.append(f"    y_{i} = {i}")
         source = "\n".join(lines) + "\n"
-        source_file = make_source_file(source)
+        source_file = SourceFileFactory.make(source)
 
         # Act
         result = rule.check(source_file)
@@ -217,7 +211,7 @@ class TestMaxMethodLengthRuleCheck:
         for i in range(49):
             lines.append(f"    y_{i} = {i}")
         source = "\n".join(lines) + "\n"
-        source_file = make_source_file(source)
+        source_file = SourceFileFactory.make(source)
 
         # Act
         result = rule.check(source_file)
@@ -241,7 +235,7 @@ class TestMethodLengthDetector:
         source = "def foo(): pass"
         scope = self._make_scope(source)
         meta = MaxMethodLengthRule().meta
-        source_file = make_source_file(source)
+        source_file = SourceFileFactory.make(source)
         limit = 10
 
         # Act
@@ -257,7 +251,7 @@ class TestMethodLengthDetector:
         source = "def foo(): pass"
         scope = self._make_scope(source)
         meta = MaxMethodLengthRule().meta
-        source_file = make_source_file(source)
+        source_file = SourceFileFactory.make(source)
         limit = 10
 
         # Act
@@ -273,7 +267,7 @@ class TestMethodLengthDetector:
         source = "class MyClass:\n    def method(self): pass"
         scope = self._make_scope(source)
         meta = MaxMethodLengthRule().meta
-        source_file = make_source_file(source)
+        source_file = SourceFileFactory.make(source)
         limit = 10
 
         # Act
@@ -290,7 +284,7 @@ class TestMethodLengthDetector:
         source = "def standalone(): pass"
         scope = self._make_scope(source)
         meta = MaxMethodLengthRule().meta
-        source_file = make_source_file(source)
+        source_file = SourceFileFactory.make(source)
         limit = 10
 
         # Act

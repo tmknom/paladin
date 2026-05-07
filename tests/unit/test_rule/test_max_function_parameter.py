@@ -12,7 +12,7 @@ from paladin.rule.max_function_parameter import (
     ParameterLimitDetector,
 )
 from paladin.rule.types import RuleMeta, Violation
-from tests.unit.test_rule.helper import make_source_file
+from tests.unit.test_rule.helper import SourceFileFactory
 
 
 class TestFunctionCollector:
@@ -211,91 +211,91 @@ class TestParameterCounter:
 
     def test_count_正常系_引数なしで0を返すこと(self):
         # Arrange
-        scope = _parse_scope("def f(): pass", is_method=False)
+        scope = FunctionScopeBuilder.parse("def f(): pass", is_method=False)
 
         # Act & Assert
         assert ParameterCounter.count(scope) == 0
 
     def test_count_正常系_位置引数のみの場合は引数数を返すこと(self):
         # Arrange
-        scope = _parse_scope("def f(a, b, c): pass", is_method=False)
+        scope = FunctionScopeBuilder.parse("def f(a, b, c): pass", is_method=False)
 
         # Act & Assert
         assert ParameterCounter.count(scope) == 3
 
     def test_count_正常系_self付きメソッドはselfを除外すること(self):
         # Arrange
-        scope = _parse_scope("def m(self, a, b): pass", is_method=True)
+        scope = FunctionScopeBuilder.parse("def m(self, a, b): pass", is_method=True)
 
         # Act & Assert
         assert ParameterCounter.count(scope) == 2
 
     def test_count_正常系_cls付きクラスメソッドはclsを除外すること(self):
         # Arrange
-        scope = _parse_scope("def m(cls, a, b): pass", is_method=True)
+        scope = FunctionScopeBuilder.parse("def m(cls, a, b): pass", is_method=True)
 
         # Act & Assert
         assert ParameterCounter.count(scope) == 2
 
     def test_count_正常系_staticmethodはselfを除外しないこと(self):
         # Arrange
-        scope = _parse_scope("@staticmethod\ndef m(a, b, c): pass", is_method=True)
+        scope = FunctionScopeBuilder.parse("@staticmethod\ndef m(a, b, c): pass", is_method=True)
 
         # Act & Assert
         assert ParameterCounter.count(scope) == 3
 
     def test_count_正常系_varargを1としてカウントすること(self):
         # Arrange
-        scope = _parse_scope("def f(a, *args): pass", is_method=False)
+        scope = FunctionScopeBuilder.parse("def f(a, *args): pass", is_method=False)
 
         # Act & Assert
         assert ParameterCounter.count(scope) == 2
 
     def test_count_正常系_kwargを1としてカウントすること(self):
         # Arrange
-        scope = _parse_scope("def f(a, **kwargs): pass", is_method=False)
+        scope = FunctionScopeBuilder.parse("def f(a, **kwargs): pass", is_method=False)
 
         # Act & Assert
         assert ParameterCounter.count(scope) == 2
 
     def test_count_正常系_posonlyargsとkwonlyargsを合算すること(self):
         # Arrange
-        scope = _parse_scope("def f(a, /, b, *, c): pass", is_method=False)
+        scope = FunctionScopeBuilder.parse("def f(a, /, b, *, c): pass", is_method=False)
 
         # Act & Assert
         assert ParameterCounter.count(scope) == 3
 
     def test_count_正常系_vararg_kwarg両方を加算すること(self):
         # Arrange
-        scope = _parse_scope("def f(a, *args, **kwargs): pass", is_method=False)
+        scope = FunctionScopeBuilder.parse("def f(a, *args, **kwargs): pass", is_method=False)
 
         # Act & Assert
         assert ParameterCounter.count(scope) == 3
 
     def test_count_正常系_メソッドの第1引数がselfでない場合は除外しないこと(self):
         # Arrange: self/cls 以外の第1引数名は除外しない（仕様通り）
-        scope = _parse_scope("def m(other, a): pass", is_method=True)
+        scope = FunctionScopeBuilder.parse("def m(other, a): pass", is_method=True)
 
         # Act & Assert
         assert ParameterCounter.count(scope) == 2
 
     def test_count_エッジケース_引数なしのstaticmethodで0を返すこと(self):
         # Arrange
-        scope = _parse_scope("@staticmethod\ndef m(): pass", is_method=True)
+        scope = FunctionScopeBuilder.parse("@staticmethod\ndef m(): pass", is_method=True)
 
         # Act & Assert
         assert ParameterCounter.count(scope) == 0
 
     def test_count_エッジケース_引数なしのメソッドで0を返すこと(self):
         # Arrange: is_method=True かつ引数なし → _first_positional_name が None を返す
-        scope = _parse_scope("def m(): pass", is_method=True)
+        scope = FunctionScopeBuilder.parse("def m(): pass", is_method=True)
 
         # Act & Assert
         assert ParameterCounter.count(scope) == 0
 
     def test_count_正常系_posonlyargs先頭がselfの場合除外すること(self):
         # Arrange: def m(self, /, a, b) → posonlyargs に self、self を除外して 2
-        scope = _parse_scope("def m(self, /, a, b): pass", is_method=True)
+        scope = FunctionScopeBuilder.parse("def m(self, /, a, b): pass", is_method=True)
 
         # Act & Assert
         assert ParameterCounter.count(scope) == 2
@@ -324,9 +324,9 @@ class TestParameterLimitDetector:
 
     def test_detect_正常系_上限以内でNoneを返すこと(self):
         # Arrange
-        source_file = make_source_file("def foo(a, b, c): pass")
-        scope = _parse_scope("def foo(a, b, c): pass", is_method=False)
-        meta = _make_meta()
+        source_file = SourceFileFactory.make("def foo(a, b, c): pass")
+        scope = FunctionScopeBuilder.parse("def foo(a, b, c): pass", is_method=False)
+        meta = MaxFunctionParameterRule().meta
 
         # Act
         result = ParameterLimitDetector.detect(
@@ -338,9 +338,9 @@ class TestParameterLimitDetector:
 
     def test_detect_正常系_上限超過でViolationを返すこと(self):
         # Arrange
-        source_file = make_source_file("def foo(a, b, c, d): pass")
-        scope = _parse_scope("def foo(a, b, c, d): pass", is_method=False)
-        meta = _make_meta()
+        source_file = SourceFileFactory.make("def foo(a, b, c, d): pass")
+        scope = FunctionScopeBuilder.parse("def foo(a, b, c, d): pass", is_method=False)
+        meta = MaxFunctionParameterRule().meta
 
         # Act
         result = ParameterLimitDetector.detect(
@@ -354,12 +354,12 @@ class TestParameterLimitDetector:
     def test_detect_正常系_violation_lineがdef文の行番号と一致すること(self):
         # Arrange: 3行目に def が来るソース
         source = "\n\ndef foo(a, b, c, d): pass"
-        source_file = make_source_file(source)
+        source_file = SourceFileFactory.make(source)
         tree = ast.parse(source)
         node = tree.body[0]
         assert isinstance(node, ast.FunctionDef)
         scope = FunctionScope(node=node, is_method=False)
-        meta = _make_meta()
+        meta = MaxFunctionParameterRule().meta
 
         # Act
         result = ParameterLimitDetector.detect(
@@ -372,9 +372,9 @@ class TestParameterLimitDetector:
 
     def test_detect_正常系_violation_messageに関数名と件数と上限が含まれること(self):
         # Arrange
-        source_file = make_source_file("def create_user(a, b, c, d): pass")
-        scope = _parse_scope("def create_user(a, b, c, d): pass", is_method=False)
-        meta = _make_meta()
+        source_file = SourceFileFactory.make("def create_user(a, b, c, d): pass")
+        scope = FunctionScopeBuilder.parse("def create_user(a, b, c, d): pass", is_method=False)
+        meta = MaxFunctionParameterRule().meta
 
         # Act
         result = ParameterLimitDetector.detect(
@@ -387,9 +387,9 @@ class TestParameterLimitDetector:
 
     def test_detect_正常系_rule_id_rule_name_reason_suggestionが設定されていること(self):
         # Arrange
-        source_file = make_source_file("def foo(a, b, c, d): pass")
-        scope = _parse_scope("def foo(a, b, c, d): pass", is_method=False)
-        meta = _make_meta()
+        source_file = SourceFileFactory.make("def foo(a, b, c, d): pass")
+        scope = FunctionScopeBuilder.parse("def foo(a, b, c, d): pass", is_method=False)
+        meta = MaxFunctionParameterRule().meta
 
         # Act
         result = ParameterLimitDetector.detect(
@@ -421,7 +421,7 @@ class TestMaxFunctionParameterRule:
     def test_check_正常系_違反のフィールド値が正しいこと(self):
         # Arrange
         source = "def foo(a, b, c, d): pass"
-        source_file = make_source_file(source)
+        source_file = SourceFileFactory.make(source)
         rule = MaxFunctionParameterRule()
 
         # Act
@@ -436,7 +436,7 @@ class TestMaxFunctionParameterRule:
     def test_check_正常系_self除外で上限以内なら違反なしを返すこと(self):
         # Arrange: self を除いて3引数 = 上限内
         source = "class C:\n    def m(self, a, b, c): pass"
-        source_file = make_source_file(source)
+        source_file = SourceFileFactory.make(source)
         rule = MaxFunctionParameterRule()
 
         # Act
@@ -448,7 +448,7 @@ class TestMaxFunctionParameterRule:
     def test_check_正常系_staticmethodは第1引数を除外しないこと(self):
         # Arrange: @staticmethod なので除外なし → 4引数で違反
         source = "class C:\n    @staticmethod\n    def m(a, b, c, d): pass"
-        source_file = make_source_file(source)
+        source_file = SourceFileFactory.make(source)
         rule = MaxFunctionParameterRule()
 
         # Act
@@ -460,7 +460,7 @@ class TestMaxFunctionParameterRule:
     def test_check_正常系_pytest_fixtureデコレータ付き関数は違反としないこと(self):
         # Arrange
         source = "@pytest.fixture\ndef f(a, b, c, d, e): pass"
-        source_file = make_source_file(source)
+        source_file = SourceFileFactory.make(source)
         rule = MaxFunctionParameterRule()
 
         # Act
@@ -472,7 +472,7 @@ class TestMaxFunctionParameterRule:
     def test_check_正常系_fixture単独デコレータも違反としないこと(self):
         # Arrange
         source = "@fixture\ndef f(a, b, c, d, e): pass"
-        source_file = make_source_file(source)
+        source_file = SourceFileFactory.make(source)
         rule = MaxFunctionParameterRule()
 
         # Act
@@ -484,7 +484,7 @@ class TestMaxFunctionParameterRule:
     def test_check_正常系_AsyncFunctionDefも違反として検出すること(self):
         # Arrange
         source = "async def f(a, b, c, d): pass"
-        source_file = make_source_file(source)
+        source_file = SourceFileFactory.make(source)
         rule = MaxFunctionParameterRule()
 
         # Act
@@ -496,7 +496,7 @@ class TestMaxFunctionParameterRule:
     def test_check_正常系_カスタムmax_parametersが適用されること(self):
         # Arrange: max_parameters=2 で def f(a,b,c) は違反
         source = "def f(a, b, c): pass"
-        source_file = make_source_file(source)
+        source_file = SourceFileFactory.make(source)
         rule = MaxFunctionParameterRule(max_parameters=2)
 
         # Act
@@ -508,7 +508,7 @@ class TestMaxFunctionParameterRule:
     def test_check_正常系_カスタムallow_decoratorsを尊重すること(self):
         # Arrange: @dataclass を許可リストに追加
         source = "@dataclass\ndef f(a, b, c, d, e): pass"
-        source_file = make_source_file(source)
+        source_file = SourceFileFactory.make(source)
         rule = MaxFunctionParameterRule(allow_decorators=("dataclass",))
 
         # Act
@@ -520,7 +520,7 @@ class TestMaxFunctionParameterRule:
     def test_check_正常系_複数の違反を定義順に報告すること(self):
         # Arrange
         source = "def f1(a, b, c, d): pass\ndef f2(a, b, c, d, e): pass"
-        source_file = make_source_file(source)
+        source_file = SourceFileFactory.make(source)
         rule = MaxFunctionParameterRule()
 
         # Act
@@ -538,13 +538,13 @@ class TestMaxFunctionParameterRule:
         rule = MaxFunctionParameterRule()
 
         # Act & Assert
-        assert rule.check(make_source_file(source_ok)) == ()
-        assert len(rule.check(make_source_file(source_ng))) == 1
+        assert rule.check(SourceFileFactory.make(source_ok)) == ()
+        assert len(rule.check(SourceFileFactory.make(source_ng))) == 1
 
     def test_check_正常系_クラスメソッドのcls引数を除外すること(self):
         # Arrange: cls を除いて3引数 = 上限内
         source = "class C:\n    @classmethod\n    def m(cls, a, b, c): pass"
-        source_file = make_source_file(source)
+        source_file = SourceFileFactory.make(source)
         rule = MaxFunctionParameterRule()
 
         # Act
@@ -555,7 +555,7 @@ class TestMaxFunctionParameterRule:
 
     def test_check_エッジケース_関数定義なしで空タプルを返すこと(self):
         # Arrange
-        source_file = make_source_file("x = 1")
+        source_file = SourceFileFactory.make("x = 1")
         rule = MaxFunctionParameterRule()
 
         # Act
@@ -566,7 +566,7 @@ class TestMaxFunctionParameterRule:
 
     def test_check_エッジケース_引数なしの関数で違反なしを返すこと(self):
         # Arrange
-        source_file = make_source_file("def f(): pass")
+        source_file = SourceFileFactory.make("def f(): pass")
         rule = MaxFunctionParameterRule()
 
         # Act
@@ -576,17 +576,10 @@ class TestMaxFunctionParameterRule:
         assert result == ()
 
 
-# --- helpers ---
-
-
-def _parse_scope(source: str, is_method: bool) -> FunctionScope:
-    """テスト用に単一関数の FunctionScope を生成する"""
-    tree = ast.parse(source)
-    node = tree.body[0]
-    assert isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef))
-    return FunctionScope(node=node, is_method=is_method)
-
-
-def _make_meta() -> RuleMeta:
-    """テスト用の RuleMeta を生成する"""
-    return MaxFunctionParameterRule().meta
+class FunctionScopeBuilder:
+    @staticmethod
+    def parse(source: str, is_method: bool) -> FunctionScope:
+        tree = ast.parse(source)
+        node = tree.body[0]
+        assert isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef))
+        return FunctionScope(node=node, is_method=is_method)

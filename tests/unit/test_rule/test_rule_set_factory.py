@@ -1,7 +1,7 @@
 from paladin.rule.rule_set import RuleSet
 from paladin.rule.rule_set_factory import RuleSetFactory
 from paladin.rule.types import SourceFiles
-from tests.unit.test_rule.helper import make_source_file
+from tests.unit.test_rule.helper import SourceFileFactory
 
 
 class TestRuleSetFactory:
@@ -160,7 +160,7 @@ class TestRuleSetFactory:
 
     def test_create_正常系_testsパッケージはデフォルトでroot_packagesに含まれること(self):
         # Arrange: RuleSet.run() が prepare() を呼び tests が自動でルートパッケージになる
-        source_file = make_source_file("from tests.foo import bar\n")
+        source_file = SourceFileFactory.make("from tests.foo import bar\n")
         source_files = SourceFiles(files=(source_file,))
         rule_set = RuleSetFactory().create()
 
@@ -173,7 +173,9 @@ class TestRuleSetFactory:
 
     def test_create_正常系_srcレイアウトのプロジェクトパッケージが自動導出されること(self):
         # Arrange: src/myapp/ 配下のファイルを渡すと myapp が root_packages に自動導出される
-        source_file = make_source_file("from myapp.utils import helper\n", "src/myapp/test.py")
+        source_file = SourceFileFactory.make(
+            "from myapp.utils import helper\n", "src/myapp/test.py"
+        )
         source_files = SourceFiles(files=(source_file,))
         rule_set = RuleSetFactory().create()
 

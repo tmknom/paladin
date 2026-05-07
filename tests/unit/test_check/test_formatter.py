@@ -1,43 +1,10 @@
 """CheckReportFormatterクラスのテスト"""
 
 import json
-from pathlib import Path
 
 from paladin.check.formatter import CheckFormatterFactory, CheckJsonFormatter, CheckReportFormatter
-from paladin.check.result import CheckResult
-from paladin.check.types import TargetFiles
 from paladin.foundation.output import OutputFormat
-from paladin.rule import SourceFiles, Violation, Violations
-
-
-def _make_violation(
-    file: str = "src/paladin/__init__.py",
-    line: int = 1,
-    column: int = 0,
-    rule_id: str = "require-all-export",
-    rule_name: str = "Require __all__ Export",
-    message: str = "__init__.py に __all__ が定義されていない",
-    reason: str = "__all__ が未定義の場合、パッケージの公開インタフェースが不明確になる",
-    suggestion: str = "__all__ リストを定義し、公開するシンボルを明示的に列挙する",
-) -> Violation:
-    return Violation(
-        file=Path(file),
-        line=line,
-        column=column,
-        rule_id=rule_id,
-        rule_name=rule_name,
-        message=message,
-        reason=reason,
-        suggestion=suggestion,
-    )
-
-
-def _make_check_result(violations: tuple[Violation, ...]) -> CheckResult:
-    return CheckResult(
-        target_files=TargetFiles(files=()),
-        source_files=SourceFiles(files=()),
-        violations=Violations(items=violations),
-    )
+from tests.unit.test_check.helper import CheckResultFactory, ViolationFactory
 
 
 class TestCheckReportFormatter:
@@ -45,7 +12,7 @@ class TestCheckReportFormatter:
 
     def test_format_正常系_違反なしでOKサマリーとexit_code_0を返すこと(self):
         # Arrange
-        result = _make_check_result(())
+        result = CheckResultFactory.make(())
 
         # Act
         report = CheckReportFormatter().format(result)
@@ -57,8 +24,8 @@ class TestCheckReportFormatter:
 
     def test_format_正常系_違反ありで診断ブロックとサマリーとexit_code_1を返すこと(self):
         # Arrange
-        v = _make_violation()
-        result = _make_check_result((v,))
+        v = ViolationFactory.make()
+        result = CheckResultFactory.make((v,))
 
         # Act
         report = CheckReportFormatter().format(result)
@@ -74,9 +41,9 @@ class TestCheckReportFormatter:
 
     def test_format_正常系_複数違反で全違反の診断ブロックが出力されること(self):
         # Arrange
-        v1 = _make_violation("a/__init__.py", rule_id="rule-a", rule_name="Rule A")
-        v2 = _make_violation("b/__init__.py", rule_id="rule-b", rule_name="Rule B")
-        result = _make_check_result((v1, v2))
+        v1 = ViolationFactory.make("a/__init__.py", rule_id="rule-a", rule_name="Rule A")
+        v2 = ViolationFactory.make("b/__init__.py", rule_id="rule-b", rule_name="Rule B")
+        result = CheckResultFactory.make((v1, v2))
 
         # Act
         report = CheckReportFormatter().format(result)
@@ -89,7 +56,7 @@ class TestCheckReportFormatter:
 
     def test_format_正常系_違反ブロックのフォーマットが仕様どおりであること(self):
         # Arrange
-        v = _make_violation(
+        v = ViolationFactory.make(
             file="src/paladin/__init__.py",
             line=1,
             column=0,
@@ -99,7 +66,7 @@ class TestCheckReportFormatter:
             reason="理由テキスト",
             suggestion="修正方向テキスト",
         )
-        result = _make_check_result((v,))
+        result = CheckResultFactory.make((v,))
 
         # Act
         report = CheckReportFormatter().format(result)
@@ -117,10 +84,10 @@ class TestCheckReportFormatter:
 
     def test_format_正常系_サマリーのby_ruleとby_fileが正しくフォーマットされること(self):
         # Arrange
-        v1 = _make_violation("a/__init__.py", rule_id="rule-a", rule_name="Rule A")
-        v2 = _make_violation("b/__init__.py", rule_id="rule-a", rule_name="Rule A")
-        v3 = _make_violation("b/__init__.py", rule_id="rule-b", rule_name="Rule B")
-        result = _make_check_result((v1, v2, v3))
+        v1 = ViolationFactory.make("a/__init__.py", rule_id="rule-a", rule_name="Rule A")
+        v2 = ViolationFactory.make("b/__init__.py", rule_id="rule-a", rule_name="Rule A")
+        v3 = ViolationFactory.make("b/__init__.py", rule_id="rule-b", rule_name="Rule B")
+        result = CheckResultFactory.make((v1, v2, v3))
 
         # Act
         report = CheckReportFormatter().format(result)
@@ -135,7 +102,7 @@ class TestCheckJsonFormatter:
 
     def test_json_format_正常系_違反なしでstatus_okとexit_code_0のJSON文字列を返すこと(self):
         # Arrange
-        result = _make_check_result(())
+        result = CheckResultFactory.make(())
 
         # Act
         report = CheckJsonFormatter().format(result)
@@ -149,8 +116,8 @@ class TestCheckJsonFormatter:
         self,
     ):
         # Arrange
-        v = _make_violation()
-        result = _make_check_result((v,))
+        v = ViolationFactory.make()
+        result = CheckResultFactory.make((v,))
 
         # Act
         report = CheckJsonFormatter().format(result)
@@ -161,8 +128,8 @@ class TestCheckJsonFormatter:
 
     def test_json_format_正常系_diagnosticsに全違反の詳細が含まれること(self):
         # Arrange
-        v = _make_violation()
-        result = _make_check_result((v,))
+        v = ViolationFactory.make()
+        result = CheckResultFactory.make((v,))
 
         # Act
         report = CheckJsonFormatter().format(result)
@@ -186,10 +153,10 @@ class TestCheckJsonFormatter:
 
     def test_json_format_正常系_summaryにby_ruleとby_fileが含まれること(self):
         # Arrange
-        v1 = _make_violation("a/__init__.py", rule_id="rule-a", rule_name="Rule A")
-        v2 = _make_violation("b/__init__.py", rule_id="rule-a", rule_name="Rule A")
-        v3 = _make_violation("b/__init__.py", rule_id="rule-b", rule_name="Rule B")
-        result = _make_check_result((v1, v2, v3))
+        v1 = ViolationFactory.make("a/__init__.py", rule_id="rule-a", rule_name="Rule A")
+        v2 = ViolationFactory.make("b/__init__.py", rule_id="rule-a", rule_name="Rule A")
+        v3 = ViolationFactory.make("b/__init__.py", rule_id="rule-b", rule_name="Rule B")
+        result = CheckResultFactory.make((v1, v2, v3))
 
         # Act
         report = CheckJsonFormatter().format(result)
@@ -203,8 +170,8 @@ class TestCheckJsonFormatter:
 
     def test_json_format_正常系_fileフィールドがPath型から文字列に変換されること(self):
         # Arrange
-        v = _make_violation(file="src/paladin/__init__.py")
-        result = _make_check_result((v,))
+        v = ViolationFactory.make(file="src/paladin/__init__.py")
+        result = CheckResultFactory.make((v,))
 
         # Act
         report = CheckJsonFormatter().format(result)
@@ -219,7 +186,7 @@ class TestCheckFormatterFactory:
 
     def test_factory_format_正常系_TEXT指定でtext形式のCheckReportを返すこと(self):
         # Arrange
-        result = _make_check_result(())
+        result = CheckResultFactory.make(())
 
         # Act
         report = CheckFormatterFactory().format(result, OutputFormat.TEXT)
@@ -229,7 +196,7 @@ class TestCheckFormatterFactory:
 
     def test_factory_format_正常系_JSON指定でJSON形式のCheckReportを返すこと(self):
         # Arrange
-        result = _make_check_result(())
+        result = CheckResultFactory.make(())
 
         # Act
         report = CheckFormatterFactory().format(result, OutputFormat.JSON)
@@ -240,8 +207,8 @@ class TestCheckFormatterFactory:
 
     def test_factory_format_正常系_TEXT指定で違反ありのexit_code_1を返すこと(self):
         # Arrange
-        v = _make_violation()
-        result = _make_check_result((v,))
+        v = ViolationFactory.make()
+        result = CheckResultFactory.make((v,))
 
         # Act
         report = CheckFormatterFactory().format(result, OutputFormat.TEXT)
@@ -251,8 +218,8 @@ class TestCheckFormatterFactory:
 
     def test_factory_format_正常系_JSON指定で違反ありのexit_code_1を返すこと(self):
         # Arrange
-        v = _make_violation()
-        result = _make_check_result((v,))
+        v = ViolationFactory.make()
+        result = CheckResultFactory.make((v,))
 
         # Act
         report = CheckFormatterFactory().format(result, OutputFormat.JSON)

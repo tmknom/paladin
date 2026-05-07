@@ -1,26 +1,10 @@
 """no_private_attr_in_test モジュールのテスト"""
 
-import ast
-
 from paladin.rule.no_private_attr_in_test import (
     NoPrivateAttrInTestRule,
     PrivateAttrDetector,
 )
-from paladin.rule.types import RuleMeta
-from tests.unit.test_rule.helper import make_source_file, make_test_source_file
-
-
-def _make_attribute_node(source: str) -> ast.Attribute:
-    """ソースコードから最初の ast.Attribute ノードを取り出す"""
-    tree = ast.parse(source)
-    for node in ast.walk(tree):
-        if isinstance(node, ast.Attribute):
-            return node
-    raise AssertionError(f"ast.Attribute が見つかりません: {source!r}")
-
-
-def _make_meta() -> RuleMeta:
-    return NoPrivateAttrInTestRule().meta
+from tests.unit.test_rule.helper import AstNodeExtractor, SourceFileFactory
 
 
 class TestPrivateAttrDetector:
@@ -29,9 +13,9 @@ class TestPrivateAttrDetector:
     def test_detect_正常系_違反のフィールド値が正しいこと(self):
         # Arrange
         source = "obj._private_attr"
-        node = _make_attribute_node(source)
-        meta = _make_meta()
-        source_file = make_test_source_file(source)
+        node = AstNodeExtractor.first_attribute(source)
+        meta = NoPrivateAttrInTestRule().meta
+        source_file = SourceFileFactory.make_test(source)
 
         # Act
         result = PrivateAttrDetector.detect(node, meta, source_file)
@@ -44,9 +28,9 @@ class TestPrivateAttrDetector:
     def test_detect_正常系_ダンダー属性はNoneを返すこと(self):
         # Arrange
         source = "obj.__dunder__"
-        node = _make_attribute_node(source)
-        meta = _make_meta()
-        source_file = make_test_source_file(source)
+        node = AstNodeExtractor.first_attribute(source)
+        meta = NoPrivateAttrInTestRule().meta
+        source_file = SourceFileFactory.make_test(source)
 
         # Act
         result = PrivateAttrDetector.detect(node, meta, source_file)
@@ -57,9 +41,9 @@ class TestPrivateAttrDetector:
     def test_detect_正常系_selfのプライベート属性はNoneを返すこと(self):
         # Arrange
         source = "self._helper"
-        node = _make_attribute_node(source)
-        meta = _make_meta()
-        source_file = make_test_source_file(source)
+        node = AstNodeExtractor.first_attribute(source)
+        meta = NoPrivateAttrInTestRule().meta
+        source_file = SourceFileFactory.make_test(source)
 
         # Act
         result = PrivateAttrDetector.detect(node, meta, source_file)
@@ -70,9 +54,9 @@ class TestPrivateAttrDetector:
     def test_detect_正常系_アンダースコアなしの属性はNoneを返すこと(self):
         # Arrange
         source = "obj.public_attr"
-        node = _make_attribute_node(source)
-        meta = _make_meta()
-        source_file = make_test_source_file(source)
+        node = AstNodeExtractor.first_attribute(source)
+        meta = NoPrivateAttrInTestRule().meta
+        source_file = SourceFileFactory.make_test(source)
 
         # Act
         result = PrivateAttrDetector.detect(node, meta, source_file)
@@ -83,9 +67,9 @@ class TestPrivateAttrDetector:
     def test_detect_正常系_ネストした属性アクセスで違反を返すこと(self):
         # Arrange
         source = "obj._rule_set._executed"
-        node = _make_attribute_node(source)
-        meta = _make_meta()
-        source_file = make_test_source_file(source)
+        node = AstNodeExtractor.first_attribute(source)
+        meta = NoPrivateAttrInTestRule().meta
+        source_file = SourceFileFactory.make_test(source)
 
         # Act
         result = PrivateAttrDetector.detect(node, meta, source_file)
@@ -101,7 +85,7 @@ class TestNoPrivateAttrInTestRuleCheck:
         # Arrange
         rule = NoPrivateAttrInTestRule()
         source = "obj._private"
-        source_file = make_test_source_file(source)
+        source_file = SourceFileFactory.make_test(source)
 
         # Act
         result = rule.check(source_file)
@@ -114,7 +98,7 @@ class TestNoPrivateAttrInTestRuleCheck:
         # Arrange
         rule = NoPrivateAttrInTestRule()
         source = "obj._first\nobj._second\n"
-        source_file = make_test_source_file(source)
+        source_file = SourceFileFactory.make_test(source)
 
         # Act
         result = rule.check(source_file)
@@ -126,7 +110,7 @@ class TestNoPrivateAttrInTestRuleCheck:
         # Arrange
         rule = NoPrivateAttrInTestRule()
         source = "obj._private"
-        source_file = make_source_file(source)
+        source_file = SourceFileFactory.make(source)
 
         # Act
         result = rule.check(source_file)
@@ -138,7 +122,7 @@ class TestNoPrivateAttrInTestRuleCheck:
         # Arrange
         rule = NoPrivateAttrInTestRule()
         source = "obj.public_attr"
-        source_file = make_test_source_file(source)
+        source_file = SourceFileFactory.make_test(source)
 
         # Act
         result = rule.check(source_file)
@@ -150,7 +134,7 @@ class TestNoPrivateAttrInTestRuleCheck:
         # Arrange
         rule = NoPrivateAttrInTestRule()
         source = "self._helper"
-        source_file = make_test_source_file(source)
+        source_file = SourceFileFactory.make_test(source)
 
         # Act
         result = rule.check(source_file)
@@ -162,7 +146,7 @@ class TestNoPrivateAttrInTestRuleCheck:
         # Arrange
         rule = NoPrivateAttrInTestRule()
         source = "obj.__init__"
-        source_file = make_test_source_file(source)
+        source_file = SourceFileFactory.make_test(source)
 
         # Act
         result = rule.check(source_file)
@@ -174,7 +158,7 @@ class TestNoPrivateAttrInTestRuleCheck:
         # Arrange
         rule = NoPrivateAttrInTestRule()
         source = "x = 1\nobj._first\ny = 2\nobj._second\n"
-        source_file = make_test_source_file(source)
+        source_file = SourceFileFactory.make_test(source)
 
         # Act
         result = rule.check(source_file)

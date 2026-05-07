@@ -10,7 +10,7 @@ from paladin.rule.no_testing_test_code import (
     TestTargetDetector,
 )
 from paladin.rule.types import RuleMeta, SourceFiles
-from tests.unit.test_rule.helper import make_source_file, make_source_files
+from tests.unit.test_rule.helper import SourceFileFactory
 
 
 class TestNoTestingTestCodeRuleMeta:
@@ -55,7 +55,7 @@ class TestNoTestingTestCodeRuleCheck:
             "class TestFakeDatabase:\n"
             "    pass\n"
         )
-        source_files = make_source_files((source, "tests/unit/test_fake/test_all.py"))
+        source_files = SourceFileFactory.make_many((source, "tests/unit/test_fake/test_all.py"))
 
         # Act
         violations = NoTestingTestCodeRule().check(source_files)
@@ -71,7 +71,7 @@ class TestNoTestingTestCodeRuleCheck:
             "class TestFakeReader:\n"
             "    pass\n"
         )
-        source_files = make_source_files((source, "tests/unit/test_fake/test_fs.py"))
+        source_files = SourceFileFactory.make_many((source, "tests/unit/test_fake/test_fs.py"))
 
         # Act
         violations = NoTestingTestCodeRule().check(source_files)
@@ -135,7 +135,7 @@ class TestNoTestingTestCodeRuleCheck:
     )
     def test_check_違反なしのケースで空を返すこと(self, source: str, filename: str) -> None:
         # Arrange
-        source_files = make_source_files((source, filename))
+        source_files = SourceFileFactory.make_many((source, filename))
         rule = NoTestingTestCodeRule()
 
         # Act
@@ -159,7 +159,7 @@ class TestNoTestingTestCodeRuleCheck:
     )
     def test_check_違反ありのケースで1件返すこと(self, source: str, filename: str) -> None:
         # Arrange
-        source_files = make_source_files((source, filename))
+        source_files = SourceFileFactory.make_many((source, filename))
         rule = NoTestingTestCodeRule()
 
         # Act
@@ -175,7 +175,7 @@ class TestTestImportCollector:
     def test_collect_正常系_tests配下からのインポートを返すこと(self):
         # Arrange
         source = "from tests.unit.fake.fs import InMemoryFsReader\n"
-        source_file = make_source_file(source, "tests/test_foo.py")
+        source_file = SourceFileFactory.make(source, "tests/test_foo.py")
         # Act / Assert
         result = TestImportCollector.collect(source_file)
         assert result == {"InMemoryFsReader": "InMemoryFsReader"}
@@ -183,7 +183,7 @@ class TestTestImportCollector:
     def test_collect_正常系_tests以外のインポートは除外すること(self):
         # Arrange
         source = "from paladin.rule import RuleMeta\n"
-        source_file = make_source_file(source, "tests/test_foo.py")
+        source_file = SourceFileFactory.make(source, "tests/test_foo.py")
         # Act / Assert
         result = TestImportCollector.collect(source_file)
         assert result == {}
@@ -200,7 +200,7 @@ class TestTestTargetDetector:
             "class TestInMemoryFsReader:\n"
             "    pass\n"
         )
-        source_file = make_source_file(source, "tests/test_fs.py")
+        source_file = SourceFileFactory.make(source, "tests/test_fs.py")
         test_imports = TestImportCollector.collect(source_file)
         node = next(n for n in source_file.tree.body if isinstance(n, ast.ClassDef))
 
@@ -217,7 +217,7 @@ class TestTestTargetDetector:
         source = (
             "from tests.unit.fake.fs import InMemoryFsReader\nclass TestOtherThing:\n    pass\n"
         )
-        source_file = make_source_file(source, "tests/test_fs.py")
+        source_file = SourceFileFactory.make(source, "tests/test_fs.py")
         test_imports = TestImportCollector.collect(source_file)
         node = next(n for n in source_file.tree.body if isinstance(n, ast.ClassDef))
 
@@ -235,7 +235,7 @@ class TestTestTargetDetector:
             "def test_in_memory_fs_reader() -> None:\n"
             "    pass\n"
         )
-        source_file = make_source_file(source, "tests/test_fs.py")
+        source_file = SourceFileFactory.make(source, "tests/test_fs.py")
         test_imports = TestImportCollector.collect(source_file)
         node = next(n for n in source_file.tree.body if isinstance(n, ast.FunctionDef))
 
