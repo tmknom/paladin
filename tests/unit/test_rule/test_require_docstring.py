@@ -11,7 +11,7 @@ from paladin.rule.require_docstring import (
     RequireDocstringRule,
 )
 from paladin.rule.types import RuleMeta
-from tests.unit.test_rule.helper import make_source_file, make_test_source_file
+from tests.unit.test_rule.helper import SourceFileFactory
 
 
 class TestDocstringChecker:
@@ -57,7 +57,7 @@ class TestModuleDocstringDetector:
 
     def test_detect_正常系_docstringがない場合Violationを返すこと(self, meta: RuleMeta):
         # Arrange
-        source_file = make_source_file("x = 1\n")
+        source_file = SourceFileFactory.make("x = 1\n")
 
         # Act
         result = ModuleDocstringDetector.detect(source_file, meta)
@@ -69,7 +69,7 @@ class TestModuleDocstringDetector:
 
     def test_detect_正常系_docstringがある場合Noneを返すこと(self, meta: RuleMeta):
         # Arrange
-        source_file = make_source_file('"""doc"""\nx = 1\n')
+        source_file = SourceFileFactory.make('"""doc"""\nx = 1\n')
 
         # Act
         result = ModuleDocstringDetector.detect(source_file, meta)
@@ -79,7 +79,7 @@ class TestModuleDocstringDetector:
 
     def test_detect_エッジケース_空ファイルの場合Noneを返すこと(self, meta: RuleMeta):
         # Arrange
-        source_file = make_source_file("")
+        source_file = SourceFileFactory.make("")
 
         # Act
         result = ModuleDocstringDetector.detect(source_file, meta)
@@ -89,7 +89,7 @@ class TestModuleDocstringDetector:
 
     def test_detect_エッジケース_空白のみのファイルの場合Noneを返すこと(self, meta: RuleMeta):
         # Arrange
-        source_file = make_source_file("   \n  \n")
+        source_file = SourceFileFactory.make("   \n  \n")
 
         # Act
         result = ModuleDocstringDetector.detect(source_file, meta)
@@ -99,7 +99,7 @@ class TestModuleDocstringDetector:
 
     def test_detect_正常系_Violationのフィールド値が正しいこと(self, meta: RuleMeta):
         # Arrange
-        source_file = make_source_file("x = 1\n")
+        source_file = SourceFileFactory.make("x = 1\n")
 
         # Act
         result = ModuleDocstringDetector.detect(source_file, meta)
@@ -129,7 +129,7 @@ class TestClassDocstringDetector:
     def test_detect_正常系_クラスにdocstringがない場合Violationを返すこと(self, meta: RuleMeta):
         # Arrange
         source = "class Foo:\n    pass\n"
-        source_file = make_source_file(source)
+        source_file = SourceFileFactory.make(source)
         class_node = self._get_class_node(source)
 
         # Act
@@ -142,7 +142,7 @@ class TestClassDocstringDetector:
     def test_detect_正常系_クラスにdocstringがある場合Noneを返すこと(self, meta: RuleMeta):
         # Arrange
         source = 'class Foo:\n    """doc"""\n    pass\n'
-        source_file = make_source_file(source)
+        source_file = SourceFileFactory.make(source)
         class_node = self._get_class_node(source)
 
         # Act
@@ -154,7 +154,7 @@ class TestClassDocstringDetector:
     def test_detect_正常系_Violationのmessageにクラス名が含まれること(self, meta: RuleMeta):
         # Arrange
         source = "class Foo:\n    pass\n"
-        source_file = make_source_file(source)
+        source_file = SourceFileFactory.make(source)
         class_node = self._get_class_node(source)
 
         # Act
@@ -188,7 +188,7 @@ class TestRequireDocstringRuleCheck:
         self, rule: RequireDocstringRule
     ):
         # Arrange
-        source_file = make_source_file("x = 1\n")
+        source_file = SourceFileFactory.make("x = 1\n")
 
         # Act
         result = rule.check(source_file)
@@ -202,7 +202,7 @@ class TestRequireDocstringRuleCheck:
     ):
         # Arrange
         source = '"""module doc"""\n\nclass Foo:\n    pass\n'
-        source_file = make_source_file(source)
+        source_file = SourceFileFactory.make(source)
 
         # Act
         result = rule.check(source_file)
@@ -216,7 +216,7 @@ class TestRequireDocstringRuleCheck:
     ):
         # Arrange
         source = "class Foo:\n    pass\n"
-        source_file = make_source_file(source)
+        source_file = SourceFileFactory.make(source)
 
         # Act
         result = rule.check(source_file)
@@ -229,7 +229,7 @@ class TestRequireDocstringRuleCheck:
     ):
         # Arrange
         source = '"""module doc"""\n\nclass Foo:\n    """class doc"""\n    pass\n'
-        source_file = make_source_file(source)
+        source_file = SourceFileFactory.make(source)
 
         # Act
         result = rule.check(source_file)
@@ -242,7 +242,7 @@ class TestRequireDocstringRuleCheck:
     ):
         # Arrange
         source = '"""module doc"""\n\nclass Foo:\n    pass\n\nclass Bar:\n    pass\n'
-        source_file = make_source_file(source)
+        source_file = SourceFileFactory.make(source)
 
         # Act
         result = rule.check(source_file)
@@ -261,7 +261,7 @@ class TestRequireDocstringRuleCheck:
             "    class Inner:\n"
             "        pass\n"
         )
-        source_file = make_source_file(source)
+        source_file = SourceFileFactory.make(source)
 
         # Act
         result = rule.check(source_file)
@@ -275,7 +275,7 @@ class TestRequireDocstringRuleCheck:
     ):
         # Arrange
         source = "class TestFoo:\n    pass\n"
-        source_file = make_test_source_file(source)
+        source_file = SourceFileFactory.make_test(source)
 
         # Act
         result = rule.check(source_file)
@@ -286,7 +286,7 @@ class TestRequireDocstringRuleCheck:
 
     def test_check_エッジケース_空ファイルは違反なしを返すこと(self, rule: RequireDocstringRule):
         # Arrange
-        source_file = make_source_file("")
+        source_file = SourceFileFactory.make("")
 
         # Act
         result = rule.check(source_file)
@@ -299,7 +299,7 @@ class TestRequireDocstringRuleCheck:
     ):
         # Arrange
         source = '"""module doc"""\n\n\nclass Foo:\n    pass\n'
-        source_file = make_source_file(source)
+        source_file = SourceFileFactory.make(source)
 
         # Act
         result = rule.check(source_file)
@@ -312,7 +312,7 @@ class TestRequireDocstringRuleCheck:
         self, rule: RequireDocstringRule
     ):
         # Arrange
-        source_file = make_source_file("x = 1\n")
+        source_file = SourceFileFactory.make("x = 1\n")
 
         # Act
         result = rule.check(source_file)

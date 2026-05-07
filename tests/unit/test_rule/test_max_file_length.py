@@ -2,13 +2,14 @@ from pathlib import Path
 
 from paladin.rule.max_file_length import FileLengthCalculator, FileLengthDetector, MaxFileLengthRule
 from paladin.rule.types import RuleMeta
-from tests.unit.test_rule.helper import make_source_file, make_test_source_file
+from tests.unit.test_rule.helper import SourceFileFactory
 
 
-def _make_source(num_lines: int) -> str:
-    """指定行数のソースを生成する"""
-    lines = [f"x_{i} = {i}" for i in range(num_lines)]
-    return "\n".join(lines) + "\n"
+class SourceCodeBuilder:
+    @staticmethod
+    def lines(num_lines: int) -> str:
+        lines = [f"x_{i} = {i}" for i in range(num_lines)]
+        return "\n".join(lines) + "\n"
 
 
 class TestMaxFileLengthRuleMeta:
@@ -33,8 +34,8 @@ class TestMaxFileLengthRuleCheck:
     def test_check_正常系_違反のフィールド値が正しいこと(self):
         # Arrange
         rule = MaxFileLengthRule()
-        source = _make_source(301)
-        source_file = make_source_file(source, "example.py")
+        source = SourceCodeBuilder.lines(301)
+        source_file = SourceFileFactory.make(source, "example.py")
 
         # Act
         result = rule.check(source_file)
@@ -48,8 +49,8 @@ class TestMaxFileLengthRuleCheck:
     def test_check_正常系_違反のline番号がファイル末尾の行番号であること(self):
         # Arrange: 301行のファイル
         rule = MaxFileLengthRule()
-        source = _make_source(301)
-        source_file = make_source_file(source)
+        source = SourceCodeBuilder.lines(301)
+        source_file = SourceFileFactory.make(source)
 
         # Act
         result = rule.check(source_file)
@@ -61,7 +62,7 @@ class TestMaxFileLengthRuleCheck:
     def test_check_正常系_空ソースで違反なしを返すこと(self) -> None:
         # Arrange
         rule = MaxFileLengthRule()
-        source_file = make_source_file("")
+        source_file = SourceFileFactory.make("")
 
         # Act
         result = rule.check(source_file)
@@ -72,8 +73,8 @@ class TestMaxFileLengthRuleCheck:
     def test_check_正常系_テストファイルはmax_test_linesが適用されること(self):
         # Arrange: テストファイルのデフォルト上限500行に対して501行のファイル
         rule = MaxFileLengthRule()
-        source = _make_source(501)
-        source_file = make_test_source_file(source)
+        source = SourceCodeBuilder.lines(501)
+        source_file = SourceFileFactory.make_test(source)
 
         # Act
         result = rule.check(source_file)
@@ -84,8 +85,8 @@ class TestMaxFileLengthRuleCheck:
     def test_check_正常系_テストファイルでmax_test_lines以下なら違反なしを返すこと(self):
         # Arrange: テストファイルで500行のファイル
         rule = MaxFileLengthRule()
-        source = _make_source(500)
-        source_file = make_test_source_file(source)
+        source = SourceCodeBuilder.lines(500)
+        source_file = SourceFileFactory.make_test(source)
 
         # Act
         result = rule.check(source_file)
@@ -96,8 +97,8 @@ class TestMaxFileLengthRuleCheck:
     def test_check_正常系_テストファイルでmax_lines超過でも違反なしを返すこと(self):
         # Arrange: プロダクション上限300行超えだがテスト上限500行以内の301行
         rule = MaxFileLengthRule()
-        source = _make_source(301)
-        source_file = make_test_source_file(source)
+        source = SourceCodeBuilder.lines(301)
+        source_file = SourceFileFactory.make_test(source)
 
         # Act
         result = rule.check(source_file)
@@ -108,8 +109,8 @@ class TestMaxFileLengthRuleCheck:
     def test_check_正常系_カスタムmax_linesが適用されること(self):
         # Arrange: max_lines=10 で11行のファイル
         rule = MaxFileLengthRule(max_lines=10)
-        source = _make_source(11)
-        source_file = make_source_file(source)
+        source = SourceCodeBuilder.lines(11)
+        source_file = SourceFileFactory.make(source)
 
         # Act
         result = rule.check(source_file)
@@ -120,8 +121,8 @@ class TestMaxFileLengthRuleCheck:
     def test_check_正常系_カスタムmax_test_linesが適用されること(self):
         # Arrange: max_test_lines=20 でテストファイルに21行のファイル
         rule = MaxFileLengthRule(max_test_lines=20)
-        source = _make_source(21)
-        source_file = make_test_source_file(source)
+        source = SourceCodeBuilder.lines(21)
+        source_file = SourceFileFactory.make_test(source)
 
         # Act
         result = rule.check(source_file)
@@ -164,8 +165,8 @@ class TestFileLengthDetector:
     def test_detect_正常系_超過していればViolationを返すこと(self):
         # Arrange
         rule = MaxFileLengthRule(max_lines=5)
-        source = _make_source(6)
-        source_file = make_source_file(source)
+        source = SourceCodeBuilder.lines(6)
+        source_file = SourceFileFactory.make(source)
 
         # Act
         result = FileLengthDetector.detect(source_file, 6, 5, rule.meta)
@@ -177,8 +178,8 @@ class TestFileLengthDetector:
     def test_detect_正常系_超過していなければNoneを返すこと(self):
         # Arrange
         rule = MaxFileLengthRule(max_lines=5)
-        source = _make_source(5)
-        source_file = make_source_file(source)
+        source = SourceCodeBuilder.lines(5)
+        source_file = SourceFileFactory.make(source)
 
         # Act
         result = FileLengthDetector.detect(source_file, 5, 5, rule.meta)
@@ -189,8 +190,8 @@ class TestFileLengthDetector:
     def test_detect_正常系_ちょうど上限はNoneを返すこと(self):
         # Arrange
         rule = MaxFileLengthRule(max_lines=5)
-        source = _make_source(5)
-        source_file = make_source_file(source)
+        source = SourceCodeBuilder.lines(5)
+        source_file = SourceFileFactory.make(source)
 
         # Act
         result = FileLengthDetector.detect(source_file, 5, 5, rule.meta)
@@ -201,8 +202,8 @@ class TestFileLengthDetector:
     def test_detect_正常系_プロダクションファイルの場合は責務見直しを促すsuggestionを返すこと(self):
         # Arrange
         rule = MaxFileLengthRule(max_lines=5)
-        source = _make_source(6)
-        source_file = make_source_file(source)
+        source = SourceCodeBuilder.lines(6)
+        source_file = SourceFileFactory.make(source)
 
         # Act
         result = FileLengthDetector.detect(source_file, 6, 5, rule.meta)
@@ -214,8 +215,8 @@ class TestFileLengthDetector:
     def test_detect_正常系_テストファイルの場合はparametrize活用を促すsuggestionを返すこと(self):
         # Arrange
         rule = MaxFileLengthRule(max_test_lines=5)
-        source = _make_source(6)
-        source_file = make_test_source_file(source)
+        source = SourceCodeBuilder.lines(6)
+        source_file = SourceFileFactory.make_test(source)
 
         # Act
         result = FileLengthDetector.detect(source_file, 6, 5, rule.meta)

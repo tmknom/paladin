@@ -3,34 +3,8 @@
 import json
 
 from paladin.foundation.output import OutputFormat
-from paladin.rule import RuleMeta
 from paladin.view.formatter import ViewFormatterFactory, ViewJsonFormatter, ViewTextFormatter
-
-
-def _make_rule_meta(
-    rule_id: str = "my-rule",
-    rule_name: str = "My Rule",
-    summary: str = "概要",
-    intent: str = "意図",
-    guidance: str = "見方",
-    suggestion: str = "修正方向",
-    background: str | None = None,
-    steps: tuple[str, ...] | None = None,
-    config_example: str | None = None,
-    detection_example: str | None = None,
-) -> RuleMeta:
-    return RuleMeta(
-        rule_id=rule_id,
-        rule_name=rule_name,
-        summary=summary,
-        intent=intent,
-        guidance=guidance,
-        suggestion=suggestion,
-        background=background,
-        steps=steps,
-        config_example=config_example,
-        detection_example=detection_example,
-    )
+from tests.unit.test_view.helper import RuleMetaFactory
 
 
 class TestViewTextFormatter:
@@ -38,7 +12,7 @@ class TestViewTextFormatter:
 
     def test_format_正常系_新フィールドが全てNoneでも既存6行が正常に出力されること(self):
         # Arrange
-        rule = _make_rule_meta(
+        rule = RuleMetaFactory.make(
             background=None,
             steps=None,
             config_example=None,
@@ -57,7 +31,7 @@ class TestViewTextFormatter:
 
     def test_format_正常系_RuleMetaの全フィールドがラベル付きで出力されること(self):
         # Arrange
-        rule = _make_rule_meta(
+        rule = RuleMetaFactory.make(
             rule_id="require-all-export",
             rule_name="Require All Export",
             summary="全モジュールに__all__を要求する",
@@ -86,7 +60,7 @@ class TestViewTextFormatter:
 
     def test_format_正常系_ラベルの値が整列されること(self):
         # Arrange
-        rule = _make_rule_meta()
+        rule = RuleMetaFactory.make()
         formatter = ViewTextFormatter()
 
         # Act
@@ -108,7 +82,7 @@ class TestViewTextFormatter:
 
     def test_format_正常系_backgroundが設定されている場合にセクション形式で表示されること(self):
         # Arrange
-        rule = _make_rule_meta(background="背景テキストです。\n詳細説明です。")
+        rule = RuleMetaFactory.make(background="背景テキストです。\n詳細説明です。")
         formatter = ViewTextFormatter()
 
         # Act
@@ -121,7 +95,7 @@ class TestViewTextFormatter:
 
     def test_format_エッジケース_backgroundがNoneの場合にセクションが表示されないこと(self):
         # Arrange
-        rule = _make_rule_meta(background=None)
+        rule = RuleMetaFactory.make(background=None)
         formatter = ViewTextFormatter()
 
         # Act
@@ -132,7 +106,7 @@ class TestViewTextFormatter:
 
     def test_format_正常系_stepsが設定されている場合に番号付きリスト形式で表示されること(self):
         # Arrange
-        rule = _make_rule_meta(steps=("手順1", "手順2", "手順3"))
+        rule = RuleMetaFactory.make(steps=("手順1", "手順2", "手順3"))
         formatter = ViewTextFormatter()
 
         # Act
@@ -146,7 +120,7 @@ class TestViewTextFormatter:
 
     def test_format_エッジケース_stepsがNoneの場合にセクションが表示されないこと(self):
         # Arrange
-        rule = _make_rule_meta(steps=None)
+        rule = RuleMetaFactory.make(steps=None)
         formatter = ViewTextFormatter()
 
         # Act
@@ -157,7 +131,7 @@ class TestViewTextFormatter:
 
     def test_format_正常系_config_exampleが設定されている場合にセクション形式で表示されること(self):
         # Arrange
-        rule = _make_rule_meta(
+        rule = RuleMetaFactory.make(
             config_example="[tool.paladin.rule.max-file-length]\nmax-lines = 300"
         )
         formatter = ViewTextFormatter()
@@ -172,7 +146,7 @@ class TestViewTextFormatter:
 
     def test_format_エッジケース_config_exampleがNoneの場合にセクションが表示されないこと(self):
         # Arrange
-        rule = _make_rule_meta(config_example=None)
+        rule = RuleMetaFactory.make(config_example=None)
         formatter = ViewTextFormatter()
 
         # Act
@@ -185,7 +159,7 @@ class TestViewTextFormatter:
         self,
     ):
         # Arrange
-        rule = _make_rule_meta(detection_example="# 違反: ...\n# 準拠: ...")
+        rule = RuleMetaFactory.make(detection_example="# 違反: ...\n# 準拠: ...")
         formatter = ViewTextFormatter()
 
         # Act
@@ -198,7 +172,7 @@ class TestViewTextFormatter:
 
     def test_format_エッジケース_detection_exampleがNoneの場合にセクションが表示されないこと(self):
         # Arrange
-        rule = _make_rule_meta(detection_example=None)
+        rule = RuleMetaFactory.make(detection_example=None)
         formatter = ViewTextFormatter()
 
         # Act
@@ -211,7 +185,7 @@ class TestViewTextFormatter:
         self,
     ):
         # Arrange
-        rule = _make_rule_meta(
+        rule = RuleMetaFactory.make(
             background="背景テキスト",
             steps=("手順A", "手順B"),
             config_example="[tool.paladin.rule.my-rule]\nkey = value",
@@ -243,7 +217,7 @@ class TestViewJsonFormatter:
 
     def test_format_正常系_RuleMetaの全6フィールドがJSONオブジェクトに含まれること(self):
         # Arrange
-        rule = _make_rule_meta(
+        rule = RuleMetaFactory.make(
             rule_id="require-all-export",
             rule_name="Require All Export",
             summary="概要テキスト",
@@ -267,7 +241,7 @@ class TestViewJsonFormatter:
 
     def test_format_正常系_日本語を含むフィールドがエスケープされずに出力されること(self):
         # Arrange
-        rule = _make_rule_meta(summary="日本語テキスト")
+        rule = RuleMetaFactory.make(summary="日本語テキスト")
         formatter = ViewJsonFormatter()
 
         # Act
@@ -278,7 +252,7 @@ class TestViewJsonFormatter:
 
     def test_format_正常系_インデント付きで整形されること(self):
         # Arrange
-        rule = _make_rule_meta()
+        rule = RuleMetaFactory.make()
         formatter = ViewJsonFormatter()
 
         # Act
@@ -290,7 +264,7 @@ class TestViewJsonFormatter:
 
     def test_format_正常系_新フィールドが設定されている場合にJSONオブジェクトに含まれること(self):
         # Arrange
-        rule = _make_rule_meta(
+        rule = RuleMetaFactory.make(
             background="背景テキスト",
             steps=("手順1", "手順2", "手順3"),
             config_example="[tool.paladin]\nkey = value",
@@ -312,7 +286,7 @@ class TestViewJsonFormatter:
         self,
     ):
         # Arrange
-        rule = _make_rule_meta(
+        rule = RuleMetaFactory.make(
             background=None,
             steps=None,
             config_example=None,
@@ -334,7 +308,7 @@ class TestViewJsonFormatter:
         self,
     ):
         # Arrange
-        rule = _make_rule_meta(
+        rule = RuleMetaFactory.make(
             background="背景のみ設定", steps=None, config_example=None, detection_example=None
         )
         formatter = ViewJsonFormatter()
@@ -355,7 +329,7 @@ class TestViewFormatterFactory:
 
     def test_format_正常系_TEXT指定でラベル付きテキスト形式を返すこと(self):
         # Arrange
-        rule = _make_rule_meta(rule_id="my-rule")
+        rule = RuleMetaFactory.make(rule_id="my-rule")
         factory = ViewFormatterFactory()
 
         # Act
@@ -367,7 +341,7 @@ class TestViewFormatterFactory:
 
     def test_format_正常系_JSON指定でJSON形式を返すこと(self):
         # Arrange
-        rule = _make_rule_meta(rule_id="my-rule")
+        rule = RuleMetaFactory.make(rule_id="my-rule")
         factory = ViewFormatterFactory()
 
         # Act

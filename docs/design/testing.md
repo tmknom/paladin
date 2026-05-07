@@ -100,7 +100,7 @@ Fake 化は副作用境界のみに限定する。
 | 配置先 | 対象 |
 |--------|------|
 | `tests/fake/` | 複数のパッケージのテストで共有する Fake クラス |
-| `tests/unit/test_<package>/helper.py` | 特定パッケージのテストのみで使う値オブジェクトファクトリ関数 |
+| `tests/unit/test_<package>/helper.py` | 特定パッケージのテストのみで使う値オブジェクトファクトリクラス |
 | `tests/unit/test_<package>/fake.py` | 特定パッケージのテストのみで使う Fake クラス |
 
 `tests/fake/` は Fake クラスのみで構成する。
@@ -109,8 +109,17 @@ Fake 化は副作用境界のみに限定する。
 |--------|------|
 | `fake/xxx.py` | Protocol に適合する Fake クラス（`FakeXxx` 等） |
 
-値オブジェクト生成ファクトリ関数（`make_xxx` 等）は、利用するテストパッケージの `helper.py` に定義する。
-ファクトリ関数はアンダースコアを付けず公開関数として定義し、各テストファイルから明示的に import する。
+値オブジェクト生成ファクトリは、利用するテストパッケージの `helper.py` にクラスとして定義する。
+ファクトリメソッドはクラスの `@staticmethod` として定義し、クラス自体を公開シンボルとして export する。
+`no-module-level-function` ルールとの整合を保つため、モジュールレベル関数ではなくクラスに集約する。
+
+```python
+class SourceFileFactory:
+    @staticmethod
+    def make(source: str, filename: str = "example.py") -> SourceFile: ...
+```
+
+各テストファイルからはクラスを明示的に import して使用する。
 
 ### Fake の実装パターン
 

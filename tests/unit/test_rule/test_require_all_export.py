@@ -9,7 +9,7 @@ from paladin.rule.require_all_export import (
     RequireAllExportRule,
 )
 from paladin.rule.types import RuleMeta, SourceFile
-from tests.unit.test_rule.helper import make_source_file
+from tests.unit.test_rule.helper import SourceFileFactory
 
 
 class TestRequireAllExportRuleMeta:
@@ -45,7 +45,7 @@ class TestRequireAllExportRuleCheck:
     def test_check_違反なしのケースで空を返すこと(self, source: str, filename: str) -> None:
         # Arrange
         rule = RequireAllExportRule()
-        source_file = make_source_file(source, filename)
+        source_file = SourceFileFactory.make(source, filename)
 
         # Act
         result = rule.check(source_file)
@@ -62,7 +62,7 @@ class TestRequireAllExportRuleCheck:
     def test_check_違反ありのケースで1件返すこと(self, source: str, filename: str) -> None:
         # Arrange
         rule = RequireAllExportRule()
-        source_file = make_source_file(source, filename)
+        source_file = SourceFileFactory.make(source, filename)
 
         # Act
         result = rule.check(source_file)
@@ -99,7 +99,7 @@ class TestPublicSymbolCollector:
     def test_collect_正常系_相対インポートのシンボルを返すこと(self):
         # Arrange
         source = "from .module import Foo, Bar\n"
-        source_file = make_source_file(source, "__init__.py")
+        source_file = SourceFileFactory.make(source, "__init__.py")
         # Act / Assert
         result = PublicSymbolCollector.collect(source_file)
         assert sorted(result) == ["Bar", "Foo"]
@@ -107,7 +107,7 @@ class TestPublicSymbolCollector:
     def test_collect_正常系_クラスと関数を返すこと(self):
         # Arrange
         source = "class MyClass:\n    pass\n\ndef my_func():\n    pass\n"
-        source_file = make_source_file(source, "__init__.py")
+        source_file = SourceFileFactory.make(source, "__init__.py")
         # Act / Assert
         result = PublicSymbolCollector.collect(source_file)
         assert sorted(result) == ["MyClass", "my_func"]
@@ -115,7 +115,7 @@ class TestPublicSymbolCollector:
     def test_collect_正常系_アンダースコア始まりは除外されること(self):
         # Arrange
         source = "from .module import _Private, Public\n"
-        source_file = make_source_file(source, "__init__.py")
+        source_file = SourceFileFactory.make(source, "__init__.py")
         # Act / Assert
         result = PublicSymbolCollector.collect(source_file)
         assert result == ["Public"]
@@ -145,7 +145,7 @@ class TestAllExportDetector:
     def test_detect_正常系_シンボルありのViolationを返すこと(self):
         # Arrange
         source = "from .module import Foo\n"
-        source_file = make_source_file(source, "__init__.py")
+        source_file = SourceFileFactory.make(source, "__init__.py")
         rule = RequireAllExportRule()
 
         # Act
@@ -157,7 +157,7 @@ class TestAllExportDetector:
     def test_detect_正常系_シンボルなしのViolationを返すこと(self):
         # Arrange
         source = "x = 1\n"
-        source_file = make_source_file(source, "__init__.py")
+        source_file = SourceFileFactory.make(source, "__init__.py")
         rule = RequireAllExportRule()
 
         # Act

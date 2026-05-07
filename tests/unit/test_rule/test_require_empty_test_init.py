@@ -3,7 +3,7 @@
 import pytest
 
 from paladin.rule.require_empty_test_init import RequireEmptyTestInitRule
-from tests.unit.test_rule.helper import make_source_file, make_test_source_file
+from tests.unit.test_rule.helper import SourceFileFactory
 
 
 class TestRequireEmptyTestInitRuleCheck:
@@ -12,7 +12,7 @@ class TestRequireEmptyTestInitRuleCheck:
     def test_check_正常系_テストinit_pyにコードがある場合に違反を1件返すこと(self):
         # Arrange
         rule = RequireEmptyTestInitRule()
-        source_file = make_test_source_file("import os\n", "tests/__init__.py")
+        source_file = SourceFileFactory.make_test("import os\n", "tests/__init__.py")
 
         # Act
         violations = rule.check(source_file)
@@ -25,7 +25,7 @@ class TestRequireEmptyTestInitRuleCheck:
     def test_check_正常系_テストinit_pyが空の場合に違反なしを返すこと(self):
         # Arrange
         rule = RequireEmptyTestInitRule()
-        source_file = make_test_source_file("", "tests/__init__.py")
+        source_file = SourceFileFactory.make_test("", "tests/__init__.py")
 
         # Act
         violations = rule.check(source_file)
@@ -46,7 +46,7 @@ class TestRequireEmptyTestInitRuleCheck:
     ):
         # Arrange
         rule = RequireEmptyTestInitRule()
-        source_file = make_source_file(source, filename)
+        source_file = SourceFileFactory.make(source, filename)
 
         # Act
         violations = rule.check(source_file)
@@ -57,7 +57,7 @@ class TestRequireEmptyTestInitRuleCheck:
     def test_check_エッジケース_空白のみのテストinit_pyで違反なしを返すこと(self):
         # Arrange
         rule = RequireEmptyTestInitRule()
-        source_file = make_test_source_file("  \n\n  ", "tests/__init__.py")
+        source_file = SourceFileFactory.make_test("  \n\n  ", "tests/__init__.py")
 
         # Act
         violations = rule.check(source_file)

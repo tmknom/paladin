@@ -1,14 +1,9 @@
 """AllExports / AllExportsExtractor のユニットテスト"""
 
 import ast
-from pathlib import Path
 
 from paladin.rule.all_exports_extractor import AllExports, AllExportsExtractor
-from paladin.rule.types import SourceFile
-
-
-def _sf(source: str, path: str = "src/paladin/__init__.py") -> SourceFile:
-    return SourceFile(file_path=Path(path), tree=ast.parse(source), source=source)
+from tests.unit.test_rule.helper import SourceFileFactory
 
 
 class TestAllExportsLineno:
@@ -17,7 +12,7 @@ class TestAllExportsLineno:
     def test_lineno_正常系_代入文の行番号を返すこと(self):
         # Arrange
         source = "\nx = 1\n__all__ = ['Foo']\n"
-        ae = AllExportsExtractor().extract(_sf(source))
+        ae = AllExportsExtractor().extract(SourceFileFactory.make(source))
 
         # Act / Assert
         assert ae.lineno == 3
@@ -126,7 +121,7 @@ class TestAllExportsExtractorExtract:
 
     def test_正常系_all定義ありのとき抽出すること(self):
         # Arrange
-        sf = _sf('__all__ = ["Foo", "Bar"]\n')
+        sf = SourceFileFactory.make('__all__ = ["Foo", "Bar"]\n')
 
         # Act
         result = AllExportsExtractor().extract(sf)
@@ -137,7 +132,7 @@ class TestAllExportsExtractorExtract:
 
     def test_正常系_all定義なしのとき空AllExportsを返すこと(self):
         # Arrange
-        sf = _sf("x = 1\n")
+        sf = SourceFileFactory.make("x = 1\n")
 
         # Act
         result = AllExportsExtractor().extract(sf)
@@ -148,7 +143,7 @@ class TestAllExportsExtractorExtract:
 
     def test_正常系_タプル形式のallを抽出すること(self):
         # Arrange
-        sf = _sf('__all__ = ("Foo", "Bar")\n')
+        sf = SourceFileFactory.make('__all__ = ("Foo", "Bar")\n')
 
         # Act
         result = AllExportsExtractor().extract(sf)
@@ -158,7 +153,7 @@ class TestAllExportsExtractorExtract:
 
     def test_正常系_文字列以外の要素を無視すること(self):
         # Arrange
-        sf = _sf('__all__ = ["Foo", 123]\n')
+        sf = SourceFileFactory.make('__all__ = ["Foo", 123]\n')
 
         # Act
         result = AllExportsExtractor().extract(sf)
@@ -168,7 +163,7 @@ class TestAllExportsExtractorExtract:
 
     def test_エッジケース_空リストのとき空シンボルで定義ありを返すこと(self):
         # Arrange
-        sf = _sf("__all__ = []\n")
+        sf = SourceFileFactory.make("__all__ = []\n")
 
         # Act
         result = AllExportsExtractor().extract(sf)
@@ -183,21 +178,21 @@ class TestAllExportsExtractorHasAllDefinition:
 
     def test_正常系_代入文があるとき真を返すこと(self):
         # Arrange
-        sf = _sf('__all__ = ["Foo"]\n')
+        sf = SourceFileFactory.make('__all__ = ["Foo"]\n')
 
         # Act / Assert
         assert AllExportsExtractor().has_all_definition(sf) is True
 
     def test_正常系_AugAssignがあるとき真を返すこと(self):
         # Arrange
-        sf = _sf('__all__ = []\n__all__ += ["Foo"]\n')
+        sf = SourceFileFactory.make('__all__ = []\n__all__ += ["Foo"]\n')
 
         # Act / Assert
         assert AllExportsExtractor().has_all_definition(sf) is True
 
     def test_正常系_定義なしのとき偽を返すこと(self):
         # Arrange
-        sf = _sf("x = 1\n")
+        sf = SourceFileFactory.make("x = 1\n")
 
         # Act / Assert
         assert AllExportsExtractor().has_all_definition(sf) is False
@@ -209,7 +204,7 @@ class TestAllExportsExtractorExtractWithReexports:
     def test_正常系_allシンボルと相対インポートを収集すること(self):
         # Arrange
         source = 'from .foo import Bar\n__all__ = ["Baz"]\n'
-        sf = _sf(source)
+        sf = SourceFileFactory.make(source)
 
         # Act
         result = AllExportsExtractor().extract_with_reexports(sf)
@@ -221,7 +216,7 @@ class TestAllExportsExtractorExtractWithReexports:
     def test_正常系_絶対インポートは対象外であること(self):
         # Arrange
         source = 'from paladin.check import Foo\n__all__ = ["Bar"]\n'
-        sf = _sf(source)
+        sf = SourceFileFactory.make(source)
 
         # Act
         result = AllExportsExtractor().extract_with_reexports(sf)
@@ -232,7 +227,7 @@ class TestAllExportsExtractorExtractWithReexports:
 
     def test_正常系_空ファイルのとき空セットを返すこと(self):
         # Arrange
-        sf = _sf("")
+        sf = SourceFileFactory.make("")
 
         # Act
         result = AllExportsExtractor().extract_with_reexports(sf)

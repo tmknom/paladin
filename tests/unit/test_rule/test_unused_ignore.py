@@ -11,7 +11,7 @@ from paladin.rule.unused_ignore import (
     UnusedIgnoreDetector,
     UnusedIgnoreRule,
 )
-from tests.unit.test_rule.helper import make_source_file
+from tests.unit.test_rule.helper import SourceFileFactory
 
 
 class TestIgnoreDirectiveCollectorInline:
@@ -20,7 +20,7 @@ class TestIgnoreDirectiveCollectorInline:
     def test_collect_正常系_直前コメントのインラインIgnoreを収集すること(self):
         # Arrange
         source = "x = 1\n# paladin: ignore[rule-a]\ny = 2\n"
-        source_file = make_source_file(source, "example.py")
+        source_file = SourceFileFactory.make(source, "example.py")
 
         # Act
         result = IgnoreDirectiveCollector.collect(source_file)
@@ -35,7 +35,7 @@ class TestIgnoreDirectiveCollectorInline:
     def test_collect_正常系_行末コメントのインラインIgnoreを収集すること(self):
         # Arrange
         source = "x = 1\ny = 2  # paladin: ignore[rule-a]\nz = 3\n"
-        source_file = make_source_file(source, "example.py")
+        source_file = SourceFileFactory.make(source, "example.py")
 
         # Act
         result = IgnoreDirectiveCollector.collect(source_file)
@@ -49,7 +49,7 @@ class TestIgnoreDirectiveCollectorInline:
     def test_collect_正常系_複数ルールIDが指定された場合にルールごとにエントリを生成すること(self):
         # Arrange
         source = "# paladin: ignore[rule-a, rule-b]\nx = 1\n"
-        source_file = make_source_file(source)
+        source_file = SourceFileFactory.make(source)
 
         # Act
         result = IgnoreDirectiveCollector.collect(source_file)
@@ -65,7 +65,7 @@ class TestIgnoreDirectiveCollectorInline:
     def test_collect_エッジケース_ワイルドカードIgnoreを除外すること(self):
         # Arrange
         source = "# paladin: ignore\nx = 1\n"
-        source_file = make_source_file(source)
+        source_file = SourceFileFactory.make(source)
 
         # Act
         result = IgnoreDirectiveCollector.collect(source_file)
@@ -76,7 +76,7 @@ class TestIgnoreDirectiveCollectorInline:
     def test_collect_エッジケース_Ignoreコメントがない場合に空タプルを返すこと(self):
         # Arrange
         source = "x = 1\ny = 2\n"
-        source_file = make_source_file(source)
+        source_file = SourceFileFactory.make(source)
 
         # Act
         result = IgnoreDirectiveCollector.collect(source_file)
@@ -87,7 +87,7 @@ class TestIgnoreDirectiveCollectorInline:
     def test_collect_正常系_理由コメント付きIgnoreを収集すること(self):
         # Arrange
         source = "# paladin: ignore[rule-a] -- 理由\nx = 1\n"
-        source_file = make_source_file(source)
+        source_file = SourceFileFactory.make(source)
 
         # Act
         result = IgnoreDirectiveCollector.collect(source_file)
@@ -104,7 +104,7 @@ class TestIgnoreDirectiveCollectorFileIgnore:
     def test_collect_正常系_ファイル単位Ignoreを収集すること(self):
         # Arrange
         source = "# paladin: ignore-file[rule-a]\nx = 1\n"
-        source_file = make_source_file(source, "example.py")
+        source_file = SourceFileFactory.make(source, "example.py")
 
         # Act
         result = IgnoreDirectiveCollector.collect(source_file)
@@ -118,7 +118,7 @@ class TestIgnoreDirectiveCollectorFileIgnore:
     def test_collect_正常系_ファイル単位Ignoreの複数ルールIDを収集すること(self):
         # Arrange
         source = "# paladin: ignore-file[rule-a, rule-b]\nx = 1\n"
-        source_file = make_source_file(source)
+        source_file = SourceFileFactory.make(source)
 
         # Act
         result = IgnoreDirectiveCollector.collect(source_file)
@@ -133,7 +133,7 @@ class TestIgnoreDirectiveCollectorFileIgnore:
     def test_collect_エッジケース_ファイル単位ワイルドカードIgnoreを除外すること(self):
         # Arrange
         source = "# paladin: ignore-file\nx = 1\n"
-        source_file = make_source_file(source)
+        source_file = SourceFileFactory.make(source)
 
         # Act
         result = IgnoreDirectiveCollector.collect(source_file)
@@ -144,7 +144,7 @@ class TestIgnoreDirectiveCollectorFileIgnore:
     def test_collect_正常系_インラインとファイル単位Ignoreが混在する場合に両方収集すること(self):
         # Arrange
         source = "# paladin: ignore-file[rule-a]\nx = 1\n# paladin: ignore[rule-b]\ny = 2\n"
-        source_file = make_source_file(source)
+        source_file = SourceFileFactory.make(source)
 
         # Act
         result = IgnoreDirectiveCollector.collect(source_file)
@@ -181,7 +181,7 @@ class TestUnusedIgnoreDetector:
     ):
         # Arrange: 直前コメント方式 line=2、target_line=3 に違反なし
         source = "x = 1\n# paladin: ignore[rule-a]\ny = 2\n"
-        source_file = make_source_file(source, "example.py")
+        source_file = SourceFileFactory.make(source, "example.py")
         entries = (
             IgnoreDirectiveEntry(
                 file_path=Path("example.py"),
@@ -207,7 +207,7 @@ class TestUnusedIgnoreDetector:
         self, meta: RuleMeta
     ):
         # Arrange: 直前コメント方式 line=2、target_line=3 に違反あり
-        source_file = make_source_file("x = 1\n# paladin: ignore[rule-a]\ny = 2\n", "f.py")
+        source_file = SourceFileFactory.make("x = 1\n# paladin: ignore[rule-a]\ny = 2\n", "f.py")
         entries = (
             IgnoreDirectiveEntry(
                 file_path=Path("f.py"),
@@ -233,7 +233,7 @@ class TestUnusedIgnoreDetector:
         self, meta: RuleMeta
     ):
         # Arrange
-        source_file = make_source_file("# paladin: ignore-file[rule-a]\nx = 1\n", "f.py")
+        source_file = SourceFileFactory.make("# paladin: ignore-file[rule-a]\nx = 1\n", "f.py")
         entries = (
             IgnoreDirectiveEntry(
                 file_path=Path("f.py"), line=1, rule_id="rule-a", is_file_ignore=True
@@ -254,7 +254,7 @@ class TestUnusedIgnoreDetector:
         self, meta: RuleMeta
     ):
         # Arrange
-        source_file = make_source_file("# paladin: ignore-file[rule-a]\nx = 1\n", "f.py")
+        source_file = SourceFileFactory.make("# paladin: ignore-file[rule-a]\nx = 1\n", "f.py")
         entries = (
             IgnoreDirectiveEntry(
                 file_path=Path("f.py"), line=1, rule_id="rule-a", is_file_ignore=True
@@ -274,7 +274,7 @@ class TestUnusedIgnoreDetector:
 
     def test_detect_正常系_無効化ルールのIgnoreは未使用とみなさないこと(self, meta: RuleMeta):
         # Arrange: 直前コメント方式 line=1、target_line=2
-        source_file = make_source_file("# paladin: ignore[rule-a]\nx = 1\n", "f.py")
+        source_file = SourceFileFactory.make("# paladin: ignore[rule-a]\nx = 1\n", "f.py")
         entries = (
             IgnoreDirectiveEntry(
                 file_path=Path("f.py"),
@@ -298,7 +298,7 @@ class TestUnusedIgnoreDetector:
         self, meta: RuleMeta
     ):
         # Arrange: 直前コメント line=2、target_line=3 に違反なし
-        source_file = make_source_file("x = 1\n# paladin: ignore[rule-a]\ny = 2\n", "f.py")
+        source_file = SourceFileFactory.make("x = 1\n# paladin: ignore[rule-a]\ny = 2\n", "f.py")
         entries = (
             IgnoreDirectiveEntry(
                 file_path=Path("f.py"),
@@ -327,7 +327,7 @@ class TestUnusedIgnoreDetector:
         self, meta: RuleMeta
     ):
         # Arrange
-        source_file = make_source_file("# paladin: ignore-file[rule-a]\nx = 1\n", "f.py")
+        source_file = SourceFileFactory.make("# paladin: ignore-file[rule-a]\nx = 1\n", "f.py")
         entries = (
             IgnoreDirectiveEntry(
                 file_path=Path("f.py"), line=1, rule_id="rule-a", is_file_ignore=True
@@ -348,7 +348,7 @@ class TestUnusedIgnoreDetector:
 
     def test_detect_エッジケース_エントリが空の場合に空タプルを返すこと(self, meta: RuleMeta):
         # Arrange
-        source_file = make_source_file("x = 1\n")
+        source_file = SourceFileFactory.make("x = 1\n")
         raw_violations = Violations(items=())
 
         # Act
@@ -361,7 +361,7 @@ class TestUnusedIgnoreDetector:
         self, meta: RuleMeta
     ):
         # Arrange: 直前コメント line=1、target_line=2
-        source_file = make_source_file("# paladin: ignore[rule-a]\nx = 1\n", "f.py")
+        source_file = SourceFileFactory.make("# paladin: ignore[rule-a]\nx = 1\n", "f.py")
         entries = (
             IgnoreDirectiveEntry(
                 file_path=Path("f.py"),
@@ -404,7 +404,7 @@ class TestUnusedIgnoreRuleCheck:
     def test_check_正常系_未使用インラインIgnoreを検出すること(self, rule: UnusedIgnoreRule):
         # Arrange: 直前コメント、対象行に違反なし
         source = "# paladin: ignore[rule-a]\nx = 1\n"
-        source_file = make_source_file(source, "f.py")
+        source_file = SourceFileFactory.make(source, "f.py")
         raw_violations = Violations(items=())
 
         # Act
@@ -418,7 +418,7 @@ class TestUnusedIgnoreRuleCheck:
     def test_check_正常系_未使用ファイル単位Ignoreを検出すること(self, rule: UnusedIgnoreRule):
         # Arrange
         source = "# paladin: ignore-file[rule-a]\nx = 1\n"
-        source_file = make_source_file(source, "f.py")
+        source_file = SourceFileFactory.make(source, "f.py")
         raw_violations = Violations(items=())
 
         # Act
@@ -433,7 +433,7 @@ class TestUnusedIgnoreRuleCheck:
     ):
         # Arrange
         source = "x = 1\ny = 2\n"
-        source_file = make_source_file(source, "f.py")
+        source_file = SourceFileFactory.make(source, "f.py")
         raw_violations = Violations(items=())
 
         # Act
@@ -445,7 +445,7 @@ class TestUnusedIgnoreRuleCheck:
     def test_check_正常系_行末コメントの未使用Ignoreを検出すること(self, rule: UnusedIgnoreRule):
         # Arrange: 行末コメント、その行に該当ルールの違反なし
         source = "x = 1  # paladin: ignore[rule-a]\ny = 2\n"
-        source_file = make_source_file(source, "f.py")
+        source_file = SourceFileFactory.make(source, "f.py")
         raw_violations = Violations(items=())
 
         # Act

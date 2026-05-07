@@ -14,28 +14,25 @@ from paladin.rule.no_unused_export import (
 )
 from paladin.rule.package_resolver import PackageResolver
 from paladin.rule.types import RuleMeta, SourceFile, SourceFiles
-from tests.unit.test_rule.helper import make_source_files
+from tests.unit.test_rule.helper import SourceFileFactory
 
 
-def _rule(root_packages: tuple[str, ...] = ("paladin",)) -> NoUnusedExportRule:
-    """root_packages を prepare() で設定した NoUnusedExportRule を返す（テスト用）
-
-    各パッケージ名を src/<pkg>/stub.py 形式の SourceFiles として渡し、
-    PackageResolver.resolve_root_packages() に自動導出させる。
-    """
-    rule = NoUnusedExportRule()
-    stub_files = tuple(
-        SourceFile(
-            file_path=Path(f"src/{pkg}/stub.py"),
-            tree=ast.parse(""),
-            source="",
+class RuleFactory:
+    @staticmethod
+    def make(root_packages: tuple[str, ...] = ("paladin",)) -> NoUnusedExportRule:
+        rule = NoUnusedExportRule()
+        stub_files = tuple(
+            SourceFile(
+                file_path=Path(f"src/{pkg}/stub.py"),
+                tree=ast.parse(""),
+                source="",
+            )
+            for pkg in root_packages
+            if pkg != "tests"
         )
-        for pkg in root_packages
-        if pkg != "tests"  # tests は常に自動導出されるため不要
-    )
-    stub_source_files = SourceFiles(files=stub_files)
-    rule.prepare(stub_source_files)
-    return rule
+        stub_source_files = SourceFiles(files=stub_files)
+        rule.prepare(stub_source_files)
+        return rule
 
 
 class TestNoUnusedExportRuleMeta:
@@ -69,11 +66,11 @@ class TestNoUnusedExportRuleCheck:
         # Arrange: Used は利用されているが Unused は利用されていない
         init_source = '__all__ = ["Used", "Unused"]\n'
         cli_source = "from paladin.check import Used\n"
-        source_files = make_source_files(
+        source_files = SourceFileFactory.make_many(
             (init_source, "src/paladin/check/__init__.py"),
             (cli_source, "src/paladin/cli.py"),
         )
-        rule = _rule(("paladin",))
+        rule = RuleFactory.make(("paladin",))
 
         # Act
         result = rule.check(source_files)
@@ -90,7 +87,7 @@ class TestNoUnusedExportRuleCheck:
         # prepare() 後に check() でシンボルが検出されれば root_packages が設定されている
         init_source = '__all__ = ["Foo"]\n'
         stub_source = "x = 1\n"
-        source_files = make_source_files(
+        source_files = SourceFileFactory.make_many(
             (init_source, "src/paladin/check/__init__.py"),
             (stub_source, "src/paladin/module.py"),  # paladin を自動導出するため
         )
@@ -110,7 +107,7 @@ class TestNoUnusedExportRuleCheck:
     def test_check_エッジケース_root_packagesが空の場合は何も検出しないこと(self):
         # Arrange: prepare() を呼ばずに check() を呼び出すと早期リターン
         init_source = '__all__ = ["Foo"]\n'
-        source_files = make_source_files((init_source, "src/paladin/check/__init__.py"))
+        source_files = SourceFileFactory.make_many((init_source, "src/paladin/check/__init__.py"))
         rule = NoUnusedExportRule()
 
         # Act
@@ -131,11 +128,11 @@ class TestNoUnusedExportRuleCheck:
         # Arrange: 2つの __init__.py にそれぞれ未使用シンボル
         init1_source = '__all__ = ["Foo"]\n'
         init2_source = '__all__ = ["Bar"]\n'
-        source_files = make_source_files(
+        source_files = SourceFileFactory.make_many(
             (init1_source, "src/paladin/check/__init__.py"),
             (init2_source, "src/paladin/rule/__init__.py"),
         )
-        rule = _rule(("paladin",))
+        rule = RuleFactory.make(("paladin",))
 
         # Act
         result = rule.check(source_files)
@@ -186,8 +183,8 @@ class TestNoUnusedExportRuleCheck:
         if sources_and_files is None:
             source_files = SourceFiles(files=())
         else:
-            source_files = make_source_files(*sources_and_files)
-        rule = _rule(("paladin",))
+            source_files = SourceFileFactory.make_many(*sources_and_files)
+        rule = RuleFactory.make(("paladin",))
 
         # Act
         result = rule.check(source_files)
@@ -277,8 +274,8 @@ class TestNoUnusedExportRuleCheck:
         self, sources_and_files: list[tuple[str, str]]
     ) -> None:
         # Arrange
-        source_files = make_source_files(*sources_and_files)
-        rule = _rule(("paladin",))
+        source_files = SourceFileFactory.make_many(*sources_and_files)
+        rule = RuleFactory.make(("paladin",))
 
         # Act
         result = rule.check(source_files)
@@ -293,7 +290,7 @@ class TestExportCollector:
     def test_collect_正常系_init_pyのallシンボルを収集すること(self):
         # Arrange
         init_source = '__all__ = ["Foo", "Bar"]\n'
-        source_files = make_source_files((init_source, "src/paladin/check/__init__.py"))
+        source_files = SourceFileFactory.make_many((init_source, "src/paladin/check/__init__.py"))
         resolver = PackageResolver()
         extractor = AllExportsExtractor()
 
@@ -310,7 +307,7 @@ class TestExportCollector:
     def test_collect_正常系_allが未定義のinit_pyはスキップすること(self):
         # Arrange
         init_source = "x = 1\n"
-        source_files = make_source_files((init_source, "src/paladin/check/__init__.py"))
+        source_files = SourceFileFactory.make_many((init_source, "src/paladin/check/__init__.py"))
         resolver = PackageResolver()
         extractor = AllExportsExtractor()
 
@@ -322,7 +319,9 @@ class TestExportCollector:
 
     def test_collect_正常系_init_py以外はスキップすること(self):
         # Arrange
-        source_files = make_source_files(('__all__ = ["Foo"]\n', "src/paladin/check/module.py"))
+        source_files = SourceFileFactory.make_many(
+            ('__all__ = ["Foo"]\n', "src/paladin/check/module.py")
+        )
         resolver = PackageResolver()
         extractor = AllExportsExtractor()
 
@@ -340,7 +339,7 @@ class TestUsageCollector:
         # Arrange
         init_source = '__all__ = ["Foo"]\n'
         cli_source = "from paladin.check import Foo\n"
-        source_files = make_source_files(
+        source_files = SourceFileFactory.make_many(
             (init_source, "src/paladin/check/__init__.py"),
             (cli_source, "src/paladin/cli.py"),
         )
@@ -359,7 +358,7 @@ class TestUsageCollector:
         # Arrange
         init_source = '__all__ = ["Foo"]\n'
         cli_source = "import paladin.check\nx = paladin.check.Foo\n"
-        source_files = make_source_files(
+        source_files = SourceFileFactory.make_many(
             (init_source, "src/paladin/check/__init__.py"),
             (cli_source, "src/paladin/cli.py"),
         )
@@ -378,7 +377,7 @@ class TestUsageCollector:
         # Arrange
         init_source = '__all__ = ["Foo"]\n'
         test_source = "from paladin.check import Foo\n"
-        source_files = make_source_files(
+        source_files = SourceFileFactory.make_many(
             (init_source, "src/paladin/check/__init__.py"),
             (test_source, "tests/unit/test_check/test_foo.py"),
         )

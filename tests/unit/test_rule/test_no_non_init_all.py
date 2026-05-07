@@ -5,7 +5,7 @@ import pytest
 
 from paladin.rule.no_non_init_all import NonInitAllDetector, NoNonInitAllRule
 from paladin.rule.types import RuleMeta, SourceFile
-from tests.unit.test_rule.helper import make_source_file
+from tests.unit.test_rule.helper import SourceFileFactory
 
 
 class TestNoNonInitAllRuleMeta:
@@ -39,7 +39,7 @@ class TestNoNonInitAllRuleCheck:
     def test_check_違反なしのケースで空を返すこと(self, source: str, filename: str) -> None:
         # Arrange
         rule = NoNonInitAllRule()
-        source_file = make_source_file(source, filename)
+        source_file = SourceFileFactory.make(source, filename)
 
         # Act
         result = rule.check(source_file)
@@ -56,7 +56,7 @@ class TestNoNonInitAllRuleCheck:
     def test_check_違反ありのケースで1件返すこと(self, source: str, filename: str) -> None:
         # Arrange
         rule = NoNonInitAllRule()
-        source_file = make_source_file(source, filename)
+        source_file = SourceFileFactory.make(source, filename)
 
         # Act
         result = rule.check(source_file)
@@ -114,7 +114,7 @@ class TestNonInitAllDetector:
         # Arrange
         rule = NoNonInitAllRule()
         source = '__all__ = ["Foo"]\n'
-        source_file = make_source_file(source, "module.py")
+        source_file = SourceFileFactory.make(source, "module.py")
 
         # Act / Assert
         result = NonInitAllDetector.detect(rule.meta, source_file, 1)

@@ -9,7 +9,7 @@ from paladin.rule.no_module_level_function import (
     NoModuleLevelFunctionRule,
 )
 from paladin.rule.types import RuleMeta, Violation
-from tests.unit.test_rule.helper import make_source_file
+from tests.unit.test_rule.helper import SourceFileFactory
 
 
 class TestModuleLevelFunctionCollector:
@@ -245,7 +245,7 @@ class TestModuleLevelFunctionDetector:
     def test_detect_正常系_関数名がmessageに含まれること(self):
         # Arrange
         source = "def calc_file_length():\n    pass\n"
-        source_file = make_source_file(source)
+        source_file = SourceFileFactory.make(source)
         tree = ast.parse(source)
         node = next(n for n in tree.body if isinstance(n, ast.FunctionDef))
         meta = self._make_meta()
@@ -259,7 +259,7 @@ class TestModuleLevelFunctionDetector:
     def test_detect_正常系_violation_lineがdef文の行番号と一致すること(self):
         # Arrange
         source = "\n\ndef foo():\n    pass\n"
-        source_file = make_source_file(source)
+        source_file = SourceFileFactory.make(source)
         tree = ast.parse(source)
         node = next(n for n in tree.body if isinstance(n, ast.FunctionDef))
         meta = self._make_meta()
@@ -273,7 +273,7 @@ class TestModuleLevelFunctionDetector:
     def test_detect_正常系_violation_columnがdef文の列位置と一致すること(self):
         # Arrange
         source = "def foo():\n    pass\n"
-        source_file = make_source_file(source)
+        source_file = SourceFileFactory.make(source)
         tree = ast.parse(source)
         node = next(n for n in tree.body if isinstance(n, ast.FunctionDef))
         meta = self._make_meta()
@@ -287,7 +287,7 @@ class TestModuleLevelFunctionDetector:
     def test_detect_正常系_rule_id_rule_name_reason_suggestionが固定値であること(self):
         # Arrange
         source = "def foo():\n    pass\n"
-        source_file = make_source_file(source)
+        source_file = SourceFileFactory.make(source)
         tree = ast.parse(source)
         node = next(n for n in tree.body if isinstance(n, ast.FunctionDef))
         meta = self._make_meta()
@@ -302,7 +302,7 @@ class TestModuleLevelFunctionDetector:
     def test_detect_正常系_AsyncFunctionDefでもViolationを生成すること(self):
         # Arrange
         source = "async def helper():\n    pass\n"
-        source_file = make_source_file(source)
+        source_file = SourceFileFactory.make(source)
         tree = ast.parse(source)
         node = next(n for n in tree.body if isinstance(n, ast.AsyncFunctionDef))
         meta = self._make_meta()
@@ -337,7 +337,7 @@ class TestNoModuleLevelFunctionRuleCheck:
     def test_check_正常系_モジュールレベル関数1件を違反として返すこと(self):
         # Arrange
         source = "def calc():\n    pass\n"
-        source_file = make_source_file(source)
+        source_file = SourceFileFactory.make(source)
         rule = NoModuleLevelFunctionRule()
 
         # Act
@@ -351,7 +351,7 @@ class TestNoModuleLevelFunctionRuleCheck:
     def test_check_正常系_pytest_fixtureデコレータ付き関数は違反としないこと(self):
         # Arrange
         source = "import pytest\n\n@pytest.fixture\ndef tmp_source():\n    pass\n"
-        source_file = make_source_file(source)
+        source_file = SourceFileFactory.make(source)
         rule = NoModuleLevelFunctionRule()
 
         # Act
@@ -363,7 +363,7 @@ class TestNoModuleLevelFunctionRuleCheck:
     def test_check_正常系_fixture単独デコレータ付き関数も違反としないこと(self):
         # Arrange
         source = "from pytest import fixture\n\n@fixture\ndef tmp_source():\n    pass\n"
-        source_file = make_source_file(source)
+        source_file = SourceFileFactory.make(source)
         rule = NoModuleLevelFunctionRule()
 
         # Act
@@ -375,7 +375,7 @@ class TestNoModuleLevelFunctionRuleCheck:
     def test_check_正常系_class内メソッドは違反としないこと(self):
         # Arrange
         source = "class C:\n    def m(self):\n        pass\n"
-        source_file = make_source_file(source)
+        source_file = SourceFileFactory.make(source)
         rule = NoModuleLevelFunctionRule()
 
         # Act
@@ -387,7 +387,7 @@ class TestNoModuleLevelFunctionRuleCheck:
     def test_check_正常系_AsyncFunctionDefも違反として検出すること(self):
         # Arrange
         source = "async def helper():\n    pass\n"
-        source_file = make_source_file(source)
+        source_file = SourceFileFactory.make(source)
         rule = NoModuleLevelFunctionRule()
 
         # Act
@@ -399,7 +399,7 @@ class TestNoModuleLevelFunctionRuleCheck:
     def test_check_正常系_複数のモジュールレベル関数を定義順に検出すること(self):
         # Arrange
         source = "def a():\n    pass\ndef b():\n    pass\n"
-        source_file = make_source_file(source)
+        source_file = SourceFileFactory.make(source)
         rule = NoModuleLevelFunctionRule()
 
         # Act
@@ -412,7 +412,7 @@ class TestNoModuleLevelFunctionRuleCheck:
     def test_check_正常系_カスタムallow_decoratorsを尊重すること(self):
         # Arrange
         source = "from dataclasses import dataclass\n\n@dataclass\ndef foo():\n    pass\n"
-        source_file = make_source_file(source)
+        source_file = SourceFileFactory.make(source)
         rule = NoModuleLevelFunctionRule(allow_decorators=("dataclass",))
 
         # Act
@@ -424,7 +424,7 @@ class TestNoModuleLevelFunctionRuleCheck:
     def test_check_エッジケース_関数定義なしで空タプルを返すこと(self):
         # Arrange
         source = "x = 1\n"
-        source_file = make_source_file(source)
+        source_file = SourceFileFactory.make(source)
         rule = NoModuleLevelFunctionRule()
 
         # Act
@@ -436,7 +436,7 @@ class TestNoModuleLevelFunctionRuleCheck:
     def test_check_エッジケース_if__name___ブロック内の関数は違反としないこと(self):
         # Arrange
         source = 'if __name__ == "__main__":\n    def helper():\n        pass\n'
-        source_file = make_source_file(source)
+        source_file = SourceFileFactory.make(source)
         rule = NoModuleLevelFunctionRule()
 
         # Act

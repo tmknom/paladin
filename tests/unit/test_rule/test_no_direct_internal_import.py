@@ -15,29 +15,25 @@ from paladin.rule.no_direct_internal_import import (
 )
 from paladin.rule.package_resolver import PackageResolver
 from paladin.rule.types import RuleMeta, SourceFile, SourceFiles
-from tests.unit.test_rule.helper import make_source_file, make_source_files
+from tests.unit.test_rule.helper import SourceFileFactory
 
 
-def _rule(root_packages: tuple[str, ...] = ("paladin",)) -> NoDirectInternalImportRule:
-    """root_packages を prepare() で設定した NoDirectInternalImportRule を返す（テスト用）
-
-    各パッケージ名を src/<pkg>/stub.py 形式の SourceFiles として渡し、
-    PackageResolver.resolve_root_packages() に自動導出させる。
-    """
-    rule = NoDirectInternalImportRule()
-    # テスト用の stub ファイルを用意して prepare() で root_packages を自動導出する
-    stub_files = tuple(
-        SourceFile(
-            file_path=Path(f"src/{pkg}/stub.py"),
-            tree=ast.parse(""),
-            source="",
+class RuleFactory:
+    @staticmethod
+    def make(root_packages: tuple[str, ...] = ("paladin",)) -> NoDirectInternalImportRule:
+        rule = NoDirectInternalImportRule()
+        stub_files = tuple(
+            SourceFile(
+                file_path=Path(f"src/{pkg}/stub.py"),
+                tree=ast.parse(""),
+                source="",
+            )
+            for pkg in root_packages
+            if pkg != "tests"
         )
-        for pkg in root_packages
-        if pkg != "tests"  # tests は常に自動導出されるため不要
-    )
-    stub_source_files = SourceFiles(files=stub_files)
-    rule.prepare(stub_source_files)
-    return rule
+        stub_source_files = SourceFiles(files=stub_files)
+        rule.prepare(stub_source_files)
+        return rule
 
 
 class TestNoDirectInternalImportRuleMeta:
@@ -102,8 +98,8 @@ class TestNoDirectInternalImportRuleCheck:
     )
     def test_check_違反なしのケースで空を返すこと(self, source: str, filename: str) -> None:
         # Arrange
-        source_files = make_source_files((source, filename))
-        rule = _rule(("paladin",))
+        source_files = SourceFileFactory.make_many((source, filename))
+        rule = RuleFactory.make(("paladin",))
 
         # Act
         result = rule.check(source_files)
@@ -115,8 +111,8 @@ class TestNoDirectInternalImportRuleCheck:
         # Arrange
         # root_packages空: _rule(()) を使う特殊ケースのため個別維持
         source = "from paladin.check.orchestrator import CheckOrchestrator\n"
-        source_files = make_source_files((source, "src/other/module.py"))
-        rule = _rule(())
+        source_files = SourceFileFactory.make_many((source, "src/other/module.py"))
+        rule = RuleFactory.make(())
 
         # Act
         result = rule.check(source_files)
@@ -126,7 +122,7 @@ class TestNoDirectInternalImportRuleCheck:
 
     def test_check_エッジケース_空のSourceFilesで空タプルを返すこと(self):
         # Arrange
-        rule = _rule(("paladin",))
+        rule = RuleFactory.make(("paladin",))
 
         # Act
         result = rule.check(SourceFiles(files=()))
@@ -153,8 +149,8 @@ class TestNoDirectInternalImportRuleCheck:
     )
     def test_check_違反ありのケースで1件返すこと(self, source: str, filename: str) -> None:
         # Arrange
-        source_files = make_source_files((source, filename))
-        rule = _rule(("paladin",))
+        source_files = SourceFileFactory.make_many((source, filename))
+        rule = RuleFactory.make(("paladin",))
 
         # Act
         result = rule.check(source_files)
@@ -174,7 +170,7 @@ class TestNoDirectInternalImportRuleCheck:
         tree.body.append(import_node)
         source_file = SourceFile(file_path=Path("src/other/module.py"), tree=tree, source="")
         source_files = SourceFiles(files=(source_file,))
-        rule = _rule(("paladin",))
+        rule = RuleFactory.make(("paladin",))
 
         # Act
         result = rule.check(source_files)
@@ -185,8 +181,8 @@ class TestNoDirectInternalImportRuleCheck:
     def test_check_エッジケース_3階層以上の外部パッケージインポートは検出しないこと(self):
         # Arrange: 3階層だが root_packages 外のパッケージ（L267 到達）
         source = "from urllib.parse.something import quote\n"
-        source_files = make_source_files((source, "src/other/module.py"))
-        rule = _rule(("paladin",))
+        source_files = SourceFileFactory.make_many((source, "src/other/module.py"))
+        rule = RuleFactory.make(("paladin",))
 
         # Act
         result = rule.check(source_files)
@@ -198,11 +194,11 @@ class TestNoDirectInternalImportRuleCheck:
         # Arrange: 2ファイルそれぞれから違反
         source1 = "from paladin.check.orchestrator import CheckOrchestrator\n"
         source2 = "from paladin.rule.types import SourceFile\n"
-        source_files = make_source_files(
+        source_files = SourceFileFactory.make_many(
             (source1, "src/other/module1.py"),
             (source2, "src/other/module2.py"),
         )
-        rule = _rule(("paladin",))
+        rule = RuleFactory.make(("paladin",))
 
         # Act
         result = rule.check(source_files)
@@ -216,10 +212,10 @@ class TestNoDirectInternalImportRuleCheck:
         # Arrange: tests/unit/test_view/test_provider.py から from paladin.view.formatter import X
         # test_view → paladin.view として同一視するため対象外
         source = "from paladin.view.formatter import ViewFormatter\n"
-        source_files = make_source_files(
+        source_files = SourceFileFactory.make_many(
             (source, "tests/unit/test_view/test_provider.py"),
         )
-        rule = _rule(("paladin",))
+        rule = RuleFactory.make(("paladin",))
 
         # Act
         result = rule.check(source_files)
@@ -233,10 +229,10 @@ class TestNoDirectInternalImportRuleCheck:
         # Arrange: tests/unit/test_view/test_provider.py から from paladin.check.orchestrator import X
         # test_view → paladin.view であり paladin.check は別パッケージなので違反
         source = "from paladin.check.orchestrator import CheckOrchestrator\n"
-        source_files = make_source_files(
+        source_files = SourceFileFactory.make_many(
             (source, "tests/unit/test_view/test_provider.py"),
         )
-        rule = _rule(("paladin",))
+        rule = RuleFactory.make(("paladin",))
 
         # Act
         result = rule.check(source_files)
@@ -250,11 +246,11 @@ class TestNoDirectInternalImportRuleCheck:
         # Arrange: paladin/check/__init__.py に from .orchestrator import Foo がある
         init_source = "from .orchestrator import Foo\n"
         import_source = "from paladin.check.orchestrator import Foo\n"
-        source_files = make_source_files(
+        source_files = SourceFileFactory.make_many(
             (init_source, "src/paladin/check/__init__.py"),
             (import_source, "src/other/module.py"),
         )
-        rule = _rule(("paladin",))
+        rule = RuleFactory.make(("paladin",))
 
         # Act
         result = rule.check(source_files)
@@ -268,11 +264,11 @@ class TestNoDirectInternalImportRuleCheck:
         # Arrange: __init__.py が存在するが __all__ も再エクスポートもない
         init_source = "# empty\n"
         import_source = "from paladin.check.orchestrator import CheckOrchestrator\n"
-        source_files = make_source_files(
+        source_files = SourceFileFactory.make_many(
             (init_source, "src/paladin/check/__init__.py"),
             (import_source, "src/other/module.py"),
         )
-        rule = _rule(("paladin",))
+        rule = RuleFactory.make(("paladin",))
 
         # Act
         result = rule.check(source_files)
@@ -286,11 +282,11 @@ class TestNoDirectInternalImportRuleCheck:
         # L280（node.module in package_exports の continue）に到達する
         init_source = '__all__ = ["CheckOrchestrator"]\n'
         import_source = "from paladin.check.orchestrator import CheckOrchestrator\n"
-        source_files = make_source_files(
+        source_files = SourceFileFactory.make_many(
             (init_source, "src/paladin/check/orchestrator/__init__.py"),
             (import_source, "src/other/module.py"),
         )
-        rule = _rule(("paladin",))
+        rule = RuleFactory.make(("paladin",))
 
         # Act
         result = rule.check(source_files)
@@ -310,10 +306,10 @@ class TestNoDirectInternalImportRuleCheck:
 
         # テストファイルは tmp_path 配下に配置して _infer_src_root が src/ を発見できるようにする
         import_source = "from paladin.foundation.fs import FileSystemError\n"
-        source_files = make_source_files(
+        source_files = SourceFileFactory.make_many(
             (import_source, str(tmp_path / "tests" / "unit" / "test_something.py")),
         )
-        rule = _rule(("paladin",))
+        rule = RuleFactory.make(("paladin",))
 
         # Act
         result = rule.check(source_files)
@@ -328,7 +324,7 @@ class TestNoDirectInternalImportRuleCheck:
         # prepare() 後に from paladin.check.orchestrator import X が検出されれば自動導出確認
         import_source = "from paladin.check.orchestrator import CheckOrchestrator\n"
         stub_source = "x = 1\n"
-        source_files = make_source_files(
+        source_files = SourceFileFactory.make_many(
             (import_source, "src/other/module.py"),
             (stub_source, "src/paladin/module.py"),  # paladin を自動導出するため
         )
@@ -368,7 +364,7 @@ class TestSrcRootResolver:
 
     def test_resolve_正常系_srcが存在しない場合はNoneを返すこと(self):
         # Arrange: 合成パス（src/ ディレクトリが実在しない）
-        source_file = make_source_file("x = 1\n", "nonexistent/tests/foo.py")
+        source_file = SourceFileFactory.make("x = 1\n", "nonexistent/tests/foo.py")
         source_files = SourceFiles(files=(source_file,))
 
         # Act
@@ -396,7 +392,9 @@ class TestSubpackageChecker:
         pkg_dir = tmp_path / "src" / "paladin" / "check"
         pkg_dir.mkdir(parents=True)
         (pkg_dir / "__init__.py").write_text("")
-        source_file = make_source_file("from paladin.check import Foo\n", "src/other/module.py")
+        source_file = SourceFileFactory.make(
+            "from paladin.check import Foo\n", "src/other/module.py"
+        )
         module = source_file.absolute_from_imports[0].module
 
         # Act
@@ -409,7 +407,9 @@ class TestSubpackageChecker:
         # Arrange: ディレクトリはあるが __init__.py がない
         pkg_dir = tmp_path / "src" / "paladin" / "check"
         pkg_dir.mkdir(parents=True)
-        source_file = make_source_file("from paladin.check import Foo\n", "src/other/module.py")
+        source_file = SourceFileFactory.make(
+            "from paladin.check import Foo\n", "src/other/module.py"
+        )
         module = source_file.absolute_from_imports[0].module
 
         # Act
@@ -420,7 +420,9 @@ class TestSubpackageChecker:
 
     def test_is_subpackage_正常系_src_rootがNoneの場合はFalseを返すこと(self):
         # Arrange
-        source_file = make_source_file("from paladin.check import Foo\n", "src/other/module.py")
+        source_file = SourceFileFactory.make(
+            "from paladin.check import Foo\n", "src/other/module.py"
+        )
         module = source_file.absolute_from_imports[0].module
 
         # Act
@@ -436,7 +438,7 @@ class TestPackageExportCollector:
     def test_collect_正常系_init_pyからパッケージエクスポートを収集すること(self):
         # Arrange
         init_source = '__all__ = ["Foo"]\n'
-        source_files = make_source_files((init_source, "src/paladin/check/__init__.py"))
+        source_files = SourceFileFactory.make_many((init_source, "src/paladin/check/__init__.py"))
         resolver = PackageResolver()
         extractor = AllExportsExtractor()
 
@@ -449,7 +451,7 @@ class TestPackageExportCollector:
 
     def test_collect_正常系_init_py以外のファイルは無視すること(self):
         # Arrange
-        source_files = make_source_files(("x = 1\n", "src/paladin/check/module.py"))
+        source_files = SourceFileFactory.make_many(("x = 1\n", "src/paladin/check/module.py"))
         resolver = PackageResolver()
         extractor = AllExportsExtractor()
 
@@ -467,7 +469,7 @@ class TestInternalImportDetector:
         # Arrange: package_exports にキーがない場合はヒューリスティック検出
         rule = NoDirectInternalImportRule()
         source = "from paladin.check.orchestrator import CheckOrchestrator\n"
-        source_file = make_source_file(source, "src/other/module.py")
+        source_file = SourceFileFactory.make(source, "src/other/module.py")
         imp = source_file.absolute_from_imports[0]
 
         # Act
@@ -483,7 +485,7 @@ class TestInternalImportDetector:
         # Arrange: package_exports に name が含まれない場合は対象外
         rule = NoDirectInternalImportRule()
         source = "from paladin.check.orchestrator import InternalHelper\n"
-        source_file = make_source_file(source, "src/other/module.py")
+        source_file = SourceFileFactory.make(source, "src/other/module.py")
         imp = source_file.absolute_from_imports[0]
         package_exports = {"paladin.check": {"CheckOrchestrator"}}
 

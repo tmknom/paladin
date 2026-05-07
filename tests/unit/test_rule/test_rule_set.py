@@ -6,24 +6,26 @@ from paladin.rule.rule_set import RuleSet
 from paladin.rule.types import RuleMeta, SourceFiles, Violation, Violations
 from paladin.rule.unused_ignore import UnusedIgnoreRule
 from tests.fake import FakeMultiFileRule, FakePreparableRule, FakeRule
-from tests.unit.test_rule.helper import make_source_files
+from tests.unit.test_rule.helper import SourceFileFactory
 
 
-def _make_violation(
-    file: str = "src/paladin/__init__.py",
-    rule_id: str = "fake-rule",
-    rule_name: str = "Fake Rule",
-) -> Violation:
-    return Violation(
-        file=Path(file),
-        line=1,
-        column=0,
-        rule_id=rule_id,
-        rule_name=rule_name,
-        message="fake message",
-        reason="fake reason",
-        suggestion="fake suggestion",
-    )
+class ViolationFactory:
+    @staticmethod
+    def make(
+        file: str = "src/paladin/__init__.py",
+        rule_id: str = "fake-rule",
+        rule_name: str = "Fake Rule",
+    ) -> Violation:
+        return Violation(
+            file=Path(file),
+            line=1,
+            column=0,
+            rule_id=rule_id,
+            rule_name=rule_name,
+            message="fake message",
+            reason="fake reason",
+            suggestion="fake suggestion",
+        )
 
 
 class TestRuleSet:
@@ -31,10 +33,10 @@ class TestRuleSet:
 
     def test_run_正常系_単一ルールの違反をViolationsとして返すこと(self):
         # Arrange
-        violation = _make_violation()
+        violation = ViolationFactory.make()
         rule = FakeRule(violations=(violation,))
         rule_set = RuleSet(rules=(rule,))
-        source_files = make_source_files(("x = 1\n", "__init__.py"))
+        source_files = SourceFileFactory.make_many(("x = 1\n", "__init__.py"))
 
         # Act
         result = rule_set.run(source_files)
@@ -47,7 +49,7 @@ class TestRuleSet:
         # Arrange
         rule = FakeRule(violations=())
         rule_set = RuleSet(rules=(rule,))
-        source_files = make_source_files(("x = 1\n", "__init__.py"))
+        source_files = SourceFileFactory.make_many(("x = 1\n", "__init__.py"))
 
         # Act
         result = rule_set.run(source_files)
@@ -58,7 +60,7 @@ class TestRuleSet:
 
     def test_run_エッジケース_空のSourceFilesで空のViolationsを返すこと(self):
         # Arrange
-        rule = FakeRule(violations=(_make_violation(),))
+        rule = FakeRule(violations=(ViolationFactory.make(),))
         rule_set = RuleSet(rules=(rule,))
         source_files = SourceFiles(files=())
 
@@ -71,10 +73,10 @@ class TestRuleSet:
 
     def test_run_正常系_複数ファイルに同じルールを適用して違反を集約すること(self):
         # Arrange
-        violation = _make_violation()
+        violation = ViolationFactory.make()
         rule = FakeRule(violations=(violation,))
         rule_set = RuleSet(rules=(rule,))
-        source_files = make_source_files(
+        source_files = SourceFileFactory.make_many(
             ("x = 1\n", "a/__init__.py"),
             ("y = 2\n", "b/__init__.py"),
         )
@@ -88,12 +90,12 @@ class TestRuleSet:
 
     def test_run_正常系_disabled_rule_idsに該当するルールの違反をスキップすること(self):
         # Arrange
-        violation_a = _make_violation(rule_id="rule-a", rule_name="Rule A")
-        violation_b = _make_violation(rule_id="rule-b", rule_name="Rule B")
+        violation_a = ViolationFactory.make(rule_id="rule-a", rule_name="Rule A")
+        violation_b = ViolationFactory.make(rule_id="rule-b", rule_name="Rule B")
         rule_a = FakeRule(rule_id="rule-a", violations=(violation_a,))
         rule_b = FakeRule(rule_id="rule-b", violations=(violation_b,))
         rule_set = RuleSet(rules=(rule_a, rule_b))
-        source_files = make_source_files(("x = 1\n", "__init__.py"))
+        source_files = SourceFileFactory.make_many(("x = 1\n", "__init__.py"))
 
         # Act
         result = rule_set.run(source_files, disabled_rule_ids=frozenset({"rule-a"}))
@@ -104,10 +106,10 @@ class TestRuleSet:
 
     def test_run_正常系_disabled_rule_idsのデフォルト値で全ルール実行すること(self):
         # Arrange
-        violation = _make_violation()
+        violation = ViolationFactory.make()
         rule = FakeRule(violations=(violation,))
         rule_set = RuleSet(rules=(rule,))
-        source_files = make_source_files(("x = 1\n", "__init__.py"))
+        source_files = SourceFileFactory.make_many(("x = 1\n", "__init__.py"))
 
         # Act: デフォルト引数（引数なし）で呼び出す
         result = rule_set.run(source_files)
@@ -185,11 +187,13 @@ class TestRuleSetPerFileDisabled:
         # FakeRule は全ファイルに violations を返すため、per_file_disabled によってファイル別に
         # ルールの実行自体がスキップされる（違反数 = ファイル数 - 無効化ファイル数）
         file_a = Path("file_a.py")
-        violation = _make_violation(rule_id="rule-a", rule_name="Rule A")
+        violation = ViolationFactory.make(rule_id="rule-a", rule_name="Rule A")
         rule_a = FakeRule(rule_id="rule-a", violations=(violation,))
         rule_b = FakeRule(rule_id="rule-b", violations=(violation,))
         rule_set = RuleSet(rules=(rule_a, rule_b))
-        source_files = make_source_files(("x = 1\n", "file_a.py"), ("y = 2\n", "file_b.py"))
+        source_files = SourceFileFactory.make_many(
+            ("x = 1\n", "file_a.py"), ("y = 2\n", "file_b.py")
+        )
 
         # Act: file_a.py では rule-a を無効化。file_b.py では全ルール有効
         result = rule_set.run(
@@ -209,10 +213,12 @@ class TestRuleSetPerFileDisabled:
         # Arrange: file_a.py は per_file_disabled で全有効（frozenset()）、
         # file_b.py は per_file_disabled にエントリなし → disabled_rule_ids にフォールバック
         file_a = Path("file_a.py")
-        violation = _make_violation(rule_id="rule-a", rule_name="Rule A")
+        violation = ViolationFactory.make(rule_id="rule-a", rule_name="Rule A")
         rule_a = FakeRule(rule_id="rule-a", violations=(violation,))
         rule_set = RuleSet(rules=(rule_a,))
-        source_files = make_source_files(("x = 1\n", "file_a.py"), ("y = 2\n", "file_b.py"))
+        source_files = SourceFileFactory.make_many(
+            ("x = 1\n", "file_a.py"), ("y = 2\n", "file_b.py")
+        )
 
         # Act: file_a.py は空 set（全有効）、file_b.py はフォールバックで rule-a 無効
         result = rule_set.run(
@@ -235,10 +241,10 @@ class TestRuleSetPerFileDisabled:
         self, per_file_disabled: dict[Path, frozenset[str]] | None
     ):
         # Arrange
-        violation = _make_violation()
+        violation = ViolationFactory.make()
         rule_a = FakeRule(rule_id="rule-a", violations=(violation,))
         rule_set = RuleSet(rules=(rule_a,))
-        source_files = make_source_files(("x = 1\n", "__init__.py"))
+        source_files = SourceFileFactory.make_many(("x = 1\n", "__init__.py"))
 
         # Act
         result = rule_set.run(
@@ -256,10 +262,10 @@ class TestRuleSetMultiFileRules:
 
     def test_run_正常系_multi_file_rulesの違反をViolationsとして返すこと(self):
         # Arrange
-        violation = _make_violation()
+        violation = ViolationFactory.make()
         multi_rule = FakeMultiFileRule(violations=(violation,))
         rule_set = RuleSet(rules=(), multi_file_rules=(multi_rule,))
-        source_files = make_source_files(("x = 1\n", "__init__.py"))
+        source_files = SourceFileFactory.make_many(("x = 1\n", "__init__.py"))
 
         # Act
         result = rule_set.run(source_files)
@@ -270,11 +276,11 @@ class TestRuleSetMultiFileRules:
 
     def test_run_正常系_単一ファイルルールと複数ファイルルールの違反が集約されること(self):
         # Arrange
-        violation = _make_violation()
+        violation = ViolationFactory.make()
         rule = FakeRule(violations=(violation,))
         multi_rule = FakeMultiFileRule(violations=(violation,))
         rule_set = RuleSet(rules=(rule,), multi_file_rules=(multi_rule,))
-        source_files = make_source_files(("x = 1\n", "__init__.py"))
+        source_files = SourceFileFactory.make_many(("x = 1\n", "__init__.py"))
 
         # Act
         result = rule_set.run(source_files)
@@ -284,10 +290,10 @@ class TestRuleSetMultiFileRules:
 
     def test_run_正常系_multi_file_rulesがdisabled_rule_idsでスキップされること(self):
         # Arrange
-        violation = _make_violation()
+        violation = ViolationFactory.make()
         multi_rule = FakeMultiFileRule(rule_id="multi-rule", violations=(violation,))
         rule_set = RuleSet(rules=(), multi_file_rules=(multi_rule,))
-        source_files = make_source_files(("x = 1\n", "__init__.py"))
+        source_files = SourceFileFactory.make_many(("x = 1\n", "__init__.py"))
 
         # Act
         result = rule_set.run(source_files, disabled_rule_ids=frozenset({"multi-rule"}))
@@ -297,10 +303,10 @@ class TestRuleSetMultiFileRules:
 
     def test_run_エッジケース_multi_file_rulesにper_file_disabledが適用されないこと(self):
         # Arrange: per_file_disabled で multi-rule を無効化しようとしても効果なし
-        violation = _make_violation()
+        violation = ViolationFactory.make()
         multi_rule = FakeMultiFileRule(rule_id="multi-rule", violations=(violation,))
         rule_set = RuleSet(rules=(), multi_file_rules=(multi_rule,))
-        source_files = make_source_files(("x = 1\n", "__init__.py"))
+        source_files = SourceFileFactory.make_many(("x = 1\n", "__init__.py"))
 
         # Act: per_file_disabled に multi-rule を指定しても multi_file_rules には影響しない
         result = rule_set.run(
@@ -357,7 +363,7 @@ class TestRuleSetPreparableRule:
         # Arrange
         preparable_rule = FakePreparableRule()
         rule_set = RuleSet(rules=(preparable_rule,))
-        source_files = make_source_files(("x = 1\n", "__init__.py"))
+        source_files = SourceFileFactory.make_many(("x = 1\n", "__init__.py"))
 
         # Act
         rule_set.run(source_files)
@@ -369,17 +375,17 @@ class TestRuleSetPreparableRule:
         # Arrange: 通常の FakeRule は prepare() を持たない
         regular_rule = FakeRule()
         rule_set = RuleSet(rules=(regular_rule,))
-        source_files = make_source_files(("x = 1\n", "__init__.py"))
+        source_files = SourceFileFactory.make_many(("x = 1\n", "__init__.py"))
 
         # Act / Assert: 例外が発生しないこと（prepare() 属性がなくても問題ない）
         rule_set.run(source_files)
 
     def test_run_正常系_prepare後にcheckが実行されること(self):
         # Arrange: prepare() 後に check() が実行されることを violations で確認
-        violation = _make_violation()
+        violation = ViolationFactory.make()
         preparable_rule = FakePreparableRule(violations=(violation,))
         rule_set = RuleSet(rules=(preparable_rule,))
-        source_files = make_source_files(("x = 1\n", "__init__.py"))
+        source_files = SourceFileFactory.make_many(("x = 1\n", "__init__.py"))
 
         # Act
         result = rule_set.run(source_files)
@@ -393,7 +399,7 @@ class TestRuleSetPreparableRule:
         rule_a = FakePreparableRule(rule_id="preparable-a")
         rule_b = FakePreparableRule(rule_id="preparable-b")
         rule_set = RuleSet(rules=(rule_a, rule_b))
-        source_files = make_source_files(("x = 1\n", "__init__.py"))
+        source_files = SourceFileFactory.make_many(("x = 1\n", "__init__.py"))
 
         # Act
         rule_set.run(source_files)
@@ -410,7 +416,7 @@ class TestRuleSetUnusedIgnore:
         # Arrange: ignore コメントがあるが、対応する raw_violations が空
         unused_ignore_rule = UnusedIgnoreRule()
         rule_set = RuleSet(rules=(), unused_ignore_rule=unused_ignore_rule)
-        source_files = make_source_files(("# paladin: ignore[rule-a]\nx = 1\n", "f.py"))
+        source_files = SourceFileFactory.make_many(("# paladin: ignore[rule-a]\nx = 1\n", "f.py"))
         raw_violations = Violations(items=())
 
         # Act
@@ -427,7 +433,7 @@ class TestRuleSetUnusedIgnore:
         # Arrange
         unused_ignore_rule = UnusedIgnoreRule()
         rule_set = RuleSet(rules=(), unused_ignore_rule=unused_ignore_rule)
-        source_files = make_source_files(("# paladin: ignore[rule-a]\nx = 1\n", "f.py"))
+        source_files = SourceFileFactory.make_many(("# paladin: ignore[rule-a]\nx = 1\n", "f.py"))
         raw_violations = Violations(items=())
 
         # Act
@@ -443,7 +449,7 @@ class TestRuleSetUnusedIgnore:
     ):
         # Arrange
         rule_set = RuleSet(rules=(), unused_ignore_rule=None)
-        source_files = make_source_files(("# paladin: ignore[rule-a]\nx = 1\n", "f.py"))
+        source_files = SourceFileFactory.make_many(("# paladin: ignore[rule-a]\nx = 1\n", "f.py"))
         raw_violations = Violations(items=())
 
         # Act

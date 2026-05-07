@@ -11,17 +11,18 @@ from paladin.rule.no_cross_package_import import (
     NoCrossPackageImportRule,
 )
 from paladin.rule.types import RuleMeta, SourceFiles
-from tests.unit.test_rule.helper import make_source_files
+from tests.unit.test_rule.helper import SourceFileFactory
 
 
-def _rule_with_prepare(
-    source_files: SourceFiles,
-    allow_dirs: tuple[str, ...] = ("src/myapp/rule/",),
-) -> NoCrossPackageImportRule:
-    """prepare() を呼んで root_packages を自動導出したルールを返す"""
-    rule = NoCrossPackageImportRule(allow_dirs=allow_dirs)
-    rule.prepare(source_files)
-    return rule
+class RuleFactory:
+    @staticmethod
+    def with_prepare(
+        source_files: SourceFiles,
+        allow_dirs: tuple[str, ...] = ("src/myapp/rule/",),
+    ) -> NoCrossPackageImportRule:
+        rule = NoCrossPackageImportRule(allow_dirs=allow_dirs)
+        rule.prepare(source_files)
+        return rule
 
 
 class TestNoCrossPackageImportRuleMeta:
@@ -45,12 +46,12 @@ class TestNoCrossPackageImportRuleCheck:
 
     def test_check_正常系_違反フィールド値が正しいこと_from_import(self):
         # Arrange
-        source_files = make_source_files(
+        source_files = SourceFileFactory.make_many(
             ("from myapp.check import OutputFormat\n", "src/myapp/view/handler.py"),
             ("x = 1\n", "src/myapp/check/__init__.py"),
             ("x = 1\n", "src/myapp/view/__init__.py"),
         )
-        rule = _rule_with_prepare(source_files, allow_dirs=("src/myapp/rule/",))
+        rule = RuleFactory.with_prepare(source_files, allow_dirs=("src/myapp/rule/",))
 
         # Act
         result = rule.check(source_files.files[0])
@@ -66,12 +67,12 @@ class TestNoCrossPackageImportRuleCheck:
 
     def test_check_正常系_allow_dirs未設定の場合は全ファイルで違反を検出すること(self):
         # Arrange
-        source_files = make_source_files(
+        source_files = SourceFileFactory.make_many(
             ("from myapp.check import OutputFormat\n", "src/myapp/view/handler.py"),
             ("x = 1\n", "src/myapp/check/__init__.py"),
             ("x = 1\n", "src/myapp/view/__init__.py"),
         )
-        rule = _rule_with_prepare(source_files, allow_dirs=())
+        rule = RuleFactory.with_prepare(source_files, allow_dirs=())
 
         # Act
         result = rule.check(source_files.files[0])
@@ -82,11 +83,11 @@ class TestNoCrossPackageImportRuleCheck:
     def test_check_正常系_エントリーポイントファイルは違反を報告しないこと(self):
         # Arrange: トップレベルに def main() がある
         source = "from myapp.check import OutputFormat\n\ndef main():\n    pass\n"
-        source_files = make_source_files(
+        source_files = SourceFileFactory.make_many(
             (source, "src/myapp/main.py"),
             ("x = 1\n", "src/myapp/check/__init__.py"),
         )
-        rule = _rule_with_prepare(source_files, allow_dirs=("src/myapp/rule/",))
+        rule = RuleFactory.with_prepare(source_files, allow_dirs=("src/myapp/rule/",))
 
         # Act
         result = rule.check(source_files.files[0])
@@ -99,12 +100,12 @@ class TestNoCrossPackageImportRuleCheck:
     ):
         # Arrange: def helper() のみ（def main() はない）
         source = "from myapp.check import OutputFormat\n\ndef helper():\n    pass\n"
-        source_files = make_source_files(
+        source_files = SourceFileFactory.make_many(
             (source, "src/myapp/view/handler.py"),
             ("x = 1\n", "src/myapp/check/__init__.py"),
             ("x = 1\n", "src/myapp/view/__init__.py"),
         )
-        rule = _rule_with_prepare(source_files, allow_dirs=("src/myapp/rule/",))
+        rule = RuleFactory.with_prepare(source_files, allow_dirs=("src/myapp/rule/",))
 
         # Act
         result = rule.check(source_files.files[0])
@@ -114,12 +115,12 @@ class TestNoCrossPackageImportRuleCheck:
 
     def test_check_正常系_末尾スラッシュなしのallow_dirsが正規化されて機能すること(self):
         # Arrange: 末尾スラッシュなしで指定
-        source_files = make_source_files(
+        source_files = SourceFileFactory.make_many(
             ("from myapp.rule import RuleMeta\n", "src/myapp/view/handler.py"),
             ("x = 1\n", "src/myapp/rule/__init__.py"),
             ("x = 1\n", "src/myapp/view/__init__.py"),
         )
-        rule = _rule_with_prepare(source_files, allow_dirs=("src/myapp/rule",))
+        rule = RuleFactory.with_prepare(source_files, allow_dirs=("src/myapp/rule",))
 
         # Act
         result = rule.check(source_files.files[0])
@@ -129,12 +130,14 @@ class TestNoCrossPackageImportRuleCheck:
 
     def test_check_正常系_複数のallow_dirsが機能すること(self):
         # Arrange: 2つの許可ディレクトリのうち1つに一致すれば許可
-        source_files = make_source_files(
+        source_files = SourceFileFactory.make_many(
             ("from myapp.rule import RuleMeta\n", "src/myapp/view/handler.py"),
             ("x = 1\n", "src/myapp/rule/__init__.py"),
             ("x = 1\n", "src/myapp/view/__init__.py"),
         )
-        rule = _rule_with_prepare(source_files, allow_dirs=("src/myapp/config/", "src/myapp/rule/"))
+        rule = RuleFactory.with_prepare(
+            source_files, allow_dirs=("src/myapp/config/", "src/myapp/rule/")
+        )
 
         # Act
         result = rule.check(source_files.files[0])
@@ -147,14 +150,14 @@ class TestNoCrossPackageImportRuleCheck:
     ):
         # Arrange: tests/unit/test_check/test_orchestrator.py から paladin.check.formatter をインポート
         # → テストファイルは paladin.check と同一視されるため違反なし
-        source_files = make_source_files(
+        source_files = SourceFileFactory.make_many(
             (
                 "from myapp.check.formatter import CheckFormatterFactory\n",
                 "tests/unit/test_check/test_orchestrator.py",
             ),
             ("x = 1\n", "src/myapp/check/__init__.py"),
         )
-        rule = _rule_with_prepare(source_files, allow_dirs=("src/myapp/rule/",))
+        rule = RuleFactory.with_prepare(source_files, allow_dirs=("src/myapp/rule/",))
 
         # Act
         result = rule.check(source_files.files[0])
@@ -168,14 +171,14 @@ class TestNoCrossPackageImportRuleCheck:
         # Arrange: tests/unit/test_check/test_ignore/test_directive.py から
         # myapp.check.ignore.directive をインポート
         # → テストファイルは myapp.check と同一視されるため違反なし
-        source_files = make_source_files(
+        source_files = SourceFileFactory.make_many(
             (
                 "from myapp.check.ignore.directive import FileIgnoreDirective\n",
                 "tests/unit/test_check/test_ignore/test_directive.py",
             ),
             ("x = 1\n", "src/myapp/check/__init__.py"),
         )
-        rule = _rule_with_prepare(source_files, allow_dirs=("src/myapp/rule/",))
+        rule = RuleFactory.with_prepare(source_files, allow_dirs=("src/myapp/rule/",))
 
         # Act
         result = rule.check(source_files.files[0])
@@ -186,7 +189,7 @@ class TestNoCrossPackageImportRuleCheck:
     def test_check_正常系_テストファイルから異なるパッケージのインポートは違反を返すこと(self):
         # Arrange: tests/unit/test_check/test_orchestrator.py から myapp.view.formatter をインポート
         # → テストファイルは myapp.check と同一視されるが myapp.view は別パッケージのため違反
-        source_files = make_source_files(
+        source_files = SourceFileFactory.make_many(
             (
                 "from myapp.view.formatter import ViewFormatter\n",
                 "tests/unit/test_check/test_orchestrator.py",
@@ -194,7 +197,7 @@ class TestNoCrossPackageImportRuleCheck:
             ("x = 1\n", "src/myapp/check/__init__.py"),
             ("x = 1\n", "src/myapp/view/__init__.py"),
         )
-        rule = _rule_with_prepare(source_files, allow_dirs=("src/myapp/rule/",))
+        rule = RuleFactory.with_prepare(source_files, allow_dirs=("src/myapp/rule/",))
 
         # Act
         result = rule.check(source_files.files[0])
@@ -280,8 +283,8 @@ class TestNoCrossPackageImportRuleCheck:
         self, sources_and_files: list[tuple[str, str]], check_index: int
     ) -> None:
         # Arrange
-        source_files = make_source_files(*sources_and_files)
-        rule = _rule_with_prepare(source_files, allow_dirs=("src/myapp/rule/",))
+        source_files = SourceFileFactory.make_many(*sources_and_files)
+        rule = RuleFactory.with_prepare(source_files, allow_dirs=("src/myapp/rule/",))
 
         # Act
         result = rule.check(source_files.files[check_index])
@@ -314,8 +317,8 @@ class TestNoCrossPackageImportRuleCheck:
         self, sources_and_files: list[tuple[str, str]]
     ) -> None:
         # Arrange
-        source_files = make_source_files(*sources_and_files)
-        rule = _rule_with_prepare(source_files, allow_dirs=("src/myapp/rule/",))
+        source_files = SourceFileFactory.make_many(*sources_and_files)
+        rule = RuleFactory.with_prepare(source_files, allow_dirs=("src/myapp/rule/",))
 
         # Act
         result = rule.check(source_files.files[0])
@@ -409,12 +412,12 @@ class TestCrossPackageImportDetector:
     def test_detect_from_import_正常系_複数名で複数Violationを返すこと(self):
         # Arrange
         source = "from myapp.check import OutputFormat, Rule\n"
-        source_files = make_source_files(
+        source_files = SourceFileFactory.make_many(
             (source, "src/myapp/view/handler.py"),
             ("x = 1\n", "src/myapp/check/__init__.py"),
             ("x = 1\n", "src/myapp/view/__init__.py"),
         )
-        rule = _rule_with_prepare(source_files, allow_dirs=("src/myapp/rule/",))
+        rule = RuleFactory.with_prepare(source_files, allow_dirs=("src/myapp/rule/",))
         source_file = source_files.files[0]
         stmt = source_file.imports[0]
         import_module = ModulePath("myapp.check")
@@ -431,12 +434,12 @@ class TestCrossPackageImportDetector:
     def test_detect_plain_import_正常系_Violationを返すこと(self):
         # Arrange
         source = "import myapp.check.context\n"
-        source_files = make_source_files(
+        source_files = SourceFileFactory.make_many(
             (source, "src/myapp/view/handler.py"),
             ("x = 1\n", "src/myapp/check/__init__.py"),
             ("x = 1\n", "src/myapp/view/__init__.py"),
         )
-        rule = _rule_with_prepare(source_files, allow_dirs=("src/myapp/rule/",))
+        rule = RuleFactory.with_prepare(source_files, allow_dirs=("src/myapp/rule/",))
         source_file = source_files.files[0]
         stmt = source_file.imports[0]
 

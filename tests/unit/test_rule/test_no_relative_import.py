@@ -2,7 +2,7 @@ import pytest
 
 from paladin.rule.no_relative_import import NoRelativeImportRule, RelativeImportDetector
 from paladin.rule.types import RuleMeta
-from tests.unit.test_rule.helper import make_source_file
+from tests.unit.test_rule.helper import SourceFileFactory
 
 
 class TestNoRelativeImportRuleMeta:
@@ -28,7 +28,7 @@ class TestNoRelativeImportRuleCheck:
         # Arrange
         rule = NoRelativeImportRule()
         source = "from . import Foo\nfrom ..bar import Baz\n"
-        source_file = make_source_file(source)
+        source_file = SourceFileFactory.make(source)
 
         # Act
         result = rule.check(source_file)
@@ -47,7 +47,7 @@ class TestNoRelativeImportRuleCheck:
     def test_check_違反なしのケースで空を返すこと(self, source: str) -> None:
         # Arrange
         rule = NoRelativeImportRule()
-        source_file = make_source_file(source)
+        source_file = SourceFileFactory.make(source)
 
         # Act
         result = rule.check(source_file)
@@ -63,7 +63,7 @@ class TestRelativeImportDetector:
         # Arrange
         rule = NoRelativeImportRule()
         source = "from .module import Foo\n"
-        source_file = make_source_file(source)
+        source_file = SourceFileFactory.make(source)
         stmt = source_file.imports[0]
 
         # Act / Assert

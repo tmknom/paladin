@@ -4,7 +4,7 @@ import pytest
 
 from paladin.rule.no_mock_usage import MockUsageDetector, NoMockUsageRule
 from paladin.rule.types import RuleMeta
-from tests.unit.test_rule.helper import make_source_file
+from tests.unit.test_rule.helper import SourceFileFactory
 
 
 class TestNoMockUsageRuleMeta:
@@ -30,7 +30,7 @@ class TestNoMockUsageRuleCheck:
         # Arrange
         rule = NoMockUsageRule()
         source = "from unittest.mock import Mock\n"
-        source_file = make_source_file(source)
+        source_file = SourceFileFactory.make(source)
 
         # Act
         result = rule.check(source_file)
@@ -48,7 +48,7 @@ class TestNoMockUsageRuleCheck:
         # Arrange
         rule = NoMockUsageRule()
         source = "from unittest.mock import Mock, MagicMock\n"
-        source_file = make_source_file(source)
+        source_file = SourceFileFactory.make(source)
 
         # Act
         result = rule.check(source_file)
@@ -60,7 +60,7 @@ class TestNoMockUsageRuleCheck:
         # Arrange: patchとMockの混合でMockのみ検出
         rule = NoMockUsageRule()
         source = "from unittest.mock import patch, Mock\n"
-        source_file = make_source_file(source)
+        source_file = SourceFileFactory.make(source)
 
         # Act
         result = rule.check(source_file)
@@ -80,7 +80,7 @@ class TestNoMockUsageRuleCheck:
     def test_check_違反ありのケースで1件返すこと(self, source: str) -> None:
         # Arrange
         rule = NoMockUsageRule()
-        source_file = make_source_file(source)
+        source_file = SourceFileFactory.make(source)
 
         # Act
         result = rule.check(source_file)
@@ -96,7 +96,7 @@ class TestMockUsageDetector:
         # Arrange
         rule = NoMockUsageRule()
         source = "from unittest.mock import Mock\n"
-        source_file = make_source_file(source)
+        source_file = SourceFileFactory.make(source)
         stmt = source_file.imports[0]
         imported = stmt.names[0]
 
@@ -111,7 +111,7 @@ class TestMockUsageDetector:
         # Arrange
         rule = NoMockUsageRule()
         source = "from os import path\n"
-        source_file = make_source_file(source)
+        source_file = SourceFileFactory.make(source)
         stmt = source_file.imports[0]
         imported = stmt.names[0]
 
@@ -125,7 +125,7 @@ class TestMockUsageDetector:
         # Arrange
         rule = NoMockUsageRule()
         source = "import unittest.mock\n"
-        source_file = make_source_file(source)
+        source_file = SourceFileFactory.make(source)
         stmt = source_file.imports[0]
         imported = stmt.names[0]
 
@@ -140,7 +140,7 @@ class TestMockUsageDetector:
         # Arrange
         rule = NoMockUsageRule()
         source = "import os\n"
-        source_file = make_source_file(source)
+        source_file = SourceFileFactory.make(source)
         stmt = source_file.imports[0]
         imported = stmt.names[0]
 

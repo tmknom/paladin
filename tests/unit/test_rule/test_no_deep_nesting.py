@@ -11,7 +11,7 @@ from paladin.rule.no_deep_nesting import (
     NoDeepNestingRule,
 )
 from paladin.rule.types import RuleMeta
-from tests.unit.test_rule.helper import make_source_file
+from tests.unit.test_rule.helper import SourceFileFactory
 
 
 class TestFunctionCollector:
@@ -377,7 +377,7 @@ class TestNestingDetector:
     def test_detect_正常系_閾値未満でNoneを返すこと(self):
         # Arrange
         rule = NoDeepNestingRule()
-        source_file = make_source_file("def foo():\n    pass\n")
+        source_file = SourceFileFactory.make("def foo():\n    pass\n")
         scope = self._make_scope("def foo():\n    pass\n")
 
         # Act
@@ -391,7 +391,7 @@ class TestNestingDetector:
     def test_detect_正常系_メソッドのViolationメッセージにクラス名_メソッド名が含まれること(self):
         # Arrange
         rule = NoDeepNestingRule()
-        source_file = make_source_file("def method():\n    pass\n")
+        source_file = SourceFileFactory.make("def method():\n    pass\n")
         scope = self._make_scope("def method():\n    pass\n", class_name="MyClass")
 
         # Act
@@ -405,7 +405,7 @@ class TestNestingDetector:
     def test_detect_正常系_関数のViolationメッセージに関数名のみが含まれること(self):
         # Arrange
         rule = NoDeepNestingRule()
-        source_file = make_source_file("def foo():\n    pass\n")
+        source_file = SourceFileFactory.make("def foo():\n    pass\n")
         scope = self._make_scope("def foo():\n    pass\n", class_name=None)
 
         # Act
@@ -446,7 +446,7 @@ class TestNoDeepNestingRuleCheck:
             "            if True:\n"
             "                pass\n"
         )
-        source_file = make_source_file(source)
+        source_file = SourceFileFactory.make(source)
 
         # Act
         result = rule.check(source_file)
@@ -477,7 +477,7 @@ class TestNoDeepNestingRuleCheck:
             "                for z in []:\n"
             "                    pass\n"
         )
-        source_file = make_source_file(source)
+        source_file = SourceFileFactory.make(source)
 
         # Act
         result = rule.check(source_file)

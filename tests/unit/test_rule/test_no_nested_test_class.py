@@ -8,29 +8,30 @@ from paladin.rule.no_nested_test_class import (
     NoNestedTestClassRule,
 )
 from paladin.rule.types import RuleMeta
-from tests.unit.test_rule.helper import make_source_file, make_test_source_file
+from tests.unit.test_rule.helper import SourceFileFactory
 
 
-def _make_class_def(name: str, lineno: int = 1) -> ast.ClassDef:
-    """テスト用の ast.ClassDef ノードを生成する"""
-    source = f"class {name}:\n    pass"
-    tree = ast.parse(source)
-    for node in ast.walk(tree):
-        if isinstance(node, ast.ClassDef):
-            node.lineno = lineno
-            return node
-    raise AssertionError(f"ast.ClassDef が見つかりません: {name!r}")
+class ClassDefFactory:
+    @staticmethod
+    def make(name: str, lineno: int = 1) -> ast.ClassDef:
+        source = f"class {name}:\n    pass"
+        tree = ast.parse(source)
+        for node in ast.walk(tree):
+            if isinstance(node, ast.ClassDef):
+                node.lineno = lineno
+                return node
+        raise AssertionError(f"ast.ClassDef が見つかりません: {name!r}")
 
-
-def _make_meta() -> RuleMeta:
-    return RuleMeta(
-        rule_id="no-nested-test-class",
-        rule_name="No Nested Test Class",
-        summary="テストクラス内へのクラスのネストを禁止する",
-        intent="テストクラスのネストは可読性を下げるため、フラットな構造を維持する",
-        guidance="テストファイル内のトップレベルクラスの body に ClassDef が存在する場合に違反を検出する",
-        suggestion="ネストされたクラスをトップレベルのテストクラスとして独立させてください",
-    )
+    @staticmethod
+    def meta() -> RuleMeta:
+        return RuleMeta(
+            rule_id="no-nested-test-class",
+            rule_name="No Nested Test Class",
+            summary="テストクラス内へのクラスのネストを禁止する",
+            intent="テストクラスのネストは可読性を下げるため、フラットな構造を維持する",
+            guidance="テストファイル内のトップレベルクラスの body に ClassDef が存在する場合に違反を検出する",
+            suggestion="ネストされたクラスをトップレベルのテストクラスとして独立させてください",
+        )
 
 
 class TestNestedTestClassCollector:
@@ -124,10 +125,12 @@ class TestNestedClassDetector:
 
     def test_detect_正常系_Violationが正しく生成されること(self):
         # Arrange
-        outer_class = _make_class_def("TestOuter", lineno=1)
-        inner_class = _make_class_def("InnerClass", lineno=5)
-        meta = _make_meta()
-        source_file = make_test_source_file("class TestOuter:\n    class InnerClass:\n        pass")
+        outer_class = ClassDefFactory.make("TestOuter", lineno=1)
+        inner_class = ClassDefFactory.make("InnerClass", lineno=5)
+        meta = ClassDefFactory.meta()
+        source_file = SourceFileFactory.make_test(
+            "class TestOuter:\n    class InnerClass:\n        pass"
+        )
 
         # Act
         result = NestedClassDetector.detect(outer_class, inner_class, meta, source_file)
@@ -146,7 +149,7 @@ class TestNoNestedTestClassRuleCheck:
         # Arrange
         rule = NoNestedTestClassRule()
         source = "class TestOuter:\n    class InnerClass:\n        pass\n"
-        source_file = make_test_source_file(source)
+        source_file = SourceFileFactory.make_test(source)
 
         # Act
         result = rule.check(source_file)
@@ -161,7 +164,7 @@ class TestNoNestedTestClassRuleCheck:
         # Arrange
         rule = NoNestedTestClassRule()
         source = "class Outer:\n    class Inner:\n        pass\n"
-        source_file = make_source_file(source)
+        source_file = SourceFileFactory.make(source)
 
         # Act
         result = rule.check(source_file)
