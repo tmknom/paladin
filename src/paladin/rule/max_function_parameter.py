@@ -3,16 +3,21 @@
 import ast
 from dataclasses import dataclass
 
-from paladin.rule.types import RuleMeta, SourceFile, Violation
+from paladin.rule.types import DetectionContext, RuleMeta, SourceFile, Violation
 
 _DEFAULT_MAX_PARAMETERS: int = 3
-_DEFAULT_ALLOW_DECORATORS: tuple[str, ...] = ("pytest.fixture", "fixture")
+_DEFAULT_ALLOW_DECORATORS: tuple[str, ...] = (
+    "pytest.fixture",
+    "fixture",
+    "app.command",
+    "app.callback",
+)
 
 _REASON = "引数が多い関数はプリミティブな値をそのまま受け渡している兆候であり、関連する値をまとめたクラスへのカプセル化機会を逃しています"
 _CONFIG_EXAMPLE = (
     "[tool.paladin.rule.max-function-parameter]\n"
     "max-parameters = 3\n"
-    'allow-decorators = ["pytest.fixture", "fixture"]'
+    'allow-decorators = ["pytest.fixture", "fixture", "app.command", "app.callback"]'
 )
 _DETECTION_EXAMPLE = (
     "# 違反: self を除いた引数が4つで上限3を超えている\n"
@@ -155,12 +160,11 @@ class ParameterLimitDetector:
     """引数数と上限の閾値判定を行う"""
 
     @staticmethod
-    def detect(
+    def detect(  # paladin: ignore[max-function-parameter]
         scope: FunctionScope,
         count: int,
         limit: int,
-        meta: RuleMeta,
-        source_file: SourceFile,
+        ctx: DetectionContext,
     ) -> Violation | None:
         """Count が limit を超えた場合に Violation を返す。そうでなければ None を返す"""
         if count <= limit:
@@ -168,12 +172,7 @@ class ParameterLimitDetector:
         message = (
             f"メソッド/関数 `{scope.node.name}` の引数は `{count}` 個です。上限は `{limit}` 個です"
         )
-        return meta.create_violation_at(
-            location=source_file.location(scope.node.lineno, scope.node.col_offset),
-            message=message,
-            reason=_REASON,
-            suggestion=meta.suggestion,
-        )
+        return ctx.violation_at(scope.node, message=message, reason=_REASON)
 
 
 class MaxFunctionParameterRule:
@@ -225,14 +224,13 @@ class MaxFunctionParameterRule:
             3. ParameterCounter で引数数を算出する
             4. ParameterLimitDetector で上限超過を判定し Violation を生成する
         """
+        ctx = DetectionContext(meta=self._meta, source_file=source_file)
         violations: list[Violation] = []
         for scope in FunctionCollector.collect(source_file.tree):
             if DecoratorAllowChecker.is_allowed(scope.node, self._allow):
                 continue
             count = ParameterCounter.count(scope)
-            violation = ParameterLimitDetector.detect(
-                scope, count, self._max, self._meta, source_file
-            )
+            violation = ParameterLimitDetector.detect(scope, count, self._max, ctx)
             if violation is not None:
                 violations.append(violation)
         return tuple(violations)

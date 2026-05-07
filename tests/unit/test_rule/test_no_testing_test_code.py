@@ -9,7 +9,7 @@ from paladin.rule.no_testing_test_code import (
     TestImportCollector,
     TestTargetDetector,
 )
-from paladin.rule.types import RuleMeta, SourceFiles
+from paladin.rule.types import DetectionContext, RuleMeta, SourceFiles
 from tests.unit.test_rule.helper import SourceFileFactory
 
 
@@ -201,11 +201,12 @@ class TestTestTargetDetector:
             "    pass\n"
         )
         source_file = SourceFileFactory.make(source, "tests/test_fs.py")
+        ctx = DetectionContext(meta=rule.meta, source_file=source_file)
         test_imports = TestImportCollector.collect(source_file)
         node = next(n for n in source_file.tree.body if isinstance(n, ast.ClassDef))
 
         # Act
-        result = TestTargetDetector.detect_class(source_file, node, test_imports, rule.meta)
+        result = TestTargetDetector.detect_class(ctx, node, test_imports)
 
         # Assert
         assert result is not None
@@ -218,11 +219,12 @@ class TestTestTargetDetector:
             "from tests.unit.fake.fs import InMemoryFsReader\nclass TestOtherThing:\n    pass\n"
         )
         source_file = SourceFileFactory.make(source, "tests/test_fs.py")
+        ctx = DetectionContext(meta=rule.meta, source_file=source_file)
         test_imports = TestImportCollector.collect(source_file)
         node = next(n for n in source_file.tree.body if isinstance(n, ast.ClassDef))
 
         # Act
-        result = TestTargetDetector.detect_class(source_file, node, test_imports, rule.meta)
+        result = TestTargetDetector.detect_class(ctx, node, test_imports)
 
         # Assert
         assert result is None
@@ -236,11 +238,12 @@ class TestTestTargetDetector:
             "    pass\n"
         )
         source_file = SourceFileFactory.make(source, "tests/test_fs.py")
+        ctx = DetectionContext(meta=rule.meta, source_file=source_file)
         test_imports = TestImportCollector.collect(source_file)
         node = next(n for n in source_file.tree.body if isinstance(n, ast.FunctionDef))
 
         # Act
-        result = TestTargetDetector.detect_func(source_file, node, test_imports, rule.meta)
+        result = TestTargetDetector.detect_func(ctx, node, test_imports)
 
         # Assert
         assert result is not None

@@ -7,8 +7,9 @@ from paladin.rule.no_cross_package_reexport import (
     CrossPackageReexportDetector,
     ImportMappingCollector,
     NoCrossPackageReexportRule,
+    ReexportSymbol,
 )
-from paladin.rule.types import RuleMeta, SourceFile
+from paladin.rule.types import DetectionContext, RuleMeta, SourceFile
 from tests.unit.test_rule.helper import SourceFileFactory
 
 
@@ -189,7 +190,7 @@ class TestNoCrossPackageReexportRuleCheck:
     def test_check_エッジケース_allの値がリスト以外の場合はcontinueすること(self):
         # Arrange: 1つ目の Assign は __all__ = ["RuleMeta"]（正常）で _extract_all_symbols が
         # 空でない値を返す。2つ目の Assign も __all__ ターゲットだが値が文字列定数で
-        # check() ループの L54 に到達してスキップされることを確認する
+        # スキップされることを確認する
         rule = NoCrossPackageReexportRule()
         tree = ast.parse("from paladin.rule import RuleMeta\n")
         # 1つ目: 通常の __all__ = ["RuleMeta"]（_extract_all_symbols に使われる）
@@ -200,7 +201,7 @@ class TestNoCrossPackageReexportRuleCheck:
                 ctx=ast.Load(),
             ),
         )
-        # 2つ目: __all__ = "Foo"（値がリストでない）— check() ループの L54 を踏む
+        # 2つ目: __all__ = "Foo"（値がリストでない）
         assign_non_list = ast.Assign(
             targets=[ast.Name(id="__all__", ctx=ast.Store())],
             value=ast.Constant(value="Foo"),
@@ -220,7 +221,7 @@ class TestNoCrossPackageReexportRuleCheck:
 
     def test_check_エッジケース_allの要素に非定数が含まれる場合はスキップすること(self):
         # Arrange: _extract_all_symbols が空でない値を返すよう通常の __all__ を先に置き、
-        # check() ループで要素が変数のリストに到達して L57 をスキップすることを確認する
+        # check() ループで要素が変数のリストに到達してスキップすることを確認する
         rule = NoCrossPackageReexportRule()
         tree = ast.parse("from paladin.rule import RuleMeta\n")
         # 1つ目: 通常の __all__ = ["RuleMeta"]（_extract_all_symbols が使う）
@@ -231,7 +232,7 @@ class TestNoCrossPackageReexportRuleCheck:
                 ctx=ast.Load(),
             ),
         )
-        # 2つ目: __all__ = [variable]（要素が変数）— check() ループの L57 を踏む
+        # 2つ目: __all__ = [variable]（要素が変数）
         assign_non_const = ast.Assign(
             targets=[ast.Name(id="__all__", ctx=ast.Store())],
             value=ast.List(
@@ -316,12 +317,12 @@ class TestCrossPackageReexportDetector:
         rule = NoCrossPackageReexportRule()
 
         # Act / Assert
-        result = CrossPackageReexportDetector.detect(
-            source_file=source_file,
+        ctx = DetectionContext(meta=rule.meta, source_file=source_file)
+        symbol = ReexportSymbol(
             line=2,
             name="RuleMeta",
             source_package="paladin.rule",
             current_package="paladin.check",
-            meta=rule.meta,
         )
+        result = CrossPackageReexportDetector.detect(ctx, symbol)
         assert result.rule_id == "no-cross-package-reexport"

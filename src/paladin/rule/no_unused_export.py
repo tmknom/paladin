@@ -1,15 +1,40 @@
-"""__init__.py の __all__ に定義されたシンボルが別パッケージから利用されていないことを検出するルール
+"""Rule 層の静的解析ルール。__init__.py の __all__ に定義されたシンボルが別パッケージから利用されていないことを検出するルール。
 
 仕様は docs/rules/no-unused-export.md を参照。
 """
 
 import ast
+from dataclasses import dataclass
 from pathlib import Path
 
 from paladin.rule.all_exports_extractor import AllExportsExtractor
 from paladin.rule.import_statement import ModulePath, SourceLocation
 from paladin.rule.package_resolver import PackageResolver
 from paladin.rule.types import RuleMeta, SourceFile, SourceFiles, Violation
+
+
+@dataclass(frozen=True)
+class _FileUsageContext:
+    """UsageCollector の処理で共通して必要となるファイル固有情報を集約する"""
+
+    is_test_file: bool
+    effective_user_key: str | None
+
+
+@dataclass(frozen=True)
+class ExportContext:
+    """UnusedExportDetector の処理で共通して必要となるエクスポート先情報を集約する"""
+
+    file_path: Path
+    meta: RuleMeta
+
+
+@dataclass
+class _ScanContext:
+    """UsageCollector のノード走査で共通して必要となる AST 走査情報を集約する"""
+
+    all_exports: dict[str, tuple[Path, dict[str, int]]]
+    imported_modules: set[str]
 
 
 class ExportCollector:
@@ -73,20 +98,21 @@ class UsageCollector:
         resolver: PackageResolver,
     ) -> dict[str, set[str]]:
         """1ファイルの AST を走査して利用シンボルを収集して返す"""
-        is_test_file = source_file.is_test_file
         user_pkg_key = resolver.resolve_package_key(source_file.file_path)
         user_exact_pkg = resolver.resolve_exact_package_path(source_file.file_path)
-        effective_user_key = user_exact_pkg or user_pkg_key
+        file_ctx = _FileUsageContext(
+            is_test_file=source_file.is_test_file,
+            effective_user_key=user_exact_pkg or user_pkg_key,
+        )
 
         # AST を1回だけ走査して Import / ImportFrom / Attribute を同時に収集する
         all_nodes = list(ast.walk(source_file.tree))
         imported_modules = UsageCollector._collect_imported_module_names(all_nodes)
+        scan_ctx = _ScanContext(all_exports=all_exports, imported_modules=imported_modules)
 
         usages: dict[str, set[str]] = {}
         for node in all_nodes:
-            node_usages = UsageCollector._process_node(
-                node, all_exports, imported_modules, is_test_file, effective_user_key
-            )
+            node_usages = UsageCollector._process_node(node, scan_ctx, file_ctx)
             for pkg, symbols in node_usages.items():
                 usages.setdefault(pkg, set()).update(symbols)
         return usages
@@ -101,59 +127,54 @@ class UsageCollector:
     @staticmethod
     def _process_node(
         node: ast.AST,
-        all_exports: dict[str, tuple[Path, dict[str, int]]],
-        imported_modules: set[str],
-        is_test_file: bool,
-        effective_user_key: str | None,
+        scan_ctx: _ScanContext,
+        file_ctx: _FileUsageContext,
     ) -> dict[str, set[str]]:
         """1 AST ノードを処理して利用シンボルの dict を返す"""
         if isinstance(node, ast.ImportFrom):
-            return UsageCollector._process_import_from(
-                node, all_exports, is_test_file, effective_user_key
-            )
+            return UsageCollector._process_import_from(node, scan_ctx, file_ctx)
         if isinstance(node, ast.Attribute):
-            return UsageCollector._process_attribute(
-                node, all_exports, imported_modules, is_test_file, effective_user_key
-            )
+            return UsageCollector._process_attribute(node, scan_ctx, file_ctx)
         return {}
 
     @staticmethod
     def _process_import_from(
         node: ast.ImportFrom,
-        all_exports: dict[str, tuple[Path, dict[str, int]]],
-        is_test_file: bool,
-        effective_user_key: str | None,
+        scan_ctx: _ScanContext,
+        file_ctx: _FileUsageContext,
     ) -> dict[str, set[str]]:
         """ImportFrom ノードを処理して利用シンボルの dict を返す"""
         if node.module is None or node.level != 0:
             return {}
-        if node.module not in all_exports:
+        if node.module not in scan_ctx.all_exports:
             return {}
-        if is_test_file and not UsageCollector._is_test_export(node.module, all_exports):
+        if file_ctx.is_test_file and not UsageCollector._is_test_export(
+            node.module, scan_ctx.all_exports
+        ):
             return {}
-        if UsageCollector._is_same_or_sub_package(effective_user_key, node.module):
+        if UsageCollector._is_same_or_sub_package(file_ctx.effective_user_key, node.module):
             return {}
         return {node.module: {alias.name for alias in node.names}}
 
     @staticmethod
     def _process_attribute(
         node: ast.Attribute,
-        all_exports: dict[str, tuple[Path, dict[str, int]]],
-        imported_modules: set[str],
-        is_test_file: bool,
-        effective_user_key: str | None,
+        scan_ctx: _ScanContext,
+        file_ctx: _FileUsageContext,
     ) -> dict[str, set[str]]:
         """Attribute ノードを処理して利用シンボルの dict を返す"""
         module_name = UsageCollector._reconstruct_module_name(node.value)
         if module_name is None:
             return {}
-        if module_name not in imported_modules:
+        if module_name not in scan_ctx.imported_modules:
             return {}
-        if module_name not in all_exports:
+        if module_name not in scan_ctx.all_exports:
             return {}
-        if is_test_file and not UsageCollector._is_test_export(module_name, all_exports):
+        if file_ctx.is_test_file and not UsageCollector._is_test_export(
+            module_name, scan_ctx.all_exports
+        ):
             return {}
-        if UsageCollector._is_same_or_sub_package(effective_user_key, module_name):
+        if UsageCollector._is_same_or_sub_package(file_ctx.effective_user_key, module_name):
             return {}
         return {module_name: {node.attr}}
 
@@ -190,18 +211,17 @@ class UnusedExportDetector:
 
     @staticmethod
     def detect(
-        file_path: Path,
+        ctx: ExportContext,
         symbols: dict[str, int],
         used_symbols: set[str],
-        meta: RuleMeta,
     ) -> list[Violation]:
         """Symbols の中から未使用のものを違反として返す"""
         violations: list[Violation] = []
         for name, lineno in symbols.items():
             if name not in used_symbols:
-                location = SourceLocation(file=file_path, line=lineno, column=0)
+                location = SourceLocation(file=ctx.file_path, line=lineno, column=0)
                 violations.append(
-                    meta.create_violation_at(
+                    ctx.meta.create_violation_at(
                         location=location,
                         message=f"`__all__` のシンボル `{name}` はどの別パッケージからも利用されていない",
                         reason="利用されていないシンボルを公開し続けると、不必要な後方互換義務が生じる",
@@ -257,8 +277,7 @@ class NoUnusedExportRule:
         violations: list[Violation] = []
         for pkg_path, (file_path, symbols) in all_exports.items():
             used_symbols = usages.get(pkg_path, set())
-            violations.extend(
-                UnusedExportDetector.detect(file_path, symbols, used_symbols, self._meta)
-            )
+            export_ctx = ExportContext(file_path=file_path, meta=self._meta)
+            violations.extend(UnusedExportDetector.detect(export_ctx, symbols, used_symbols))
 
         return tuple(violations)

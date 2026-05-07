@@ -4,22 +4,24 @@ import logging
 from pathlib import Path
 
 from paladin.foundation.log.builder import LogDictConfigBuilder
+from paladin.foundation.log.config import LogConfig
 
 
 class TestLogDictConfigBuilder:
     """LogDictConfigBuilder クラスのテスト"""
 
-    def setup_method(self):
-        self._builder = LogDictConfigBuilder()
+    def test_build_正常系_コンソールのみの設定でコンソールハンドラのみが設定されること(self):
+        # Arrange
+        builder = LogDictConfigBuilder()
 
-    def test_build_console_only(self):
         # Act
-        result = self._builder.build(
-            level="INFO",
-            stream="stdout",
-            file_output=False,
-            log_path=None,
-            console_formatter_type="json_context",
+        result = builder.build(
+            LogConfig(
+                level="INFO",
+                stream="stdout",
+                file_output=False,
+                console_formatter_type="json_context",
+            )
         )
 
         # Assert
@@ -28,17 +30,20 @@ class TestLogDictConfigBuilder:
         assert "file" not in result["handlers"]
         assert result["root"]["handlers"] == ["console"]
 
-    def test_build_with_file_output(self):
+    def test_build_正常系_ファイル出力有効時にfileハンドラが追加されること(self):
         # Arrange
+        builder = LogDictConfigBuilder()
         log_path = Path("/tmp/test.log")
 
         # Act
-        result = self._builder.build(
-            level="DEBUG",
-            stream="stderr",
-            file_output=True,
-            log_path=log_path,
-            console_formatter_type="color",
+        result = builder.build(
+            LogConfig(
+                level="DEBUG",
+                stream="stderr",
+                file_output=True,
+                console_formatter_type="color",
+                log_path=log_path,
+            )
         )
 
         # Assert
@@ -46,32 +51,39 @@ class TestLogDictConfigBuilder:
         assert "file" in result["root"]["handlers"]
         assert "file" in result["formatters"]
 
-    def test_build_with_json_formatter_class(self):
+    def test_build_正常系_カスタムjsonフォーマッタクラスが設定されること(self):
         # Arrange
+        builder = LogDictConfigBuilder()
+
         class CustomFormatter(logging.Formatter):
             pass
 
         # Act
-        result = self._builder.build(
-            level="INFO",
-            stream="stdout",
-            file_output=False,
-            log_path=None,
-            console_formatter_type="json_context",
-            json_formatter_class=CustomFormatter,
+        result = builder.build(
+            LogConfig(
+                level="INFO",
+                stream="stdout",
+                file_output=False,
+                console_formatter_type="json_context",
+                json_formatter_class=CustomFormatter,
+            )
         )
 
         # Assert
         assert result["formatters"]["console"]["()"] is CustomFormatter
 
-    def test_build_disable_existing_loggers_false(self):
+    def test_build_正常系_disable_existing_loggers_がFalseであること(self):
+        # Arrange
+        builder = LogDictConfigBuilder()
+
         # Act
-        result = self._builder.build(
-            level="INFO",
-            stream="stdout",
-            file_output=False,
-            log_path=None,
-            console_formatter_type="json_context",
+        result = builder.build(
+            LogConfig(
+                level="INFO",
+                stream="stdout",
+                file_output=False,
+                console_formatter_type="json_context",
+            )
         )
 
         # Assert

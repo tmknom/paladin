@@ -1,13 +1,18 @@
-"""サードパーティ完全修飾インポート要求ルール
+"""Rule 層の静的解析ルール。サードパーティ完全修飾インポート要求ルール。
 
 仕様は docs/rules/require-qualified-third-party.md を参照。
 """
 
 import sys
 
-from paladin.rule.import_statement import AbsoluteFromImport, ImportStatement, ModulePath
+from paladin.rule.import_statement import (
+    AbsoluteFromImport,
+    ImportedName,
+    ImportStatement,
+    ModulePath,
+)
 from paladin.rule.package_resolver import PackageResolver
-from paladin.rule.types import RuleMeta, SourceFile, SourceFiles, Violation
+from paladin.rule.types import DetectionContext, RuleMeta, SourceFile, SourceFiles, Violation
 
 
 class QualifiedThirdPartyDetector:
@@ -16,16 +21,15 @@ class QualifiedThirdPartyDetector:
     @staticmethod
     def detect_from_import(
         imp: AbsoluteFromImport,
-        source_file: SourceFile,
-        meta: RuleMeta,
+        ctx: DetectionContext,
     ) -> list[Violation]:
         """From X import Y 形式の違反リストを返す"""
         module_str = imp.module_str
         violations: list[Violation] = []
         for imported in imp.names:
             violations.append(
-                meta.create_violation_at(
-                    location=source_file.location_from(imp),
+                ctx.meta.create_violation_at(
+                    location=ctx.source_file.location_from(imp),
                     message=f"`from {module_str} import {imported.name}` はサードパーティライブラリの直接インポートである",
                     reason="外部依存の境界を明示するために、サードパーティライブラリは完全修飾名で使用する必要がある",
                     suggestion=f"`from {module_str} import {imported.name}` を `import {module_str}` に書き換え、使用箇所の `{imported.name}` を `{module_str}.{imported.name}` に置換してください",
@@ -36,14 +40,14 @@ class QualifiedThirdPartyDetector:
     @staticmethod
     def detect_import_as(
         stmt: ImportStatement,
-        imported_name: str,
-        asname: str,
-        source_file: SourceFile,
-        meta: RuleMeta,
+        imported: ImportedName,
+        ctx: DetectionContext,
     ) -> Violation:
         """Import X as Y 形式の違反を返す"""
-        return meta.create_violation_at(
-            location=source_file.location_from(stmt),
+        imported_name = imported.name
+        asname = imported.asname or imported_name
+        return ctx.meta.create_violation_at(
+            location=ctx.source_file.location_from(stmt),
             message=f"`import {imported_name} as {asname}` はサードパーティライブラリのエイリアスインポートである",
             reason="外部依存の境界を明示するために、サードパーティライブラリは完全修飾名で使用する必要がある",
             suggestion=f"`import {imported_name} as {asname}` を `import {imported_name}` に書き換え、使用箇所の `{asname}` を `{imported_name}` に置換してください",
@@ -84,23 +88,22 @@ class RequireQualifiedThirdPartyRule:
 
     def check(self, source_file: SourceFile) -> tuple[Violation, ...]:
         """単一ファイルに対する違反判定を行う"""
+        ctx = DetectionContext(meta=self._meta, source_file=source_file)
         violations: list[Violation] = []
         for imp in source_file.absolute_from_imports:
             top = imp.top_level
             if top in self._stdlib_modules or top in self._root_packages:
                 continue
-            violations.extend(
-                QualifiedThirdPartyDetector.detect_from_import(imp, source_file, self._meta)
-            )
+            violations.extend(QualifiedThirdPartyDetector.detect_from_import(imp, ctx))
         for stmt in source_file.imports:
             if not stmt.is_import_from:
-                violations.extend(self._check_import_as(stmt, source_file))
+                violations.extend(self._check_import_as(stmt, ctx))
         return tuple(violations)
 
     def _check_import_as(
         self,
         stmt: ImportStatement,
-        source_file: SourceFile,
+        ctx: DetectionContext,
     ) -> list[Violation]:
         violations: list[Violation] = []
         for imported in stmt.names:
@@ -109,13 +112,5 @@ class RequireQualifiedThirdPartyRule:
             top = ModulePath(imported.name).top_level
             if top in self._stdlib_modules or top in self._root_packages:
                 continue
-            violations.append(
-                QualifiedThirdPartyDetector.detect_import_as(
-                    stmt,
-                    imported.name,
-                    imported.asname,
-                    source_file,
-                    self._meta,
-                )
-            )
+            violations.append(QualifiedThirdPartyDetector.detect_import_as(stmt, imported, ctx))
         return violations

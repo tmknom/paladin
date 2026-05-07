@@ -1,7 +1,4 @@
-"""ルールドメインの型定義
-
-ルール判定の入出力・メタ情報・検査対象を表す値オブジェクトを定義する。
-"""
+"""Rule 層の型定義。ルール判定の入出力・メタ情報・検査対象を表す値オブジェクト群を定義する。"""
 
 from __future__ import annotations
 
@@ -84,7 +81,7 @@ class SourceFile:
 
 @dataclass(frozen=True)
 class SourceFiles:
-    """複数Pythonソースファイルを集約する不変な値オブジェクト"""
+    """SourceFile のコレクション。init_files()/production_files() でフィルタリングアクセスを提供する。"""
 
     files: tuple[SourceFile, ...]
 
@@ -121,7 +118,7 @@ class Violation:
 
 @dataclass(frozen=True)
 class Violations:
-    """複数Violationを集約する値オブジェクト"""
+    """Violation のコレクション。"""
 
     items: tuple[Violation, ...]
 
@@ -149,7 +146,7 @@ class RuleMeta:
     config_example: str | None = None
     detection_example: str | None = None
 
-    def create_violation_at(
+    def create_violation_at(  # paladin: ignore[max-function-parameter] -- Violation の全フィールドを受け取る責務のため引数削減不可
         self,
         location: SourceLocation,
         message: str,
@@ -166,6 +163,34 @@ class RuleMeta:
             message=message,
             reason=reason,
             suggestion=suggestion,
+        )
+
+
+@dataclass(frozen=True)
+class DetectionContext:
+    """検出器が共通して必要とするメタ情報とファイル情報を集約するバリューオブジェクト"""
+
+    meta: RuleMeta
+    source_file: SourceFile
+
+    def violation_at(self, node: ast.AST, message: str, reason: str) -> Violation:
+        """AST ノードの位置に違反を生成する"""
+        return self.meta.create_violation_at(
+            location=self.source_file.location(
+                getattr(node, "lineno", 0), getattr(node, "col_offset", 0)
+            ),
+            message=message,
+            reason=reason,
+            suggestion=self.meta.suggestion,
+        )
+
+    def violation_from(self, stmt: ImportStatement, message: str, reason: str) -> Violation:
+        """ImportStatement の位置に違反を生成する"""
+        return self.meta.create_violation_at(
+            location=self.source_file.location_from(stmt),
+            message=message,
+            reason=reason,
+            suggestion=self.meta.suggestion,
         )
 
 

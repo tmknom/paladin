@@ -13,7 +13,7 @@ from paladin.rule import PerFileIgnoreEntry, SourceFiles, Violations
 class IgnoreProcessor:
     """Ignore ディレクティブの解析・統合・フィルタリングを一括実行するファサード"""
 
-    def apply(
+    def apply(  # paladin: ignore[max-function-parameter]
         self,
         violations: Violations,
         source_files: SourceFiles,

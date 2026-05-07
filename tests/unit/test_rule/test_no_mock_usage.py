@@ -3,7 +3,7 @@ from pathlib import Path
 import pytest
 
 from paladin.rule.no_mock_usage import MockUsageDetector, NoMockUsageRule
-from paladin.rule.types import RuleMeta
+from paladin.rule.types import DetectionContext, RuleMeta
 from tests.unit.test_rule.helper import SourceFileFactory
 
 
@@ -97,11 +97,12 @@ class TestMockUsageDetector:
         rule = NoMockUsageRule()
         source = "from unittest.mock import Mock\n"
         source_file = SourceFileFactory.make(source)
+        ctx = DetectionContext(meta=rule.meta, source_file=source_file)
         stmt = source_file.imports[0]
         imported = stmt.names[0]
 
         # Act
-        result = MockUsageDetector.detect_from_import(source_file, stmt, imported, rule.meta)
+        result = MockUsageDetector.detect_from_import(ctx, stmt, imported)
 
         # Assert
         assert result is not None
@@ -112,11 +113,12 @@ class TestMockUsageDetector:
         rule = NoMockUsageRule()
         source = "from os import path\n"
         source_file = SourceFileFactory.make(source)
+        ctx = DetectionContext(meta=rule.meta, source_file=source_file)
         stmt = source_file.imports[0]
         imported = stmt.names[0]
 
         # Act
-        result = MockUsageDetector.detect_from_import(source_file, stmt, imported, rule.meta)
+        result = MockUsageDetector.detect_from_import(ctx, stmt, imported)
 
         # Assert
         assert result is None
@@ -126,11 +128,12 @@ class TestMockUsageDetector:
         rule = NoMockUsageRule()
         source = "import unittest.mock\n"
         source_file = SourceFileFactory.make(source)
+        ctx = DetectionContext(meta=rule.meta, source_file=source_file)
         stmt = source_file.imports[0]
         imported = stmt.names[0]
 
         # Act
-        result = MockUsageDetector.detect_plain_import(source_file, stmt, imported, rule.meta)
+        result = MockUsageDetector.detect_plain_import(ctx, stmt, imported)
 
         # Assert
         assert result is not None
@@ -141,11 +144,12 @@ class TestMockUsageDetector:
         rule = NoMockUsageRule()
         source = "import os\n"
         source_file = SourceFileFactory.make(source)
+        ctx = DetectionContext(meta=rule.meta, source_file=source_file)
         stmt = source_file.imports[0]
         imported = stmt.names[0]
 
         # Act
-        result = MockUsageDetector.detect_plain_import(source_file, stmt, imported, rule.meta)
+        result = MockUsageDetector.detect_plain_import(ctx, stmt, imported)
 
         # Assert
         assert result is None

@@ -1,4 +1,4 @@
-"""内部モジュールへの直接インポート禁止ルール
+"""Rule 層の静的解析ルール。内部モジュールへの直接インポートを禁止するルール。
 
 仕様は docs/rules/no-direct-internal-import.md を参照。
 """
@@ -9,7 +9,7 @@ from paladin.rule.all_exports_extractor import AllExportsExtractor
 from paladin.rule.import_statement import AbsoluteFromImport, ModulePath
 from paladin.rule.own_package_resolver import OwnPackageResolver
 from paladin.rule.package_resolver import NON_PACKAGE_DIRS, PackageResolver
-from paladin.rule.types import RuleMeta, SourceFile, SourceFiles, Violation
+from paladin.rule.types import DetectionContext, RuleMeta, SourceFile, SourceFiles, Violation
 
 
 class SrcRootResolver:
@@ -81,18 +81,17 @@ class InternalImportDetector:
     """内部モジュールへの直接インポートの判定と Violation 生成"""
 
     @staticmethod
-    def detect(
-        source_file: SourceFile,
+    def detect(  # paladin: ignore[max-function-parameter]
+        ctx: DetectionContext,
         imp: AbsoluteFromImport,
         name: str,
         package: str,
         package_exports: dict[str, set[str]],
-        meta: RuleMeta,
     ) -> Violation | None:
         """違反として報告すべきかを判定し、Violation を返す"""
         if not InternalImportDetector._should_report(name, package, package_exports):
             return None
-        return InternalImportDetector._make_violation(source_file, imp, name, package, meta)
+        return InternalImportDetector._make_violation(ctx, imp, name, package)
 
     @staticmethod
     def _should_report(
@@ -114,17 +113,16 @@ class InternalImportDetector:
         return name in exports
 
     @staticmethod
-    def _make_violation(
-        source_file: SourceFile,
+    def _make_violation(  # paladin: ignore[max-function-parameter]
+        ctx: DetectionContext,
         imp: AbsoluteFromImport,
         name: str,
         package: str,
-        meta: RuleMeta,
     ) -> Violation:
         """違反オブジェクトを生成する"""
         module_path = imp.module_str
-        return meta.create_violation_at(
-            location=source_file.location_from(imp),
+        return ctx.meta.create_violation_at(
+            location=ctx.source_file.location_from(imp),
             message=f"`from {module_path} import {name}` は内部モジュールへの直接参照である",
             reason=f"`{package}` の内部実装に直接依存しており、パッケージの公開 API を経由していない",
             suggestion=f"`from {module_path} import {name}` を `from {package} import {name}` に書き換えてください",
@@ -222,15 +220,14 @@ class NoDirectInternalImportRule:
             if SubpackageChecker.is_subpackage(imp.module, src_root):
                 continue
 
-            violations.extend(
-                self._check_imported_names(source_file, imp, import_package, package_exports)
-            )
+            ctx = DetectionContext(meta=self._meta, source_file=source_file)
+            violations.extend(self._check_imported_names(ctx, imp, import_package, package_exports))
 
         return violations
 
-    def _check_imported_names(
+    def _check_imported_names(  # paladin: ignore[max-function-parameter]
         self,
-        source_file: SourceFile,
+        ctx: DetectionContext,
         imp: AbsoluteFromImport,
         import_package: str,
         package_exports: dict[str, set[str]],
@@ -239,7 +236,7 @@ class NoDirectInternalImportRule:
         violations: list[Violation] = []
         for imported in imp.names:
             v = InternalImportDetector.detect(
-                source_file, imp, imported.name, import_package, package_exports, self._meta
+                ctx, imp, imported.name, import_package, package_exports
             )
             if v is not None:
                 violations.append(v)

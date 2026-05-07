@@ -7,7 +7,7 @@ from paladin.rule.no_third_party_import import (
     ThirdPartyChecker,
     ThirdPartyImportDetector,
 )
-from paladin.rule.types import RuleMeta, SourceFiles
+from paladin.rule.types import DetectionContext, RuleMeta, SourceFiles
 from tests.unit.test_rule.helper import SourceFileFactory
 
 _STDLIB = frozenset({"os", "sys"})
@@ -219,10 +219,11 @@ class TestThirdPartyImportDetector:
         source_files = SourceFileFactory.make_many((source, "src/app/main.py"))
         rule = NoThirdPartyImportRule(allow_dirs=())
         rule.prepare(source_files)
+        ctx = DetectionContext(meta=rule.meta, source_file=source_file)
         stmt = source_file.imports[0]
 
         # Act
-        result = ThirdPartyImportDetector.detect_from_import(stmt, source_file, rule.meta)
+        result = ThirdPartyImportDetector.detect_from_import(ctx, stmt)
 
         # Assert
         assert len(result) == 2
@@ -235,12 +236,11 @@ class TestThirdPartyImportDetector:
         source_files = SourceFileFactory.make_many((source, "src/app/main.py"))
         rule = NoThirdPartyImportRule(allow_dirs=())
         rule.prepare(source_files)
+        ctx = DetectionContext(meta=rule.meta, source_file=source_file)
         stmt = source_file.imports[0]
 
         # Act
-        result = ThirdPartyImportDetector.detect_plain_import(
-            stmt, "requests", source_file, rule.meta
-        )
+        result = ThirdPartyImportDetector.detect_plain_import(ctx, stmt, "requests")
 
         # Assert
         assert result.rule_id == "no-third-party-import"

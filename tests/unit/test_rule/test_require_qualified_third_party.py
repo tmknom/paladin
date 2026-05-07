@@ -2,11 +2,12 @@ from pathlib import Path
 
 import pytest
 
+from paladin.rule.import_statement import ImportedName
 from paladin.rule.require_qualified_third_party import (
     QualifiedThirdPartyDetector,
     RequireQualifiedThirdPartyRule,
 )
-from paladin.rule.types import RuleMeta, SourceFiles
+from paladin.rule.types import DetectionContext, RuleMeta, SourceFiles
 from tests.unit.test_rule.helper import SourceFileFactory
 
 
@@ -185,8 +186,10 @@ class TestQualifiedThirdPartyDetector:
         source_file = source_files.files[0]
         imp = source_file.absolute_from_imports[0]
 
+        ctx = DetectionContext(meta=rule.meta, source_file=source_file)
+
         # Act / Assert
-        result = QualifiedThirdPartyDetector.detect_from_import(imp, source_file, rule.meta)
+        result = QualifiedThirdPartyDetector.detect_from_import(imp, ctx)
         assert len(result) == 2
         assert result[0].rule_id == "require-qualified-third-party"
 
@@ -197,9 +200,9 @@ class TestQualifiedThirdPartyDetector:
         rule = RuleFactory.with_prepare(source_files)
         source_file = source_files.files[0]
         stmt = source_file.imports[0]
+        imported = ImportedName(name="requests", asname="req")
+        ctx = DetectionContext(meta=rule.meta, source_file=source_file)
 
         # Act / Assert
-        result = QualifiedThirdPartyDetector.detect_import_as(
-            stmt, "requests", "req", source_file, rule.meta
-        )
+        result = QualifiedThirdPartyDetector.detect_import_as(stmt, imported, ctx)
         assert result.rule_id == "require-qualified-third-party"

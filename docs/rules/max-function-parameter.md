@@ -79,6 +79,20 @@ def user_service(
     return UserService(db=db, cache=cache, mailer=mailer, logger=logger)
 ```
 
+### 準拠コード（@app.command は対象外）
+
+```python
+# src/paladin/cli.py
+@app.command()
+def check(
+    ctx: typer.Context,
+    targets: list[Path] | None = None,
+    format: OutputFormat = OutputFormat.TEXT,
+    rule: list[str] | None = None,  # 準拠: @app.command は許可リストに含まれる
+) -> None:
+    ...
+```
+
 ## 検出の補足
 
 ### 検出ロジック
@@ -100,11 +114,14 @@ def user_service(
 以下は違反として報告しません。
 
 - **`@pytest.fixture` デコレータ付き関数**: フィクスチャは依存オブジェクトを注入する構造上、引数が多くなることが多い。設定の許可リストで管理する
+- **`@app.command` / `@app.callback` デコレータ付き関数**: Typer の CLI コマンド関数は各引数が独立したコマンドラインオプションに対応するため、集約によって引数を減らすことが構造的にできない。デフォルトの許可リストに含める
 - **ラムダ**: `ast.Lambda` は `FunctionDef` ではないため対象外
 - **内包表記**: リスト・辞書・集合内包表記およびジェネレータ式は対象外
 - **`@dataclass` 自動生成 `__init__`**: `@dataclass` が生成する `__init__` は AST に出現しないため、自動的に対象外となる
 
 ダンダーメソッド（`__init__` を含む）、ネスト関数、`async def` は対象に含みます。
+
+Composition Root の `__init__`（DI コンテナに相当するクラスが複数の協力者を受け取るパターン）は対象に含みます。これらはバリューオブジェクト化しても凝集度が上がらないケースですが、インライン抑制（`# paladin: ignore[max-function-parameter]`）で個別に対応してください。
 
 ### 適用範囲
 
@@ -119,13 +136,13 @@ def user_service(
 ```toml
 [tool.paladin.rule.max-function-parameter]
 max-parameters = 3
-allow-decorators = ["pytest.fixture", "fixture"]
+allow-decorators = ["pytest.fixture", "fixture", "app.command", "app.callback"]
 ```
 
 | パラメータ | 説明 | デフォルト値 |
 |-----------|------|------------|
 | `max-parameters` | `self` / `cls` を除いた引数数の上限 | `3` |
-| `allow-decorators` | 検査対象から除外するデコレータ名 | `["pytest.fixture", "fixture"]` |
+| `allow-decorators` | 検査対象から除外するデコレータ名 | `["pytest.fixture", "fixture", "app.command", "app.callback"]` |
 
 ### max-method-length との関係
 

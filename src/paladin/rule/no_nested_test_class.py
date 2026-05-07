@@ -1,29 +1,28 @@
-"""Rule 層の単一ルール実装。ASTベースの静的解析で実装するルールはこの層に配置する。
+"""Rule 層の静的解析ルール。テストクラスのネストを AST で検出する。
 
 仕様は docs/rules/no-nested-test-class.md を参照。
 """
 
 import ast
 
-from paladin.rule.types import RuleMeta, SourceFile, Violation
+from paladin.rule.types import DetectionContext, RuleMeta, SourceFile, Violation
 
 _REASON = "テストクラスのネストは可読性を下げます。テストはフラットな構造に保ってください"
 _SUGGESTION = "ネストされたクラスをトップレベルのテストクラスとして独立させてください"
 
 
 class NestedClassDetector:
-    """ネストされたクラス定義から Violation を生成するヘルパー。検出ロジックは呼び出し側が担う"""
+    """ネストされたクラス定義から Violation を生成するヘルパー。ネスト検出の条件判定は `NestedTestClassCollector` が担う"""
 
     @staticmethod
     def detect(
+        ctx: DetectionContext,
         outer_class: ast.ClassDef,
         inner_class: ast.ClassDef,
-        meta: RuleMeta,
-        source_file: SourceFile,
     ) -> Violation:
         """ネストされたクラスに対して Violation を返す"""
-        return meta.create_violation_at(
-            location=source_file.location(line=inner_class.lineno),
+        return ctx.meta.create_violation_at(
+            location=ctx.source_file.location(line=inner_class.lineno),
             message=f"テストクラス `{outer_class.name}` の中にクラス `{inner_class.name}` がネストされています",
             reason=_REASON,
             suggestion=_SUGGESTION,
@@ -82,9 +81,8 @@ class NoNestedTestClassRule:
         """テストファイルのみを対象にネストされたクラスを検査する"""
         if not source_file.is_test_file:
             return ()
+        ctx = DetectionContext(meta=self._meta, source_file=source_file)
         violations: list[Violation] = []
         for outer_class, inner_class in NestedTestClassCollector.collect(source_file.tree):
-            violations.append(
-                NestedClassDetector.detect(outer_class, inner_class, self._meta, source_file)
-            )
+            violations.append(NestedClassDetector.detect(ctx, outer_class, inner_class))
         return tuple(violations)

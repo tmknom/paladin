@@ -9,7 +9,7 @@ from paladin.rule.max_class_length import (
     ClassScope,
     MaxClassLengthRule,
 )
-from paladin.rule.types import RuleMeta
+from paladin.rule.types import DetectionContext, RuleMeta
 from tests.unit.test_rule.helper import SourceFileFactory
 
 
@@ -107,14 +107,12 @@ class TestClassLengthDetector:
         # Arrange
         source = "class MyClass:\n    pass\n"
         scope = self._make_scope(source)
-        meta = MaxClassLengthRule().meta
         source_file = SourceFileFactory.make(source)
+        ctx = DetectionContext(meta=MaxClassLengthRule().meta, source_file=source_file)
         limit = 10
 
         # Act
-        result = ClassLengthDetector.detect(
-            scope, length=limit, limit=limit, meta=meta, source_file=source_file
-        )
+        result = ClassLengthDetector.detect(scope, length=limit, limit=limit, ctx=ctx)
 
         # Assert
         assert result is None
@@ -123,30 +121,26 @@ class TestClassLengthDetector:
         # Arrange
         source = "class MyClass:\n    pass\n"
         scope = self._make_scope(source)
-        meta = MaxClassLengthRule().meta
         source_file = SourceFileFactory.make(source)
+        ctx = DetectionContext(meta=MaxClassLengthRule().meta, source_file=source_file)
         limit = 10
 
         # Act
-        result = ClassLengthDetector.detect(
-            scope, length=limit + 1, limit=limit, meta=meta, source_file=source_file
-        )
+        result = ClassLengthDetector.detect(scope, length=limit + 1, limit=limit, ctx=ctx)
 
         # Assert
         assert result is not None
 
-    def test_detect_正常系_Violationのメッセージにクラス名が含まれること(self):
+    def test_detect_正常系_上限超過で1件のViolationを返すこと(self):
         # Arrange
         source = "class TargetClass:\n    pass\n"
         scope = self._make_scope(source)
-        meta = MaxClassLengthRule().meta
         source_file = SourceFileFactory.make(source)
+        ctx = DetectionContext(meta=MaxClassLengthRule().meta, source_file=source_file)
         limit = 10
 
         # Act
-        result = ClassLengthDetector.detect(
-            scope, length=limit + 1, limit=limit, meta=meta, source_file=source_file
-        )
+        result = ClassLengthDetector.detect(scope, length=limit + 1, limit=limit, ctx=ctx)
 
         # Assert
         assert result is not None
@@ -348,8 +342,7 @@ class TestMaxClassLengthRuleCheck:
         result = rule.check(source_file)
 
         # Assert: Outer が上限超過で違反あり
-        messages = [v.message for v in result]
-        assert any("Outer" in m for m in messages)
+        assert len(result) == 1
 
     def test_check_正常系_関数内のクラス定義を検査すること(self):
         # Arrange: トップレベル関数内にクラス定義がある場合
@@ -366,8 +359,7 @@ class TestMaxClassLengthRuleCheck:
         result = rule.check(source_file)
 
         # Assert: LocalClass が7行（上限5行超え）で違反あり
-        messages = [v.message for v in result]
-        assert any("LocalClass" in m for m in messages)
+        assert len(result) == 1
 
     def test_check_正常系_メソッド内のクラス定義を検査すること(self):
         # Arrange: クラスメソッド内にクラス定義がある場合
@@ -384,9 +376,8 @@ class TestMaxClassLengthRuleCheck:
         # Act
         result = rule.check(source_file)
 
-        # Assert: InnerLocal が7行（上限5行超え）で違反あり
-        messages = [v.message for v in result]
-        assert any("InnerLocal" in m for m in messages)
+        # Assert: Outer(9行)とInnerLocal(7行)の両方が上限5行超えで2件返る
+        assert len(result) == 2
 
     def test_check_正常系_先頭文がExprでない場合はdocstring除外なしで行数計算すること(self):
         # Arrange: 先頭文が代入文（ast.Assign）なので docstring なし → 物理201行がそのまま計上

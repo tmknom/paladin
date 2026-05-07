@@ -1,9 +1,9 @@
-"""メソッド/関数の最大行数制限ルール"""
+"""Rule 層の静的解析ルール。AST ベースでメソッド/関数行数の上限超過を検出する。"""
 
 import ast
 from dataclasses import dataclass
 
-from paladin.rule.types import RuleMeta, SourceFile, Violation
+from paladin.rule.types import DetectionContext, RuleMeta, SourceFile, Violation
 
 _DEFAULT_MAX_LINES = 50
 _DEFAULT_MAX_TEST_LINES = 100
@@ -90,12 +90,11 @@ class MethodLengthDetector:
     """メソッド行数の閾値判定を行う"""
 
     @staticmethod
-    def detect(
+    def detect(  # paladin: ignore[max-function-parameter]
         scope: FunctionScope,
         length: int,
         limit: int,
-        meta: RuleMeta,
-        source_file: SourceFile,
+        ctx: DetectionContext,
     ) -> Violation | None:
         """Length が limit を超えた場合に Violation を返す。そうでなければ None を返す"""
         if length <= limit:
@@ -105,11 +104,10 @@ class MethodLengthDetector:
         else:
             func_label = scope.node.name
         message = f"メソッド/関数 `{func_label}` は `{length}` 行です。上限は `{limit}` 行です"
-        return meta.create_violation_at(
-            location=source_file.location(scope.node.lineno),
+        return ctx.violation_at(
+            scope.node,
             message=message,
             reason="メソッド/関数が長すぎることは、責務の肥大化や設計上の問題を示す兆候です",
-            suggestion="メソッド/関数の処理を分割し、複数のプライベートメソッドや関数に分離することを検討してください",
         )
 
 
@@ -159,10 +157,11 @@ class MaxMethodLengthRule:
     def check(self, source_file: SourceFile) -> tuple[Violation, ...]:
         """単一ファイルに対する違反判定を行う"""
         limit = self._max_test_lines if source_file.is_test_file else self._max_lines
+        ctx = DetectionContext(meta=self._meta, source_file=source_file)
         violations: list[Violation] = []
         for scope in FunctionCollector.collect(source_file.tree):
             length = MethodLengthCalculator.calc(scope.node)
-            violation = MethodLengthDetector.detect(scope, length, limit, self._meta, source_file)
+            violation = MethodLengthDetector.detect(scope, length, limit, ctx)
             if violation is not None:
                 violations.append(violation)
         return tuple(violations)

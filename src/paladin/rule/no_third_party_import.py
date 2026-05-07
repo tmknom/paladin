@@ -1,4 +1,4 @@
-"""許可ディレクトリ外でのサードパーティインポート禁止ルール
+"""Rule 層の静的解析ルール。許可ディレクトリ外でのサードパーティインポート禁止ルール。
 
 仕様は docs/rules/no-third-party-import.md を参照。
 """
@@ -8,7 +8,7 @@ from pathlib import Path
 
 from paladin.rule.import_statement import ImportStatement, ModulePath
 from paladin.rule.package_resolver import PackageResolver
-from paladin.rule.types import RuleMeta, SourceFile, SourceFiles, Violation
+from paladin.rule.types import DetectionContext, RuleMeta, SourceFile, SourceFiles, Violation
 
 
 class ThirdPartyChecker:
@@ -40,17 +40,16 @@ class ThirdPartyImportDetector:
 
     @staticmethod
     def detect_from_import(
+        ctx: DetectionContext,
         stmt: ImportStatement,
-        source_file: SourceFile,
-        meta: RuleMeta,
     ) -> list[Violation]:
         """From X import Y 形式の違反リストを返す"""
         module_str = stmt.module_str
         violations: list[Violation] = []
         for imported in stmt.names:
             violations.append(
-                meta.create_violation_at(
-                    location=source_file.location_from(stmt),
+                ctx.meta.create_violation_at(
+                    location=ctx.source_file.location_from(stmt),
                     message=f"`from {module_str} import {imported.name}` は許可ディレクトリ外でのサードパーティライブラリのインポートである",
                     reason="サードパーティライブラリの利用は `allow-dirs` で指定されたディレクトリに集約する必要がある",
                     suggestion=f"`{module_str}` の利用を許可ディレクトリ配下に移動するか、ラッパーモジュール経由でアクセスしてください",
@@ -60,14 +59,13 @@ class ThirdPartyImportDetector:
 
     @staticmethod
     def detect_plain_import(
+        ctx: DetectionContext,
         stmt: ImportStatement,
         imported_name: str,
-        source_file: SourceFile,
-        meta: RuleMeta,
     ) -> Violation:
         """Import X 形式の違反を返す"""
-        return meta.create_violation_at(
-            location=source_file.location_from(stmt),
+        return ctx.meta.create_violation_at(
+            location=ctx.source_file.location_from(stmt),
             message=f"`import {imported_name}` は許可ディレクトリ外でのサードパーティライブラリのインポートである",
             reason="サードパーティライブラリの利用は `allow-dirs` で指定されたディレクトリに集約する必要がある",
             suggestion=f"`{imported_name}` の利用を許可ディレクトリ配下に移動するか、ラッパーモジュール経由でアクセスしてください",
@@ -118,32 +116,33 @@ class NoThirdPartyImportRule:
         if ThirdPartyChecker.is_allowed_path(source_file.file_path, self._allow_dirs):
             return ()
 
+        ctx = DetectionContext(meta=self._meta, source_file=source_file)
         violations: list[Violation] = []
         for stmt in source_file.imports:
             if stmt.is_relative:
                 continue
             if stmt.is_import_from:
-                violations.extend(self._check_from_import(stmt, source_file))
+                violations.extend(self._check_from_import(ctx, stmt))
             else:
-                violations.extend(self._check_plain_import(stmt, source_file))
+                violations.extend(self._check_plain_import(ctx, stmt))
         return tuple(violations)
 
     def _check_from_import(
         self,
+        ctx: DetectionContext,
         stmt: ImportStatement,
-        source_file: SourceFile,
     ) -> list[Violation]:
         top = stmt.top_level_module
         if top is None or not ThirdPartyChecker.is_third_party(
             top, self._stdlib_modules, self._root_packages
         ):
             return []
-        return ThirdPartyImportDetector.detect_from_import(stmt, source_file, self._meta)
+        return ThirdPartyImportDetector.detect_from_import(ctx, stmt)
 
     def _check_plain_import(
         self,
+        ctx: DetectionContext,
         stmt: ImportStatement,
-        source_file: SourceFile,
     ) -> list[Violation]:
         violations: list[Violation] = []
         for imported in stmt.names:
@@ -151,8 +150,6 @@ class NoThirdPartyImportRule:
             if not ThirdPartyChecker.is_third_party(top, self._stdlib_modules, self._root_packages):
                 continue
             violations.append(
-                ThirdPartyImportDetector.detect_plain_import(
-                    stmt, imported.name, source_file, self._meta
-                )
+                ThirdPartyImportDetector.detect_plain_import(ctx, stmt, imported.name)
             )
         return violations

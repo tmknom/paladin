@@ -1,7 +1,4 @@
-"""ルール管理・実行
-
-複数 Rule を束ねて管理し、実行・一覧・検索を提供する。
-"""
+"""Rule 層のルール集約・実行担当。個別ルールを束ねてソースファイル群に一括適用する。"""
 
 from __future__ import annotations
 
@@ -25,7 +22,7 @@ class RuleSet:
         multi_file_rules: tuple[MultiFileRule, ...] = (),
         unused_ignore_rule: UnusedIgnoreRule | None = None,
     ) -> None:
-        """RuleSetを初期化"""
+        """ルールセットを初期化する。unused_ignore_rule 省略時は unused-ignore チェックが無効になる"""
         self._rules = rules
         self._multi_file_rules = multi_file_rules
         self._unused_ignore_rule = unused_ignore_rule
@@ -85,7 +82,7 @@ class RuleSet:
             violations.extend(rule.check(source_file))
         return violations
 
-    def run_unused_ignore(
+    def run_unused_ignore(  # paladin: ignore[max-function-parameter] -- run/run_unused_ignore は同一シグネチャを維持する必要があるため引数削減不可
         self,
         source_files: SourceFiles,
         raw_violations: Violations,

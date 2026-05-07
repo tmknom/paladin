@@ -11,8 +11,17 @@ from paladin.rule.max_function_parameter import (
     ParameterCounter,
     ParameterLimitDetector,
 )
-from paladin.rule.types import RuleMeta, Violation
+from paladin.rule.types import DetectionContext, RuleMeta, Violation
 from tests.unit.test_rule.helper import SourceFileFactory
+
+
+class FunctionScopeBuilder:
+    @staticmethod
+    def parse(source: str, is_method: bool) -> FunctionScope:
+        tree = ast.parse(source)
+        node = tree.body[0]
+        assert isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef))
+        return FunctionScope(node=node, is_method=is_method)
 
 
 class TestFunctionCollector:
@@ -326,12 +335,10 @@ class TestParameterLimitDetector:
         # Arrange
         source_file = SourceFileFactory.make("def foo(a, b, c): pass")
         scope = FunctionScopeBuilder.parse("def foo(a, b, c): pass", is_method=False)
-        meta = MaxFunctionParameterRule().meta
+        ctx = DetectionContext(meta=MaxFunctionParameterRule().meta, source_file=source_file)
 
         # Act
-        result = ParameterLimitDetector.detect(
-            scope, count=3, limit=3, meta=meta, source_file=source_file
-        )
+        result = ParameterLimitDetector.detect(scope, count=3, limit=3, ctx=ctx)
 
         # Assert
         assert result is None
@@ -340,12 +347,10 @@ class TestParameterLimitDetector:
         # Arrange
         source_file = SourceFileFactory.make("def foo(a, b, c, d): pass")
         scope = FunctionScopeBuilder.parse("def foo(a, b, c, d): pass", is_method=False)
-        meta = MaxFunctionParameterRule().meta
+        ctx = DetectionContext(meta=MaxFunctionParameterRule().meta, source_file=source_file)
 
         # Act
-        result = ParameterLimitDetector.detect(
-            scope, count=4, limit=3, meta=meta, source_file=source_file
-        )
+        result = ParameterLimitDetector.detect(scope, count=4, limit=3, ctx=ctx)
 
         # Assert
         assert result is not None
@@ -359,12 +364,10 @@ class TestParameterLimitDetector:
         node = tree.body[0]
         assert isinstance(node, ast.FunctionDef)
         scope = FunctionScope(node=node, is_method=False)
-        meta = MaxFunctionParameterRule().meta
+        ctx = DetectionContext(meta=MaxFunctionParameterRule().meta, source_file=source_file)
 
         # Act
-        result = ParameterLimitDetector.detect(
-            scope, count=4, limit=3, meta=meta, source_file=source_file
-        )
+        result = ParameterLimitDetector.detect(scope, count=4, limit=3, ctx=ctx)
 
         # Assert
         assert result is not None
@@ -374,12 +377,10 @@ class TestParameterLimitDetector:
         # Arrange
         source_file = SourceFileFactory.make("def create_user(a, b, c, d): pass")
         scope = FunctionScopeBuilder.parse("def create_user(a, b, c, d): pass", is_method=False)
-        meta = MaxFunctionParameterRule().meta
+        ctx = DetectionContext(meta=MaxFunctionParameterRule().meta, source_file=source_file)
 
         # Act
-        result = ParameterLimitDetector.detect(
-            scope, count=4, limit=3, meta=meta, source_file=source_file
-        )
+        result = ParameterLimitDetector.detect(scope, count=4, limit=3, ctx=ctx)
 
         # Assert
         assert result is not None
@@ -389,12 +390,10 @@ class TestParameterLimitDetector:
         # Arrange
         source_file = SourceFileFactory.make("def foo(a, b, c, d): pass")
         scope = FunctionScopeBuilder.parse("def foo(a, b, c, d): pass", is_method=False)
-        meta = MaxFunctionParameterRule().meta
+        ctx = DetectionContext(meta=MaxFunctionParameterRule().meta, source_file=source_file)
 
         # Act
-        result = ParameterLimitDetector.detect(
-            scope, count=4, limit=3, meta=meta, source_file=source_file
-        )
+        result = ParameterLimitDetector.detect(scope, count=4, limit=3, ctx=ctx)
 
         # Assert
         assert result is not None
@@ -575,11 +574,26 @@ class TestMaxFunctionParameterRule:
         # Assert
         assert result == ()
 
+    def test_check_正常系_app_commandデコレータ付き関数は違反としないこと(self):
+        # Arrange
+        source = "@app.command()\ndef check(ctx, targets, format, rule): pass"
+        source_file = SourceFileFactory.make(source)
+        rule = MaxFunctionParameterRule()
 
-class FunctionScopeBuilder:
-    @staticmethod
-    def parse(source: str, is_method: bool) -> FunctionScope:
-        tree = ast.parse(source)
-        node = tree.body[0]
-        assert isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef))
-        return FunctionScope(node=node, is_method=is_method)
+        # Act
+        result = rule.check(source_file)
+
+        # Assert
+        assert result == ()
+
+    def test_check_正常系_app_callbackデコレータ付き関数は違反としないこと(self):
+        # Arrange
+        source = "@app.callback()\ndef main(ctx, verbose, config, output): pass"
+        source_file = SourceFileFactory.make(source)
+        rule = MaxFunctionParameterRule()
+
+        # Act
+        result = rule.check(source_file)
+
+        # Assert
+        assert result == ()
