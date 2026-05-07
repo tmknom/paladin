@@ -1,14 +1,22 @@
-"""深いネスト禁止ルール"""
+"""Rule 層の静的解析ルール。AST ベースで関数/メソッド内の深すぎるネストを検出する。"""
 
 import ast
 from dataclasses import dataclass
 
-from paladin.rule.types import RuleMeta, SourceFile, Violation
+from paladin.rule.types import DetectionContext, RuleMeta, SourceFile, Violation
 
 _MAX_DEPTH = 3
 
 # ast.TryStar は Python 3.11+ で存在する
 _TRY_STAR_TYPE = getattr(ast, "TryStar", None)
+
+
+@dataclass(frozen=True)
+class NestingCheck:
+    """ネスト深度の判定に必要な情報を集約する"""
+
+    depth: int
+    threshold: int
 
 
 @dataclass(frozen=True)
@@ -207,21 +215,21 @@ class NestingDetector:
     @staticmethod
     def detect(
         scope: FunctionScope,
-        depth: int,
-        threshold: int,
-        meta: RuleMeta,
-        source_file: SourceFile,
+        check: NestingCheck,
+        ctx: DetectionContext,
     ) -> Violation | None:
         """Depth が threshold 以上なら Violation を返す。そうでなければ None を返す"""
-        if depth < threshold:
+        if check.depth < check.threshold:
             return None
         if scope.class_name is not None:
             scope_label = f"メソッド {scope.class_name}.{scope.node.name}"
         else:
             scope_label = f"関数 {scope.node.name}"
-        message = f"{scope_label} 内のネストが {depth} 段階に達している（最大: {threshold}）"
-        return meta.create_violation_at(
-            location=source_file.location(scope.node.lineno),
+        message = (
+            f"{scope_label} 内のネストが {check.depth} 段階に達している（最大: {check.threshold}）"
+        )
+        return ctx.meta.create_violation_at(
+            location=ctx.source_file.location(scope.node.lineno),
             message=message,
             reason="深いネストはテスタビリティを下げ、手続き的にロジックを持たせすぎている兆候である",
             suggestion="ネストの深い処理をプライベートメソッドに切り出すか、クラス設計を見直してください",
@@ -269,10 +277,12 @@ class NoDeepNestingRule:
 
     def check(self, source_file: SourceFile) -> tuple[Violation, ...]:
         """単一ファイルに対する違反判定を行う"""
+        ctx = DetectionContext(meta=self._meta, source_file=source_file)
         violations: list[Violation] = []
         for scope in FunctionCollector.collect(source_file.tree):
             depth = NestingCalculator.calc_max_depth(scope.node.body)
-            violation = NestingDetector.detect(scope, depth, _MAX_DEPTH, self._meta, source_file)
+            check = NestingCheck(depth=depth, threshold=_MAX_DEPTH)
+            violation = NestingDetector.detect(scope, check, ctx)
             if violation is not None:
                 violations.append(violation)
         return tuple(violations)

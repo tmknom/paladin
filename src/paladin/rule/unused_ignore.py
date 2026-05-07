@@ -1,8 +1,4 @@
-"""未使用 Ignore コメントを検出するルール
-
-ルール ID を指定した Ignore コメント（`# paladin: ignore[rule-id]` /
-`# paladin: ignore-file[rule-id]`）のうち、対応する違反が実際には存在しないものを検出する。
-"""
+"""Rule 層の静的解析ルール。ルール ID 指定の Ignore コメントのうち対応違反がないものを検出する。"""
 
 import re
 from dataclasses import dataclass
@@ -42,7 +38,7 @@ class IgnoreDirectiveCollector:
         return tuple(entries)
 
     @staticmethod
-    def _collect_line(
+    def _collect_line(  # paladin: ignore[max-function-parameter] -- source_file / line / line_number / entries は全て独立した情報であり集約不可
         source_file: SourceFile,
         line: str,
         line_number: int,
@@ -97,7 +93,7 @@ class UnusedIgnoreDetector:
     """生の違反リストと Ignore ディレクティブを照合し、未使用の Ignore を検出する"""
 
     @staticmethod
-    def detect(
+    def detect(  # paladin: ignore[max-function-parameter] -- entries / raw_violations / disabled_rule_ids / source_file / meta は全て独立した情報であり集約不可
         entries: tuple[IgnoreDirectiveEntry, ...],
         raw_violations: Violations,
         disabled_rule_ids: frozenset[str],

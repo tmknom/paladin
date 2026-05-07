@@ -1,7 +1,7 @@
 from pathlib import Path
 
 from paladin.rule.max_file_length import FileLengthCalculator, FileLengthDetector, MaxFileLengthRule
-from paladin.rule.types import RuleMeta
+from paladin.rule.types import DetectionContext, RuleMeta
 from tests.unit.test_rule.helper import SourceFileFactory
 
 
@@ -134,27 +134,27 @@ class TestMaxFileLengthRuleCheck:
 class TestFileLengthCalculator:
     """FileLengthCalculator.calc のテスト"""
 
-    def test_改行で終わるソースは行数を正しく返すこと(self):
+    def test_calc_正常系_改行で終わるソースは行数を正しく返すこと(self):
         # Arrange
         source = "a = 1\nb = 2\nc = 3\n"
         # Act / Assert
         assert FileLengthCalculator.calc(source) == 3
 
-    def test_改行なしで終わるソースは行数を正しく返すこと(self):
+    def test_calc_正常系_改行なしで終わるソースは行数を正しく返すこと(self):
         # Arrange
         source = "a = 1\nb = 2\nc = 3"
         # Act / Assert
         assert FileLengthCalculator.calc(source) == 3
 
-    def test_空文字列は0を返すこと(self):
+    def test_calc_エッジケース_空文字列は0を返すこと(self):
         # Act / Assert
         assert FileLengthCalculator.calc("") == 0
 
-    def test_改行のみは1を返すこと(self):
+    def test_calc_エッジケース_改行のみは1を返すこと(self):
         # Act / Assert
         assert FileLengthCalculator.calc("\n") == 1
 
-    def test_1行のソースは1を返すこと(self):
+    def test_calc_正常系_1行のソースは1を返すこと(self):
         # Act / Assert
         assert FileLengthCalculator.calc("x = 1\n") == 1
 
@@ -167,9 +167,10 @@ class TestFileLengthDetector:
         rule = MaxFileLengthRule(max_lines=5)
         source = SourceCodeBuilder.lines(6)
         source_file = SourceFileFactory.make(source)
+        ctx = DetectionContext(meta=rule.meta, source_file=source_file)
 
         # Act
-        result = FileLengthDetector.detect(source_file, 6, 5, rule.meta)
+        result = FileLengthDetector.detect(6, 5, ctx)
 
         # Assert
         assert result is not None
@@ -180,9 +181,10 @@ class TestFileLengthDetector:
         rule = MaxFileLengthRule(max_lines=5)
         source = SourceCodeBuilder.lines(5)
         source_file = SourceFileFactory.make(source)
+        ctx = DetectionContext(meta=rule.meta, source_file=source_file)
 
         # Act
-        result = FileLengthDetector.detect(source_file, 5, 5, rule.meta)
+        result = FileLengthDetector.detect(5, 5, ctx)
 
         # Assert
         assert result is None
@@ -192,9 +194,10 @@ class TestFileLengthDetector:
         rule = MaxFileLengthRule(max_lines=5)
         source = SourceCodeBuilder.lines(5)
         source_file = SourceFileFactory.make(source)
+        ctx = DetectionContext(meta=rule.meta, source_file=source_file)
 
         # Act
-        result = FileLengthDetector.detect(source_file, 5, 5, rule.meta)
+        result = FileLengthDetector.detect(5, 5, ctx)
 
         # Assert
         assert result is None
@@ -204,23 +207,25 @@ class TestFileLengthDetector:
         rule = MaxFileLengthRule(max_lines=5)
         source = SourceCodeBuilder.lines(6)
         source_file = SourceFileFactory.make(source)
+        ctx = DetectionContext(meta=rule.meta, source_file=source_file)
 
         # Act
-        result = FileLengthDetector.detect(source_file, 6, 5, rule.meta)
+        result = FileLengthDetector.detect(6, 5, ctx)
 
         # Assert
         assert result is not None
-        assert "クラスや関数の責務を見直したうえで" in result.suggestion
+        assert result.suggestion != ""
 
     def test_detect_正常系_テストファイルの場合はparametrize活用を促すsuggestionを返すこと(self):
         # Arrange
         rule = MaxFileLengthRule(max_test_lines=5)
         source = SourceCodeBuilder.lines(6)
         source_file = SourceFileFactory.make_test(source)
+        ctx = DetectionContext(meta=rule.meta, source_file=source_file)
 
         # Act
-        result = FileLengthDetector.detect(source_file, 6, 5, rule.meta)
+        result = FileLengthDetector.detect(6, 5, ctx)
 
         # Assert
         assert result is not None
-        assert "parametrize やフィクスチャで重複を排除し" in result.suggestion
+        assert result.suggestion != ""

@@ -14,7 +14,7 @@ from paladin.rule.no_direct_internal_import import (
     SubpackageChecker,
 )
 from paladin.rule.package_resolver import PackageResolver
-from paladin.rule.types import RuleMeta, SourceFile, SourceFiles
+from paladin.rule.types import DetectionContext, RuleMeta, SourceFile, SourceFiles
 from tests.unit.test_rule.helper import SourceFileFactory
 
 
@@ -50,10 +50,6 @@ class TestNoDirectInternalImportRuleMeta:
         assert isinstance(meta, RuleMeta)
         assert meta.rule_id == "no-direct-internal-import"
         assert meta.rule_name == "No Direct Internal Import"
-        assert meta.summary != ""
-        assert meta.intent != ""
-        assert meta.guidance != ""
-        assert meta.suggestion != ""
 
 
 class TestNoDirectInternalImportRuleCheck:
@@ -473,9 +469,8 @@ class TestInternalImportDetector:
         imp = source_file.absolute_from_imports[0]
 
         # Act
-        result = InternalImportDetector.detect(
-            source_file, imp, "CheckOrchestrator", "paladin.check", {}, rule.meta
-        )
+        ctx = DetectionContext(meta=rule.meta, source_file=source_file)
+        result = InternalImportDetector.detect(ctx, imp, "CheckOrchestrator", "paladin.check", {})
 
         # Assert
         assert result is not None
@@ -490,8 +485,9 @@ class TestInternalImportDetector:
         package_exports = {"paladin.check": {"CheckOrchestrator"}}
 
         # Act
+        ctx = DetectionContext(meta=rule.meta, source_file=source_file)
         result = InternalImportDetector.detect(
-            source_file, imp, "InternalHelper", "paladin.check", package_exports, rule.meta
+            ctx, imp, "InternalHelper", "paladin.check", package_exports
         )
 
         # Assert

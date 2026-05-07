@@ -1,12 +1,24 @@
-"""別パッケージのシンボルを __all__ で再エクスポートすることを禁止するルール
+"""Rule 層の静的解析ルール。別パッケージのシンボルを __all__ で再エクスポートすることを禁止するルール。
 
 仕様は docs/rules/no-cross-package-reexport.md を参照。
 """
 
+from dataclasses import dataclass
+
 from paladin.rule.all_exports_extractor import AllExportsExtractor
 from paladin.rule.import_statement import ModulePath
 from paladin.rule.package_resolver import PackageResolver
-from paladin.rule.types import RuleMeta, SourceFile, Violation
+from paladin.rule.types import DetectionContext, RuleMeta, SourceFile, Violation
+
+
+@dataclass(frozen=True)
+class ReexportSymbol:
+    """クロスパッケージ再エクスポート検出に必要なシンボル情報を集約する"""
+
+    line: int
+    name: str
+    source_package: str
+    current_package: str
 
 
 class ImportMappingCollector:
@@ -32,20 +44,13 @@ class CrossPackageReexportDetector:
     """クロスパッケージ再エクスポートの Violation を生成する"""
 
     @staticmethod
-    def detect(
-        source_file: SourceFile,
-        line: int,
-        name: str,
-        source_package: str,
-        current_package: str,
-        meta: RuleMeta,
-    ) -> Violation:
+    def detect(ctx: DetectionContext, symbol: ReexportSymbol) -> Violation:
         """診断メッセージ仕様に従い Violation を生成する"""
-        return meta.create_violation_at(
-            location=source_file.location(line),
-            message=f"__all__ に別パッケージのシンボル `{name}` が含まれている（定義元: `{source_package}`）",
-            reason=f"`{source_package}` で定義されたシンボルを `{current_package}` の公開 API として再エクスポートすると、パッケージ境界が曖昧になる",
-            suggestion=f"`{name}` を __all__ から削除し、利用者が `from {source_package} import {name}` を直接使用するよう誘導してください",
+        return ctx.meta.create_violation_at(
+            location=ctx.source_file.location(symbol.line),
+            message=f"__all__ に別パッケージのシンボル `{symbol.name}` が含まれている（定義元: `{symbol.source_package}`）",
+            reason=f"`{symbol.source_package}` で定義されたシンボルを `{symbol.current_package}` の公開 API として再エクスポートすると、パッケージ境界が曖昧になる",
+            suggestion=f"`{symbol.name}` を __all__ から削除し、利用者が `from {symbol.source_package} import {symbol.name}` を直接使用するよう誘導してください",
         )
 
 
@@ -104,6 +109,7 @@ class NoCrossPackageReexportRule:
 
         import_mapping = ImportMappingCollector.collect(source_file)
 
+        ctx = DetectionContext(meta=self._meta, source_file=source_file)
         current_module = ModulePath(current_package)
         violations: list[Violation] = []
         for name in all_exports:
@@ -111,15 +117,11 @@ class NoCrossPackageReexportRule:
                 continue
             import_module = ModulePath(import_mapping[name])
             if not import_module.is_subpackage_of(current_module):
-                source_package = import_module.package_key
-                violations.append(
-                    CrossPackageReexportDetector.detect(
-                        source_file=source_file,
-                        line=all_exports.lineno,
-                        name=name,
-                        source_package=source_package,
-                        current_package=current_package,
-                        meta=self._meta,
-                    )
+                symbol = ReexportSymbol(
+                    line=all_exports.lineno,
+                    name=name,
+                    source_package=import_module.package_key,
+                    current_package=current_package,
                 )
+                violations.append(CrossPackageReexportDetector.detect(ctx, symbol))
         return tuple(violations)

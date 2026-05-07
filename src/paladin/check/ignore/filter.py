@@ -1,7 +1,4 @@
-"""Ignoreパッケージの違反フィルタリング
-
-ignore ディレクティブに基づいて違反を除外する。
-"""
+"""Check層の違反フィルタリング担当。ignore ディレクティブを違反群に適用する。"""
 
 from pathlib import Path
 
@@ -10,9 +7,9 @@ from paladin.rule import Violation, Violations
 
 
 class ViolationFilter:
-    """FileIgnoreDirective / LineIgnoreDirective に基づいて Violations から ignore 対象の違反を除外するフィルター"""
+    """IgnoreディレクティブをViolationsに適用して対象外違反を除外するフィルター"""
 
-    def filter(
+    def filter(  # paladin: ignore[max-function-parameter]
         self,
         violations: Violations,
         directives: tuple[FileIgnoreDirective, ...],

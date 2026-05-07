@@ -1,4 +1,4 @@
-"""Rule 層の Composition Root。全ルールの登録と依存オプションの解決を一元管理する。"""
+"""Rule 層の Composition Root。"""
 
 from typing import cast
 
@@ -39,7 +39,12 @@ class RuleSetFactory:
     `RuleSet` を返す。主要メソッドは `create()`。
     """
 
-    _DEFAULT_ALLOW_DECORATORS: tuple[str, ...] = ("pytest.fixture", "fixture")
+    _DEFAULT_ALLOW_DECORATORS: tuple[str, ...] = (
+        "pytest.fixture",
+        "fixture",
+        "app.command",
+        "app.callback",
+    )
 
     def create(self, rule_options: dict[str, dict[str, object]] | None = None) -> RuleSet:
         """`rule_options` が `None` の場合は全ルールにデフォルト値を適用する。
@@ -182,7 +187,7 @@ class RuleSetFactory:
             return ()
         return tuple(str(item) for item in cast(list[object], raw))
 
-    def _extract_length_options(
+    def _extract_length_options(  # paladin: ignore[max-function-parameter] -- max-lines と max-test-lines を同時に取り出す責務のため引数削減不可
         self,
         rule_options: dict[str, dict[str, object]] | None,
         rule_id: str,

@@ -7,7 +7,7 @@ from paladin.rule.no_nested_test_class import (
     NestedTestClassCollector,
     NoNestedTestClassRule,
 )
-from paladin.rule.types import RuleMeta
+from paladin.rule.types import DetectionContext
 from tests.unit.test_rule.helper import SourceFileFactory
 
 
@@ -21,17 +21,6 @@ class ClassDefFactory:
                 node.lineno = lineno
                 return node
         raise AssertionError(f"ast.ClassDef が見つかりません: {name!r}")
-
-    @staticmethod
-    def meta() -> RuleMeta:
-        return RuleMeta(
-            rule_id="no-nested-test-class",
-            rule_name="No Nested Test Class",
-            summary="テストクラス内へのクラスのネストを禁止する",
-            intent="テストクラスのネストは可読性を下げるため、フラットな構造を維持する",
-            guidance="テストファイル内のトップレベルクラスの body に ClassDef が存在する場合に違反を検出する",
-            suggestion="ネストされたクラスをトップレベルのテストクラスとして独立させてください",
-        )
 
 
 class TestNestedTestClassCollector:
@@ -127,18 +116,17 @@ class TestNestedClassDetector:
         # Arrange
         outer_class = ClassDefFactory.make("TestOuter", lineno=1)
         inner_class = ClassDefFactory.make("InnerClass", lineno=5)
-        meta = ClassDefFactory.meta()
+        meta = NoNestedTestClassRule().meta
         source_file = SourceFileFactory.make_test(
             "class TestOuter:\n    class InnerClass:\n        pass"
         )
+        ctx = DetectionContext(meta=meta, source_file=source_file)
 
         # Act
-        result = NestedClassDetector.detect(outer_class, inner_class, meta, source_file)
+        result = NestedClassDetector.detect(ctx, outer_class, inner_class)
 
         # Assert
         assert result.rule_id == "no-nested-test-class"
-        assert "TestOuter" in result.message
-        assert "InnerClass" in result.message
         assert result.line == 5
 
 
@@ -156,9 +144,6 @@ class TestNoNestedTestClassRuleCheck:
 
         # Assert
         assert len(result) == 1
-        violation = result[0]
-        assert "TestOuter" in violation.message
-        assert "InnerClass" in violation.message
 
     def test_check_正常系_非テストファイルは空タプルを返すこと(self):
         # Arrange

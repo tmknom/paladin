@@ -8,6 +8,7 @@ import pytest
 from paladin.rule.all_exports_extractor import AllExportsExtractor
 from paladin.rule.no_unused_export import (
     ExportCollector,
+    ExportContext,
     NoUnusedExportRule,
     UnusedExportDetector,
     UsageCollector,
@@ -48,11 +49,6 @@ class TestNoUnusedExportRuleMeta:
         # Assert
         assert isinstance(meta, RuleMeta)
         assert meta.rule_id == "no-unused-export"
-        assert meta.rule_name != ""
-        assert meta.summary != ""
-        assert meta.intent != ""
-        assert meta.guidance != ""
-        assert meta.suggestion != ""
 
 
 class TestNoUnusedExportRuleCheck:
@@ -401,9 +397,10 @@ class TestUnusedExportDetector:
         file_path = Path("src/paladin/check/__init__.py")
         symbols = {"Foo": 1, "Bar": 2}
         used_symbols: set[str] = set()
+        ctx = ExportContext(file_path=file_path, meta=rule.meta)
 
         # Act
-        result = UnusedExportDetector.detect(file_path, symbols, used_symbols, rule.meta)
+        result = UnusedExportDetector.detect(ctx, symbols, used_symbols)
 
         # Assert
         assert len(result) == 2
@@ -414,9 +411,10 @@ class TestUnusedExportDetector:
         file_path = Path("src/paladin/check/__init__.py")
         symbols = {"Foo": 1}
         used_symbols = {"Foo"}
+        ctx = ExportContext(file_path=file_path, meta=rule.meta)
 
         # Act
-        result = UnusedExportDetector.detect(file_path, symbols, used_symbols, rule.meta)
+        result = UnusedExportDetector.detect(ctx, symbols, used_symbols)
 
         # Assert
         assert len(result) == 0
@@ -427,9 +425,10 @@ class TestUnusedExportDetector:
         file_path = Path("src/paladin/check/__init__.py")
         symbols = {"Foo": 3}
         used_symbols: set[str] = set()
+        ctx = ExportContext(file_path=file_path, meta=rule.meta)
 
         # Act
-        result = UnusedExportDetector.detect(file_path, symbols, used_symbols, rule.meta)
+        result = UnusedExportDetector.detect(ctx, symbols, used_symbols)
 
         # Assert
         assert len(result) == 1

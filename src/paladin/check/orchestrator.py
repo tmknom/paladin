@@ -1,7 +1,4 @@
-"""Checkパッケージのオーケストレーター
-
-対象列挙と AST 生成の処理フロー全体を制御し、結果を返す。
-"""
+"""Check パッケージのオーケストレーター層。ファイル収集から違反検出・整形までの全工程を一括制御する。"""
 
 from pathlib import Path
 
@@ -33,7 +30,7 @@ class CheckOrchestrator:
         CheckReport: フォーマット済みレポート文字列と終了コードを含む実行結果
     """
 
-    def __init__(
+    def __init__(  # paladin: ignore[max-function-parameter]
         self,
         collector: FileCollector,
         parser: AstParser,
@@ -44,18 +41,7 @@ class CheckOrchestrator:
         path_excluder: PathExcluder,
         override_resolver: OverrideResolver,
     ) -> None:
-        """CheckOrchestratorを初期化
-
-        Args:
-            collector: ファイル列挙コレクター
-            parser: ASTパーサー
-            rule_set: ルール管理・実行
-            formatter: レポートフォーマッター
-            ignore_processor: ignore ディレクティブ処理ファサード
-            rule_filter: ルール有効/無効フィルター
-            path_excluder: exclude パターンによるファイル除外
-            override_resolver: ディレクトリ別オーバーライド解決
-        """
+        """依存オブジェクトを受け取りオーケストレーターを初期化する"""
         self.collector = collector
         self.parser = parser
         self.rule_set = rule_set
@@ -73,7 +59,7 @@ class CheckOrchestrator:
             context: Check処理の実行時コンテキスト
 
         Returns:
-            Check処理のフォーマット済みレポート
+            `CheckReport.exit_code` が非ゼロの場合は違反あり
         """
         target_files = self.collector.collect(context.targets)
         target_files = self.path_excluder.exclude(target_files, context.exclude)

@@ -1,4 +1,4 @@
-"""tests/ 配下のコードに対するテストコードの作成を禁止するルール
+"""Rule 層の静的解析ルール。tests/ 配下のコードに対するテストコードの作成を禁止するルール。
 
 仕様は docs/rules/no-testing-test-code.md を参照。
 """
@@ -6,7 +6,7 @@
 import ast
 import re
 
-from paladin.rule.types import RuleMeta, SourceFile, SourceFiles, Violation
+from paladin.rule.types import DetectionContext, RuleMeta, SourceFile, SourceFiles, Violation
 
 
 class TestImportCollector:
@@ -29,10 +29,9 @@ class TestTargetDetector:
 
     @staticmethod
     def detect_class(
-        source_file: SourceFile,
+        ctx: DetectionContext,
         node: ast.ClassDef,
         test_imports: dict[str, str],
-        meta: RuleMeta,
     ) -> Violation | None:
         """TestXxx クラスが tests/ インポートと名前一致する場合に Violation を返す"""
         if not node.name.startswith("Test"):
@@ -40,16 +39,13 @@ class TestTargetDetector:
         imported_name = node.name[len("Test") :]
         if imported_name not in test_imports:
             return None
-        return TestTargetDetector._make_violation(
-            source_file, node, test_imports[imported_name], meta
-        )
+        return TestTargetDetector._make_violation(ctx, node, test_imports[imported_name])
 
     @staticmethod
     def detect_func(
-        source_file: SourceFile,
+        ctx: DetectionContext,
         node: ast.FunctionDef,
         test_imports: dict[str, str],
-        meta: RuleMeta,
     ) -> Violation | None:
         """test_xxx 関数が tests/ インポートの snake_case 名と一致する場合に Violation を返す"""
         if not node.name.startswith("test_"):
@@ -58,7 +54,7 @@ class TestTargetDetector:
         for bound_name, original_name in test_imports.items():
             snake = TestTargetDetector._to_snake_case(bound_name)
             if func_suffix == snake or func_suffix.startswith(snake + "_"):
-                return TestTargetDetector._make_violation(source_file, node, original_name, meta)
+                return TestTargetDetector._make_violation(ctx, node, original_name)
         return None
 
     @staticmethod
@@ -70,14 +66,13 @@ class TestTargetDetector:
 
     @staticmethod
     def _make_violation(
-        source_file: SourceFile,
+        ctx: DetectionContext,
         node: ast.ClassDef | ast.FunctionDef,
         name: str,
-        meta: RuleMeta,
     ) -> Violation:
         """診断メッセージ仕様に従い Violation を生成する"""
-        return meta.create_violation_at(
-            location=source_file.location(node.lineno, node.col_offset),
+        return ctx.meta.create_violation_at(
+            location=ctx.source_file.location(node.lineno, node.col_offset),
             message=f"`tests/` 配下のコード `{name}` に対するテストが定義されている",
             reason="テスト用コードをテストすることは無駄なメンテナンスコストを生む。テストが必要なほど複雑なコードを `tests/` 配下に置くべきではない",
             suggestion=f"`{name}` のテストを削除してください。テストが必要なほど複雑なら、そのロジックを `src/` 配下に移動することを検討してください",
@@ -127,20 +122,15 @@ class NoTestingTestCodeRule:
         if not test_imports:
             return []
 
+        ctx = DetectionContext(meta=self._meta, source_file=source_file)
         violations: list[Violation] = []
         for node in source_file.tree.body:
             if (
                 isinstance(node, ast.ClassDef)
-                and (
-                    v := TestTargetDetector.detect_class(
-                        source_file, node, test_imports, self._meta
-                    )
-                )
+                and (v := TestTargetDetector.detect_class(ctx, node, test_imports))
             ) or (
                 isinstance(node, ast.FunctionDef)
-                and (
-                    v := TestTargetDetector.detect_func(source_file, node, test_imports, self._meta)
-                )
+                and (v := TestTargetDetector.detect_func(ctx, node, test_imports))
             ):
                 violations.append(v)
         return violations

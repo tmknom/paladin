@@ -7,10 +7,11 @@ from paladin.rule.no_deep_nesting import (
     FunctionCollector,
     FunctionScope,
     NestingCalculator,
+    NestingCheck,
     NestingDetector,
     NoDeepNestingRule,
 )
-from paladin.rule.types import RuleMeta
+from paladin.rule.types import DetectionContext, RuleMeta
 from tests.unit.test_rule.helper import SourceFileFactory
 
 
@@ -379,11 +380,11 @@ class TestNestingDetector:
         rule = NoDeepNestingRule()
         source_file = SourceFileFactory.make("def foo():\n    pass\n")
         scope = self._make_scope("def foo():\n    pass\n")
+        ctx = DetectionContext(meta=rule.meta, source_file=source_file)
+        check = NestingCheck(depth=2, threshold=3)
 
         # Act
-        result = NestingDetector.detect(
-            scope, depth=2, threshold=3, meta=rule.meta, source_file=source_file
-        )
+        result = NestingDetector.detect(scope, check, ctx)
 
         # Assert
         assert result is None
@@ -393,11 +394,11 @@ class TestNestingDetector:
         rule = NoDeepNestingRule()
         source_file = SourceFileFactory.make("def method():\n    pass\n")
         scope = self._make_scope("def method():\n    pass\n", class_name="MyClass")
+        ctx = DetectionContext(meta=rule.meta, source_file=source_file)
+        check = NestingCheck(depth=3, threshold=3)
 
         # Act
-        result = NestingDetector.detect(
-            scope, depth=3, threshold=3, meta=rule.meta, source_file=source_file
-        )
+        result = NestingDetector.detect(scope, check, ctx)
 
         # Assert
         assert result is not None
@@ -407,11 +408,11 @@ class TestNestingDetector:
         rule = NoDeepNestingRule()
         source_file = SourceFileFactory.make("def foo():\n    pass\n")
         scope = self._make_scope("def foo():\n    pass\n", class_name=None)
+        ctx = DetectionContext(meta=rule.meta, source_file=source_file)
+        check = NestingCheck(depth=3, threshold=3)
 
         # Act
-        result = NestingDetector.detect(
-            scope, depth=3, threshold=3, meta=rule.meta, source_file=source_file
-        )
+        result = NestingDetector.detect(scope, check, ctx)
 
         # Assert
         assert result is not None

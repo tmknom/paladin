@@ -1,6 +1,6 @@
-"""ファイルの最大行数制限ルール"""
+"""Rule 層の静的解析ルール。ファイル行数の上限超過を検出する。"""
 
-from paladin.rule.types import RuleMeta, SourceFile, Violation
+from paladin.rule.types import DetectionContext, RuleMeta, SourceFile, Violation
 
 _DEFAULT_MAX_LINES = 300
 _DEFAULT_MAX_TEST_LINES = 500
@@ -22,22 +22,23 @@ class FileLengthDetector:
 
     @staticmethod
     def detect(
-        source_file: SourceFile,
         length: int,
         limit: int,
-        meta: RuleMeta,
+        ctx: DetectionContext,
     ) -> Violation | None:
         """Length が limit を超えていれば Violation を返す。そうでなければ None を返す"""
         if length <= limit:
             return None
+        source_file = ctx.source_file
         file_path = source_file.file_path.name
         message = f"ファイル `{file_path}` は `{length}` 行です。上限は `{limit}` 行です"
         if source_file.is_test_file:
             suggestion = "parametrize やフィクスチャで重複を排除し、必要に応じてテストファイルを分割してください"
         else:
             suggestion = "不要なコードを削除し、クラスや関数の責務を見直したうえで、必要に応じてファイルを分割してください"
-        return meta.create_violation_at(
-            location=source_file.location(length),
+        location = source_file.location(length)
+        return ctx.meta.create_violation_at(
+            location=location,
             message=message,
             reason="ファイルが長すぎることは、責務の肥大化や設計上の問題を示す兆候です",
             suggestion=suggestion,
@@ -90,7 +91,8 @@ class MaxFileLengthRule:
         """単一ファイルに対する違反判定を行う"""
         limit = self._max_test_lines if source_file.is_test_file else self._max_lines
         length = FileLengthCalculator.calc(source_file.source)
-        violation = FileLengthDetector.detect(source_file, length, limit, self._meta)
+        ctx = DetectionContext(meta=self._meta, source_file=source_file)
+        violation = FileLengthDetector.detect(length, limit, ctx)
         if violation is None:
             return ()
         return (violation,)

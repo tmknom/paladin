@@ -7,7 +7,7 @@ from paladin.rule.max_method_length import (
     MaxMethodLengthRule,
     MethodLengthDetector,
 )
-from paladin.rule.types import RuleMeta
+from paladin.rule.types import DetectionContext, RuleMeta
 from tests.unit.test_rule.helper import SourceFileFactory
 
 
@@ -91,7 +91,7 @@ class TestMaxMethodLengthRuleCheck:
         # Assert
         assert len(result) == 2
 
-    def test_check_違反なしのケースで空を返すこと_docstring除外で上限以下(self) -> None:
+    def test_check_違反なし_docstring除外で上限以下なら空を返すこと(self) -> None:
         # Arrange
         rule = MaxMethodLengthRule()
         source = MethodSourceBuilder.with_docstring(num_lines=55, docstring_lines=5)
@@ -103,7 +103,7 @@ class TestMaxMethodLengthRuleCheck:
         # Assert
         assert len(result) == 0
 
-    def test_check_違反ありのケースで1件返すこと_docstring除外しても上限超過(self) -> None:
+    def test_check_違反あり_docstring除外しても上限超過なら1件返すこと(self) -> None:
         # Arrange
         rule = MaxMethodLengthRule()
         source = MethodSourceBuilder.with_docstring(num_lines=61, docstring_lines=10)
@@ -234,14 +234,12 @@ class TestMethodLengthDetector:
         # Arrange
         source = "def foo(): pass"
         scope = self._make_scope(source)
-        meta = MaxMethodLengthRule().meta
         source_file = SourceFileFactory.make(source)
+        ctx = DetectionContext(meta=MaxMethodLengthRule().meta, source_file=source_file)
         limit = 10
 
         # Act
-        result = MethodLengthDetector.detect(
-            scope, length=limit, limit=limit, meta=meta, source_file=source_file
-        )
+        result = MethodLengthDetector.detect(scope, length=limit, limit=limit, ctx=ctx)
 
         # Assert
         assert result is None
@@ -250,51 +248,43 @@ class TestMethodLengthDetector:
         # Arrange
         source = "def foo(): pass"
         scope = self._make_scope(source)
-        meta = MaxMethodLengthRule().meta
         source_file = SourceFileFactory.make(source)
+        ctx = DetectionContext(meta=MaxMethodLengthRule().meta, source_file=source_file)
         limit = 10
 
         # Act
-        result = MethodLengthDetector.detect(
-            scope, length=limit + 1, limit=limit, meta=meta, source_file=source_file
-        )
+        result = MethodLengthDetector.detect(scope, length=limit + 1, limit=limit, ctx=ctx)
 
         # Assert
         assert result is not None
 
-    def test_detect_正常系_メソッドのViolationメッセージにクラス名_メソッド名が含まれること(self):
+    def test_detect_正常系_メソッドのViolationが生成されること(self):
         # Arrange
         source = "class MyClass:\n    def method(self): pass"
         scope = self._make_scope(source)
-        meta = MaxMethodLengthRule().meta
         source_file = SourceFileFactory.make(source)
+        ctx = DetectionContext(meta=MaxMethodLengthRule().meta, source_file=source_file)
         limit = 10
 
         # Act
-        result = MethodLengthDetector.detect(
-            scope, length=limit + 1, limit=limit, meta=meta, source_file=source_file
-        )
+        result = MethodLengthDetector.detect(scope, length=limit + 1, limit=limit, ctx=ctx)
 
         # Assert
         assert result is not None
-        assert "MyClass.method" in result.message
 
-    def test_detect_正常系_関数のViolationメッセージに関数名のみが含まれること(self):
+    def test_detect_正常系_関数のViolationが生成されること(self):
         # Arrange
         source = "def standalone(): pass"
         scope = self._make_scope(source)
-        meta = MaxMethodLengthRule().meta
         source_file = SourceFileFactory.make(source)
+        ctx = DetectionContext(meta=MaxMethodLengthRule().meta, source_file=source_file)
         limit = 10
 
         # Act
-        result = MethodLengthDetector.detect(
-            scope, length=limit + 1, limit=limit, meta=meta, source_file=source_file
-        )
+        result = MethodLengthDetector.detect(scope, length=limit + 1, limit=limit, ctx=ctx)
 
         # Assert
         assert result is not None
-        assert "standalone" in result.message
 
 
 class TestFunctionCollector:

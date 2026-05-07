@@ -1,13 +1,19 @@
-"""Ignore パッケージの解析層
-
-ソーステキストを走査してディレクティブを値オブジェクトに変換する責務を持つ。
-"""
+"""Ignore パッケージの解析層。ソーステキストからディレクティブを抽出する責務を持つ。"""
 
 import re
+from dataclasses import dataclass
 from pathlib import Path
 
 from paladin.check.ignore.directive import FileIgnoreDirective, LineIgnoreDirective
 from paladin.rule import SourceFiles
+
+
+@dataclass(frozen=True)
+class ParseContext:
+    """行単位 ignore パース処理で共有されるファイルコンテキスト"""
+
+    file_path: Path
+    lines: list[str]
 
 
 def _parse_rule_spec(rule_spec: str) -> frozenset[str]:
@@ -54,7 +60,7 @@ class FileIgnoreParser:
             stripped = lines[i].strip()
 
             if in_docstring:
-                # クォート文字列が行内に現れれば docstring 終了と見なす
+                # クォートが行内に出現すればdocstring終了（in_docstringをFalseに）
                 in_docstring = docstring_quote not in lines[i]
                 i += 1
                 continue
@@ -151,16 +157,16 @@ class LineIgnoreParser:
             LineIgnoreDirective のタプル。ディレクティブなしの場合は空タプル
         """
         lines = source.splitlines()
+        context = ParseContext(file_path=file_path, lines=lines)
         return tuple(
             directive
             for i, line in enumerate(lines)
-            for directive in self._parse_line(file_path, lines, i, line)
+            for directive in self._parse_line(context, i, line)
         )
 
     def _parse_line(
         self,
-        file_path: Path,
-        lines: list[str],
+        context: ParseContext,
         i: int,
         line: str,
     ) -> list[LineIgnoreDirective]:
@@ -173,17 +179,16 @@ class LineIgnoreParser:
         """
         preceding_match = self._LINE_DIRECTIVE_PATTERN.match(line.lstrip())
         if preceding_match:
-            directive = self._parse_preceding(file_path, lines, i, preceding_match)
+            directive = self._parse_preceding(context, i, preceding_match)
             return [directive] if directive is not None else []
         trailing_match = self._TRAILING_DIRECTIVE_PATTERN.search(line)
         if trailing_match:
-            return [self._parse_trailing(file_path, i, trailing_match)]
+            return [self._parse_trailing(context.file_path, i, trailing_match)]
         return []
 
     def _parse_preceding(
         self,
-        file_path: Path,
-        lines: list[str],
+        context: ParseContext,
         i: int,
         match: re.Match[str],
     ) -> LineIgnoreDirective | None:
@@ -196,18 +201,18 @@ class LineIgnoreParser:
                （次行の行番号を target_line とする）
         """
         next_index = i + 1
-        if next_index >= len(lines) or lines[next_index].strip() == "":
+        if next_index >= len(context.lines) or context.lines[next_index].strip() == "":
             return None
         rule_spec = match.group(2)
         if rule_spec is None:
             return LineIgnoreDirective(
-                file_path=file_path,
+                file_path=context.file_path,
                 target_line=next_index + 1,
                 ignore_all=True,
                 ignored_rules=frozenset(),
             )
         return LineIgnoreDirective(
-            file_path=file_path,
+            file_path=context.file_path,
             target_line=next_index + 1,
             ignore_all=False,
             ignored_rules=_parse_rule_spec(rule_spec),

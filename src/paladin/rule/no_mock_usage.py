@@ -1,10 +1,10 @@
-"""Mock/MagicMock インポート禁止ルール
+"""Rule 層の静的解析ルール。Mock/MagicMock インポート禁止ルール。
 
 仕様は docs/rules/no-mock-usage.md を参照。
 """
 
 from paladin.rule.import_statement import ImportedName, ImportStatement
-from paladin.rule.types import RuleMeta, SourceFile, Violation
+from paladin.rule.types import DetectionContext, RuleMeta, SourceFile, Violation
 
 _FORBIDDEN_NAMES = frozenset({"Mock", "MagicMock"})
 _REASON = (
@@ -17,38 +17,34 @@ class MockUsageDetector:
 
     @staticmethod
     def detect_from_import(
-        source_file: SourceFile,
+        ctx: DetectionContext,
         stmt: ImportStatement,
         imported: ImportedName,
-        meta: RuleMeta,
     ) -> Violation | None:
         """From unittest.mock import Mock/MagicMock パターンを検出する"""
         if stmt.module_str != "unittest.mock":
             return None
         if imported.name not in _FORBIDDEN_NAMES:
             return None
-        return meta.create_violation_at(
-            location=source_file.location_from(stmt),
+        return ctx.violation_from(
+            stmt=stmt,
             message=f"{imported.name} のインポートは禁止されています",
             reason=_REASON,
-            suggestion=meta.suggestion,
         )
 
     @staticmethod
     def detect_plain_import(
-        source_file: SourceFile,
+        ctx: DetectionContext,
         stmt: ImportStatement,
         imported: ImportedName,
-        meta: RuleMeta,
     ) -> Violation | None:
         """Import unittest.mock パターンを検出する"""
         if imported.name != "unittest.mock":
             return None
-        return meta.create_violation_at(
-            location=source_file.location_from(stmt),
+        return ctx.violation_from(
+            stmt=stmt,
             message="unittest.mock のインポートは禁止されています",
             reason=_REASON,
-            suggestion=meta.suggestion,
         )
 
 
@@ -92,16 +88,17 @@ class NoMockUsageRule:
 
     def check(self, source_file: SourceFile) -> tuple[Violation, ...]:
         """単一ファイルに対する違反判定を行う"""
+        ctx = DetectionContext(meta=self._meta, source_file=source_file)
         violations: list[Violation] = []
         for stmt in source_file.imports:
             if stmt.is_import_from:
                 detected = (
-                    MockUsageDetector.detect_from_import(source_file, stmt, imported, self._meta)
+                    MockUsageDetector.detect_from_import(ctx, stmt, imported)
                     for imported in stmt.names
                 )
             else:
                 detected = (
-                    MockUsageDetector.detect_plain_import(source_file, stmt, imported, self._meta)
+                    MockUsageDetector.detect_plain_import(ctx, stmt, imported)
                     for imported in stmt.names
                 )
             violations.extend(v for v in detected if v is not None)
