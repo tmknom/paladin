@@ -16,11 +16,6 @@ class ParseContext:
     lines: list[str]
 
 
-def _parse_rule_spec(rule_spec: str) -> frozenset[str]:
-    """カンマ区切りのルール仕様文字列を frozenset に変換する"""
-    return frozenset(r.strip() for r in rule_spec.split(","))
-
-
 class FileIgnoreParser:
     """ソーステキストの先頭コメントから ignore-file ディレクティブを抽出するパーサー
 
@@ -114,8 +109,11 @@ class FileIgnoreParser:
         return FileIgnoreDirective(
             file_path=file_path,
             ignore_all=False,
-            ignored_rules=_parse_rule_spec(rule_spec),
+            ignored_rules=self._parse_rule_spec(rule_spec),
         )
+
+    def _parse_rule_spec(self, rule_spec: str) -> frozenset[str]:
+        return frozenset(r.strip() for r in rule_spec.split(","))
 
     def parse_all(self, source_files: SourceFiles) -> tuple[FileIgnoreDirective, ...]:
         """複数ファイルのディレクティブをタプルで返す
@@ -215,7 +213,7 @@ class LineIgnoreParser:
             file_path=context.file_path,
             target_line=next_index + 1,
             ignore_all=False,
-            ignored_rules=_parse_rule_spec(rule_spec),
+            ignored_rules=self._parse_rule_spec(rule_spec),
         )
 
     def _parse_trailing(
@@ -237,8 +235,11 @@ class LineIgnoreParser:
             file_path=file_path,
             target_line=i + 1,
             ignore_all=False,
-            ignored_rules=_parse_rule_spec(rule_spec),
+            ignored_rules=self._parse_rule_spec(rule_spec),
         )
+
+    def _parse_rule_spec(self, rule_spec: str) -> frozenset[str]:
+        return frozenset(r.strip() for r in rule_spec.split(","))
 
     def parse_all(self, source_files: SourceFiles) -> tuple[LineIgnoreDirective, ...]:
         """複数ファイルのディレクティブをタプルで返す
