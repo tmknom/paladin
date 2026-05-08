@@ -7,7 +7,7 @@ class RuleMetaFactory:
     """テスト用 RuleMeta 生成ファクトリ（拡張版）"""
 
     @staticmethod
-    def make(
+    def make(  # paladin: ignore[max-function-parameter]
         rule_id: str = "my-rule",
         rule_name: str = "My Rule",
         summary: str = "概要",

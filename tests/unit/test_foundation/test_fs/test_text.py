@@ -226,6 +226,7 @@ class TestTextFileSystemWriter:
         # Path.mkdirをモックして、予期しないエラーを発生させる
         original_mkdir = Path.mkdir
 
+        # paladin: ignore[max-function-parameter]
         def mock_mkdir(
             self: Path,
             mode: int = 0o777,
