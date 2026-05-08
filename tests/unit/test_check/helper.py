@@ -11,7 +11,7 @@ class ViolationFactory:
     """テスト用 Violation 生成ファクトリ"""
 
     @staticmethod
-    def make(
+    def make(  # paladin: ignore[max-function-parameter]
         file: str = "src/paladin/__init__.py",
         line: int = 1,
         column: int = 0,
