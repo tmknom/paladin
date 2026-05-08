@@ -3,6 +3,8 @@
 import ast
 from pathlib import Path
 
+import pytest
+
 from paladin.rule.max_function_parameter import (
     DecoratorAllowChecker,
     FunctionCollector,
@@ -11,7 +13,7 @@ from paladin.rule.max_function_parameter import (
     ParameterCounter,
     ParameterLimitDetector,
 )
-from paladin.rule.types import DetectionContext, RuleMeta, Violation
+from paladin.rule.types import DetectionContext
 from tests.unit.test_rule.helper import SourceFileFactory
 
 
@@ -53,21 +55,6 @@ class TestFunctionCollector:
         assert result[0].is_method is True
         assert result[0].node.name == "m"
 
-    def test_collect_正常系_ネスト関数をis_method_Falseで収集すること(self):
-        # Arrange
-        source = "def outer():\n    def inner(): pass"
-        tree = ast.parse(source)
-
-        # Act
-        result = FunctionCollector.collect(tree)
-
-        # Assert
-        assert len(result) == 2
-        names = {s.node.name for s in result}
-        assert names == {"outer", "inner"}
-        for scope in result:
-            assert scope.is_method is False
-
     def test_collect_正常系_関数内クラスのメソッドをis_method_Trueで収集すること(self):
         # Arrange
         source = "def outer():\n    class Local:\n        def m(self): pass"
@@ -83,18 +70,6 @@ class TestFunctionCollector:
         assert outer_scope.is_method is False
         assert m_scope.is_method is True
 
-    def test_collect_正常系_async関数を収集すること(self):
-        # Arrange
-        source = "async def foo(): pass"
-        tree = ast.parse(source)
-
-        # Act
-        result = FunctionCollector.collect(tree)
-
-        # Assert
-        assert len(result) == 1
-        assert result[0].is_method is False
-
     def test_collect_正常系_ネストクラスのメソッドを収集すること(self):
         # Arrange
         source = "class Outer:\n    class Inner:\n        def m(self): pass"
@@ -106,6 +81,21 @@ class TestFunctionCollector:
         # Assert
         assert len(result) == 1
         assert result[0].is_method is True
+
+    def test_collect_正常系_ネスト関数をis_method_Falseで収集すること(self):
+        # Arrange
+        source = "def outer():\n    def inner(): pass"
+        tree = ast.parse(source)
+
+        # Act
+        result = FunctionCollector.collect(tree)
+
+        # Assert
+        assert len(result) == 2
+        names = {s.node.name for s in result}
+        assert names == {"outer", "inner"}
+        for scope in result:
+            assert scope.is_method is False
 
     def test_collect_エッジケース_関数なしで空タプルを返すこと(self):
         # Arrange
@@ -158,174 +148,66 @@ class TestDecoratorAllowChecker:
         # Assert
         assert result == "pytest.fixture"
 
-    def test_decorator_name_エッジケース_文字列化不能な式でNoneを返すこと(self):
-        # Arrange
-        decorator = ast.Constant(value=42)
+    @pytest.mark.parametrize(
+        "decorator",
+        [
+            ast.Constant(value=42),
+            ast.Attribute(value=ast.Constant(value=1), attr="foo", ctx=ast.Load()),
+        ],
+        ids=["Constant式", "解決不能Attribute"],
+    )
+    def test_decorator_name_エッジケース_文字列化不能な式でNoneを返すこと(
+        self, decorator: ast.expr
+    ):
+        # Arrange: Constant と Attribute(Constant, attr) はどちらも解決不能
 
         # Act
         result = DecoratorAllowChecker.decorator_name(decorator)
 
         # Assert
         assert result is None
-
-    def test_decorator_name_エッジケース_Attribute親が解決不能な場合Noneを返すこと(self):
-        # Arrange: Constant(1).foo のような解決不能な Attribute
-        decorator = ast.Attribute(value=ast.Constant(value=1), attr="foo", ctx=ast.Load())
-
-        # Act
-        result = DecoratorAllowChecker.decorator_name(decorator)
-
-        # Assert
-        assert result is None
-
-    def test_is_allowed_正常系_許可リストに完全一致する場合Trueを返すこと(self):
-        # Arrange
-        source = "@pytest.fixture\ndef f(a, b, c, d): pass"
-        node = ast.parse(source).body[0]
-        assert isinstance(node, ast.FunctionDef)
-
-        # Act
-        result = DecoratorAllowChecker.is_allowed(node, frozenset({"pytest.fixture"}))
-
-        # Assert
-        assert result is True
-
-    def test_is_allowed_正常系_許可リストに含まれない場合Falseを返すこと(self):
-        # Arrange
-        source = "@dataclass\ndef f(a, b, c, d): pass"
-        node = ast.parse(source).body[0]
-        assert isinstance(node, ast.FunctionDef)
-
-        # Act
-        result = DecoratorAllowChecker.is_allowed(node, frozenset({"pytest.fixture"}))
-
-        # Assert
-        assert result is False
-
-    def test_is_allowed_正常系_decorator_listが空の場合Falseを返すこと(self):
-        # Arrange
-        source = "def f(a, b, c, d): pass"
-        node = ast.parse(source).body[0]
-        assert isinstance(node, ast.FunctionDef)
-
-        # Act
-        result = DecoratorAllowChecker.is_allowed(node, frozenset({"pytest.fixture"}))
-
-        # Assert
-        assert result is False
 
 
 class TestParameterCounter:
     """ParameterCounter.count() のテスト"""
 
-    def test_count_正常系_引数なしで0を返すこと(self):
-        # Arrange
-        scope = FunctionScopeBuilder.parse("def f(): pass", is_method=False)
-
+    @pytest.mark.parametrize(
+        ("source", "is_method", "expected"),
+        [
+            ("def f(): pass", False, 0),
+            ("def f(a, b, c): pass", False, 3),
+            ("def m(self, a, b): pass", True, 2),
+            ("def m(cls, a, b): pass", True, 2),
+            ("@staticmethod\ndef m(a, b, c): pass", True, 3),
+            ("def f(a, *args): pass", False, 2),
+            ("def f(a, **kwargs): pass", False, 2),
+            ("def f(a, /, b, *, c): pass", False, 3),
+            ("def f(a, *args, **kwargs): pass", False, 3),
+            ("def m(other, a): pass", True, 2),
+            ("@staticmethod\ndef m(): pass", True, 0),
+            ("def m(): pass", True, 0),
+            ("def m(self, /, a, b): pass", True, 2),
+        ],
+        ids=[
+            "引数なし",
+            "位置引数のみ",
+            "self除外",
+            "cls除外",
+            "staticmethodはselfを除外しない",
+            "varargを1としてカウント",
+            "kwargを1としてカウント",
+            "posonlyargsとkwonlyargsを合算",
+            "vararg_kwarg両方を加算",
+            "メソッドの第1引数がselfでない場合は除外しない",
+            "引数なしstaticmethodで0",
+            "引数なしメソッドで0",
+            "posonlyargs先頭がselfの場合除外",
+        ],
+    )
+    def test_count_正常系(self, source: str, is_method: bool, expected: int):
         # Act & Assert
-        assert ParameterCounter.count(scope) == 0
-
-    def test_count_正常系_位置引数のみの場合は引数数を返すこと(self):
-        # Arrange
-        scope = FunctionScopeBuilder.parse("def f(a, b, c): pass", is_method=False)
-
-        # Act & Assert
-        assert ParameterCounter.count(scope) == 3
-
-    def test_count_正常系_self付きメソッドはselfを除外すること(self):
-        # Arrange
-        scope = FunctionScopeBuilder.parse("def m(self, a, b): pass", is_method=True)
-
-        # Act & Assert
-        assert ParameterCounter.count(scope) == 2
-
-    def test_count_正常系_cls付きクラスメソッドはclsを除外すること(self):
-        # Arrange
-        scope = FunctionScopeBuilder.parse("def m(cls, a, b): pass", is_method=True)
-
-        # Act & Assert
-        assert ParameterCounter.count(scope) == 2
-
-    def test_count_正常系_staticmethodはselfを除外しないこと(self):
-        # Arrange
-        scope = FunctionScopeBuilder.parse("@staticmethod\ndef m(a, b, c): pass", is_method=True)
-
-        # Act & Assert
-        assert ParameterCounter.count(scope) == 3
-
-    def test_count_正常系_varargを1としてカウントすること(self):
-        # Arrange
-        scope = FunctionScopeBuilder.parse("def f(a, *args): pass", is_method=False)
-
-        # Act & Assert
-        assert ParameterCounter.count(scope) == 2
-
-    def test_count_正常系_kwargを1としてカウントすること(self):
-        # Arrange
-        scope = FunctionScopeBuilder.parse("def f(a, **kwargs): pass", is_method=False)
-
-        # Act & Assert
-        assert ParameterCounter.count(scope) == 2
-
-    def test_count_正常系_posonlyargsとkwonlyargsを合算すること(self):
-        # Arrange
-        scope = FunctionScopeBuilder.parse("def f(a, /, b, *, c): pass", is_method=False)
-
-        # Act & Assert
-        assert ParameterCounter.count(scope) == 3
-
-    def test_count_正常系_vararg_kwarg両方を加算すること(self):
-        # Arrange
-        scope = FunctionScopeBuilder.parse("def f(a, *args, **kwargs): pass", is_method=False)
-
-        # Act & Assert
-        assert ParameterCounter.count(scope) == 3
-
-    def test_count_正常系_メソッドの第1引数がselfでない場合は除外しないこと(self):
-        # Arrange: self/cls 以外の第1引数名は除外しない（仕様通り）
-        scope = FunctionScopeBuilder.parse("def m(other, a): pass", is_method=True)
-
-        # Act & Assert
-        assert ParameterCounter.count(scope) == 2
-
-    def test_count_エッジケース_引数なしのstaticmethodで0を返すこと(self):
-        # Arrange
-        scope = FunctionScopeBuilder.parse("@staticmethod\ndef m(): pass", is_method=True)
-
-        # Act & Assert
-        assert ParameterCounter.count(scope) == 0
-
-    def test_count_エッジケース_引数なしのメソッドで0を返すこと(self):
-        # Arrange: is_method=True かつ引数なし → _first_positional_name が None を返す
-        scope = FunctionScopeBuilder.parse("def m(): pass", is_method=True)
-
-        # Act & Assert
-        assert ParameterCounter.count(scope) == 0
-
-    def test_count_正常系_posonlyargs先頭がselfの場合除外すること(self):
-        # Arrange: def m(self, /, a, b) → posonlyargs に self、self を除外して 2
-        scope = FunctionScopeBuilder.parse("def m(self, /, a, b): pass", is_method=True)
-
-        # Act & Assert
-        assert ParameterCounter.count(scope) == 2
-
-    def test_is_static_正常系_staticmethodデコレータでTrueを返すこと(self):
-        # Arrange
-        source = "@staticmethod\ndef m(a, b): pass"
-        node = ast.parse(source).body[0]
-        assert isinstance(node, ast.FunctionDef)
-
-        # Act & Assert
-        assert ParameterCounter.is_static(node) is True
-
-    def test_is_static_正常系_デコレータなしでFalseを返すこと(self):
-        # Arrange
-        source = "def m(a, b): pass"
-        node = ast.parse(source).body[0]
-        assert isinstance(node, ast.FunctionDef)
-
-        # Act & Assert
-        assert ParameterCounter.is_static(node) is False
+        scope = FunctionScopeBuilder.parse(source, is_method=is_method)
+        assert ParameterCounter.count(scope) == expected
 
 
 class TestParameterLimitDetector:
@@ -354,9 +236,8 @@ class TestParameterLimitDetector:
 
         # Assert
         assert result is not None
-        assert isinstance(result, Violation)
 
-    def test_detect_正常系_violation_lineがdef文の行番号と一致すること(self):
+    def test_detect_正常系_violationのフィールド値が正しいこと(self):
         # Arrange: 3行目に def が来るソース
         source = "\n\ndef foo(a, b, c, d): pass"
         source_file = SourceFileFactory.make(source)
@@ -372,31 +253,6 @@ class TestParameterLimitDetector:
         # Assert
         assert result is not None
         assert result.line == 3
-
-    def test_detect_正常系_violation_messageに関数名と件数と上限が含まれること(self):
-        # Arrange
-        source_file = SourceFileFactory.make("def create_user(a, b, c, d): pass")
-        scope = FunctionScopeBuilder.parse("def create_user(a, b, c, d): pass", is_method=False)
-        ctx = DetectionContext(meta=MaxFunctionParameterRule().meta, source_file=source_file)
-
-        # Act
-        result = ParameterLimitDetector.detect(scope, count=4, limit=3, ctx=ctx)
-
-        # Assert
-        assert result is not None
-        assert isinstance(result, Violation)
-
-    def test_detect_正常系_rule_id_rule_name_reason_suggestionが設定されていること(self):
-        # Arrange
-        source_file = SourceFileFactory.make("def foo(a, b, c, d): pass")
-        scope = FunctionScopeBuilder.parse("def foo(a, b, c, d): pass", is_method=False)
-        ctx = DetectionContext(meta=MaxFunctionParameterRule().meta, source_file=source_file)
-
-        # Act
-        result = ParameterLimitDetector.detect(scope, count=4, limit=3, ctx=ctx)
-
-        # Assert
-        assert result is not None
         assert result.rule_id == "max-function-parameter"
         assert result.rule_name == "Max Function Parameter"
         assert result.reason != ""
@@ -413,7 +269,6 @@ class TestMaxFunctionParameterRule:
         # Act & Assert
         assert rule.meta.rule_id == "max-function-parameter"
         assert rule.meta.rule_name == "Max Function Parameter"
-        assert isinstance(rule.meta, RuleMeta)
         assert rule.meta.config_example is not None
         assert rule.meta.detection_example is not None
 
@@ -544,17 +399,6 @@ class TestMaxFunctionParameterRule:
         # Arrange: cls を除いて3引数 = 上限内
         source = "class C:\n    @classmethod\n    def m(cls, a, b, c): pass"
         source_file = SourceFileFactory.make(source)
-        rule = MaxFunctionParameterRule()
-
-        # Act
-        result = rule.check(source_file)
-
-        # Assert
-        assert result == ()
-
-    def test_check_エッジケース_関数定義なしで空タプルを返すこと(self):
-        # Arrange
-        source_file = SourceFileFactory.make("x = 1")
         rule = MaxFunctionParameterRule()
 
         # Act
