@@ -10,17 +10,6 @@ from pathlib import Path
 from paladin.rule.import_statement import AbsoluteFromImport, ImportStatement, SourceLocation
 
 
-def _collect_imports(nodes: Iterable[ast.AST]) -> tuple[ImportStatement, ...]:
-    """AST ノード列からインポート文を収集して返す"""
-    result: list[ImportStatement] = []
-    for node in nodes:
-        if isinstance(node, ast.ImportFrom):
-            result.append(ImportStatement.from_import_from(node))
-        elif isinstance(node, ast.Import):
-            result.append(ImportStatement.from_import(node))
-    return tuple(result)
-
-
 @dataclass(frozen=True)
 class SourceFile:
     """単一Pythonソースファイルの情報を保持する不変な値オブジェクト"""
@@ -49,12 +38,22 @@ class SourceFile:
     @property
     def imports(self) -> tuple[ImportStatement, ...]:
         """全インポート文を抽出して返す（AST 全走査）"""
-        return _collect_imports(ast.walk(self.tree))
+        return self._collect_imports(ast.walk(self.tree))
 
     @property
     def top_level_imports(self) -> tuple[ImportStatement, ...]:
         """トップレベルのインポート文のみを抽出して返す"""
-        return _collect_imports(self.tree.body)
+        return self._collect_imports(self.tree.body)
+
+    def _collect_imports(self, nodes: Iterable[ast.AST]) -> tuple[ImportStatement, ...]:
+        """AST ノード列からインポート文を収集して返す"""
+        result: list[ImportStatement] = []
+        for node in nodes:
+            if isinstance(node, ast.ImportFrom):
+                result.append(ImportStatement.from_import_from(node))
+            elif isinstance(node, ast.Import):
+                result.append(ImportStatement.from_import(node))
+        return tuple(result)
 
     @property
     def absolute_from_imports(self) -> tuple[AbsoluteFromImport, ...]:
