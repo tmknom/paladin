@@ -1,5 +1,9 @@
 """ロギングデコレータ"""
 
+# デコレータをモジュールレベル関数として登録する必要があるため、
+# no-module-level-function を本ファイル全体で抑制する。
+# paladin: ignore-file[no-module-level-function]
+
 import functools
 import logging
 from collections.abc import Callable
