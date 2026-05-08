@@ -1,5 +1,6 @@
 """Rule 層の Composition Root。"""
 
+from dataclasses import dataclass
 from typing import cast
 
 from paladin.rule.max_class_length import MaxClassLengthRule
@@ -32,6 +33,23 @@ from paladin.rule.rule_set import RuleSet
 from paladin.rule.unused_ignore import UnusedIgnoreRule
 
 
+@dataclass(frozen=True)
+class RuleOptions:
+    """各ルールへ渡すオプション値を集約する dataclass。"""
+
+    third_party_allow_dirs: tuple[str, ...]
+    cross_package_allow_dirs: tuple[str, ...]
+    nmlf_allow_decorators: tuple[str, ...]
+    mfp_max: int
+    mfp_allow_decorators: tuple[str, ...]
+    max_lines: int
+    max_test_lines: int
+    class_max_lines: int
+    class_max_test_lines: int
+    file_max_lines: int
+    file_max_test_lines: int
+
+
 class RuleSetFactory:
     """静的解析で使用するルール一式を組み立てる Factory。
 
@@ -57,12 +75,51 @@ class RuleSetFactory:
         Returns:
             全ルールを格納した `RuleSet` インスタンス。
         """
-        third_party_allow_dirs = self._extract_allow_dirs(
-            rule_options, "no-third-party-import"
-        )  # [tool.paladin.rule.no-third-party-import].allow-dirs
-        cross_package_allow_dirs = self._extract_allow_dirs(
-            rule_options, "no-cross-package-import"
-        )  # [tool.paladin.rule.no-cross-package-import].allow-dirs
+        opts = self._resolve_options(rule_options)
+        return RuleSet(
+            rules=(
+                RequireAllExportRule(),
+                NoRelativeImportRule(),
+                NoLocalImportRule(),
+                RequireQualifiedThirdPartyRule(),
+                NoNonInitAllRule(),
+                NoCrossPackageReexportRule(),
+                NoMockUsageRule(),
+                NoDeepNestingRule(),
+                NoThirdPartyImportRule(allow_dirs=opts.third_party_allow_dirs),
+                NoCrossPackageImportRule(allow_dirs=opts.cross_package_allow_dirs),
+                MaxMethodLengthRule(max_lines=opts.max_lines, max_test_lines=opts.max_test_lines),
+                MaxClassLengthRule(
+                    max_lines=opts.class_max_lines, max_test_lines=opts.class_max_test_lines
+                ),
+                MaxFileLengthRule(
+                    max_lines=opts.file_max_lines, max_test_lines=opts.file_max_test_lines
+                ),
+                RequireDocstringRule(),
+                RequireEmptyTestInitRule(),
+                RequireAaaCommentRule(),
+                NoErrorMessageTestRule(),
+                NoFrozenInstanceTestRule(),
+                NoNestedTestClassRule(),
+                NoPrivateAttrInTestRule(),
+                NoTestMethodDocstringRule(),
+                NoModuleLevelFunctionRule(allow_decorators=opts.nmlf_allow_decorators),
+                MaxFunctionParameterRule(
+                    max_parameters=opts.mfp_max, allow_decorators=opts.mfp_allow_decorators
+                ),
+            ),
+            multi_file_rules=(
+                NoDirectInternalImportRule(),
+                NoUnusedExportRule(),
+                NoTestingTestCodeRule(),
+            ),
+            unused_ignore_rule=UnusedIgnoreRule(),
+        )
+
+    def _resolve_options(self, rule_options: dict[str, dict[str, object]] | None) -> RuleOptions:
+        """設定辞書を解析して `RuleOptions` に集約する。各 `_extract_*` ヘルパーに委譲し、型不一致はデフォルト値へフォールバックする。"""
+        third_party_allow_dirs = self._extract_allow_dirs(rule_options, "no-third-party-import")
+        cross_package_allow_dirs = self._extract_allow_dirs(rule_options, "no-cross-package-import")
         nmlf_allow_decorators = self._extract_allow_decorators(
             rule_options,
             "no-module-level-function",  # [tool.paladin.rule.no-module-level-function].allow-decorators
@@ -94,40 +151,18 @@ class RuleSetFactory:
             300,
             500,  # [tool.paladin.rule.max-file-length].max-lines / max-test-lines
         )
-        return RuleSet(
-            rules=(
-                RequireAllExportRule(),
-                NoRelativeImportRule(),
-                NoLocalImportRule(),
-                RequireQualifiedThirdPartyRule(),
-                NoNonInitAllRule(),
-                NoCrossPackageReexportRule(),
-                NoMockUsageRule(),
-                NoDeepNestingRule(),
-                NoThirdPartyImportRule(allow_dirs=third_party_allow_dirs),
-                NoCrossPackageImportRule(allow_dirs=cross_package_allow_dirs),
-                MaxMethodLengthRule(max_lines=max_lines, max_test_lines=max_test_lines),
-                MaxClassLengthRule(max_lines=class_max_lines, max_test_lines=class_max_test_lines),
-                MaxFileLengthRule(max_lines=file_max_lines, max_test_lines=file_max_test_lines),
-                RequireDocstringRule(),
-                RequireEmptyTestInitRule(),
-                RequireAaaCommentRule(),
-                NoErrorMessageTestRule(),
-                NoFrozenInstanceTestRule(),
-                NoNestedTestClassRule(),
-                NoPrivateAttrInTestRule(),
-                NoTestMethodDocstringRule(),
-                NoModuleLevelFunctionRule(allow_decorators=nmlf_allow_decorators),
-                MaxFunctionParameterRule(
-                    max_parameters=mfp_max, allow_decorators=mfp_allow_decorators
-                ),
-            ),
-            multi_file_rules=(
-                NoDirectInternalImportRule(),
-                NoUnusedExportRule(),
-                NoTestingTestCodeRule(),
-            ),
-            unused_ignore_rule=UnusedIgnoreRule(),
+        return RuleOptions(
+            third_party_allow_dirs=third_party_allow_dirs,
+            cross_package_allow_dirs=cross_package_allow_dirs,
+            nmlf_allow_decorators=nmlf_allow_decorators,
+            mfp_max=mfp_max,
+            mfp_allow_decorators=mfp_allow_decorators,
+            max_lines=max_lines,
+            max_test_lines=max_test_lines,
+            class_max_lines=class_max_lines,
+            class_max_test_lines=class_max_test_lines,
+            file_max_lines=file_max_lines,
+            file_max_test_lines=file_max_test_lines,
         )
 
     def _extract_max_parameters(
