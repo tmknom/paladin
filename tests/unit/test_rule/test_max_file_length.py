@@ -34,7 +34,7 @@ class TestMaxFileLengthRuleCheck:
     def test_check_正常系_違反のフィールド値が正しいこと(self):
         # Arrange
         rule = MaxFileLengthRule()
-        source = SourceCodeBuilder.lines(301)
+        source = SourceCodeBuilder.lines(401)
         source_file = SourceFileFactory.make(source, "example.py")
 
         # Act
@@ -47,9 +47,9 @@ class TestMaxFileLengthRuleCheck:
         assert violation.rule_id == "max-file-length"
 
     def test_check_正常系_違反のline番号がファイル末尾の行番号であること(self):
-        # Arrange: 301行のファイル
+        # Arrange: 401行のファイル
         rule = MaxFileLengthRule()
-        source = SourceCodeBuilder.lines(301)
+        source = SourceCodeBuilder.lines(401)
         source_file = SourceFileFactory.make(source)
 
         # Act
@@ -57,7 +57,7 @@ class TestMaxFileLengthRuleCheck:
 
         # Assert: 違反の行番号はファイルの行数（末尾）
         assert len(result) == 1
-        assert result[0].line == 301
+        assert result[0].line == 401
 
     def test_check_正常系_空ソースで違反なしを返すこと(self) -> None:
         # Arrange
@@ -71,9 +71,9 @@ class TestMaxFileLengthRuleCheck:
         assert len(result) == 0
 
     def test_check_正常系_テストファイルはmax_test_linesが適用されること(self):
-        # Arrange: テストファイルのデフォルト上限500行に対して501行のファイル
+        # Arrange: テストファイルのデフォルト上限800行に対して801行のファイル
         rule = MaxFileLengthRule()
-        source = SourceCodeBuilder.lines(501)
+        source = SourceCodeBuilder.lines(801)
         source_file = SourceFileFactory.make_test(source)
 
         # Act
@@ -83,9 +83,9 @@ class TestMaxFileLengthRuleCheck:
         assert len(result) == 1
 
     def test_check_正常系_テストファイルでmax_test_lines以下なら違反なしを返すこと(self):
-        # Arrange: テストファイルで500行のファイル
+        # Arrange: テストファイルで800行のファイル
         rule = MaxFileLengthRule()
-        source = SourceCodeBuilder.lines(500)
+        source = SourceCodeBuilder.lines(800)
         source_file = SourceFileFactory.make_test(source)
 
         # Act
@@ -95,9 +95,9 @@ class TestMaxFileLengthRuleCheck:
         assert len(result) == 0
 
     def test_check_正常系_テストファイルでmax_lines超過でも違反なしを返すこと(self):
-        # Arrange: プロダクション上限300行超えだがテスト上限500行以内の301行
+        # Arrange: 上限400行超えだがテスト上限800行以内の401行
         rule = MaxFileLengthRule()
-        source = SourceCodeBuilder.lines(301)
+        source = SourceCodeBuilder.lines(401)
         source_file = SourceFileFactory.make_test(source)
 
         # Act

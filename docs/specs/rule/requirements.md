@@ -73,10 +73,10 @@
 | `no-cross-package-import` | `allow-dirs` | `[]`（許可ディレクトリなし） |
 | `max-method-length` | `max-lines` | `50` |
 | `max-method-length` | `max-test-lines` | `100` |
-| `max-class-length` | `max-lines` | `200` |
-| `max-class-length` | `max-test-lines` | `400` |
-| `max-file-length` | `max-lines` | `300` |
-| `max-file-length` | `max-test-lines` | `500` |
+| `max-class-length` | `max-lines` | `300` |
+| `max-class-length` | `max-test-lines` | `600` |
+| `max-file-length` | `max-lines` | `400` |
+| `max-file-length` | `max-test-lines` | `800` |
 
 - `allow-dirs` にはディレクトリパスを複数指定できる（`src/paladin/foundation/` や `tests/fake/` 等）
 - `max-lines` と `max-test-lines` は整数値で指定する

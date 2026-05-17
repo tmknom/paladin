@@ -40,7 +40,7 @@
 ### 違反コード
 
 ```python
-# src/paladin/check/orchestrator.py（上限300行に対して301行以上の場合）
+# src/paladin/check/orchestrator.py（上限400行に対して401行以上の場合）
 # ファイルの行数が設定された上限を超えている
 class CheckOrchestrator:
     ...
@@ -50,14 +50,14 @@ class CheckOrchestrator:
 ### 準拠コード
 
 ```python
-# src/paladin/check/orchestrator.py（300行以内）
+# src/paladin/check/orchestrator.py（400行以内）
 # ファイルの行数が上限内に収まっている
 class CheckOrchestrator:
     ...
 ```
 
 ```python
-# tests/unit/test_check/test_orchestrator.py（上限500行に対して500行以内）
+# tests/unit/test_check/test_orchestrator.py（上限800行に対して800行以内）
 # テストファイルは max-test-lines の上限が適用される
 class TestCheckOrchestrator:
     ...
@@ -90,14 +90,14 @@ class TestCheckOrchestrator:
 
 ```toml
 [tool.paladin.rule.max-file-length]
-max-lines = 300
-max-test-lines = 500
+max-lines = 400
+max-test-lines = 800
 ```
 
 | パラメータ | 説明 | デフォルト値 |
 |-----------|------|------------|
-| `max-lines` | プロダクションコードの行数上限 | `300` |
-| `max-test-lines` | テストコードの行数上限 | `500` |
+| `max-lines` | プロダクションコードの行数上限 | `400` |
+| `max-test-lines` | テストコードの行数上限 | `800` |
 
 `max-lines` と `max-test-lines` はそれぞれ独立して設定できます。未指定の場合はデフォルト値が使用されます。
 
