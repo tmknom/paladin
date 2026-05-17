@@ -127,7 +127,7 @@ class RuleSetFactory:
         mfp_max = self._extract_max_parameters(
             rule_options,
             "max-function-parameter",
-            3,  # [tool.paladin.rule.max-function-parameter].max-parameters
+            4,  # [tool.paladin.rule.max-function-parameter].max-parameters
         )
         mfp_allow_decorators = self._extract_allow_decorators(
             rule_options,
@@ -222,7 +222,7 @@ class RuleSetFactory:
             return ()
         return tuple(str(item) for item in cast(list[object], raw))
 
-    def _extract_length_options(  # paladin: ignore[max-function-parameter] -- max-lines と max-test-lines を同時に取り出す責務のため引数削減不可
+    def _extract_length_options(
         self,
         rule_options: dict[str, dict[str, object]] | None,
         rule_id: str,

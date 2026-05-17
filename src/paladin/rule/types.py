@@ -145,7 +145,7 @@ class RuleMeta:
     config_example: str | None = None
     detection_example: str | None = None
 
-    def create_violation_at(  # paladin: ignore[max-function-parameter] -- Violation の全フィールドを受け取る責務のため引数削減不可
+    def create_violation_at(
         self,
         location: SourceLocation,
         message: str,

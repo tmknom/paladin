@@ -9,7 +9,7 @@ from paladin.rule import Violation, Violations
 class ViolationFilter:
     """IgnoreディレクティブをViolationsに適用して対象外違反を除外するフィルター"""
 
-    def filter(  # paladin: ignore[max-function-parameter]
+    def filter(
         self,
         violations: Violations,
         directives: tuple[FileIgnoreDirective, ...],

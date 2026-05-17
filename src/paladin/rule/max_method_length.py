@@ -90,7 +90,7 @@ class MethodLengthDetector:
     """メソッド行数の閾値判定を行う"""
 
     @staticmethod
-    def detect(  # paladin: ignore[max-function-parameter]
+    def detect(
         scope: FunctionScope,
         length: int,
         limit: int,

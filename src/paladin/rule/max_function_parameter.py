@@ -5,7 +5,7 @@ from dataclasses import dataclass
 
 from paladin.rule.types import DetectionContext, RuleMeta, SourceFile, Violation
 
-_DEFAULT_MAX_PARAMETERS: int = 3
+_DEFAULT_MAX_PARAMETERS: int = 4
 _DEFAULT_ALLOW_DECORATORS: tuple[str, ...] = (
     "pytest.fixture",
     "fixture",
@@ -16,13 +16,13 @@ _DEFAULT_ALLOW_DECORATORS: tuple[str, ...] = (
 _REASON = "引数が多い関数はプリミティブな値をそのまま受け渡している兆候であり、関連する値をまとめたクラスへのカプセル化機会を逃しています"
 _CONFIG_EXAMPLE = (
     "[tool.paladin.rule.max-function-parameter]\n"
-    "max-parameters = 3\n"
+    "max-parameters = 4\n"
     'allow-decorators = ["pytest.fixture", "fixture", "app.command", "app.callback"]'
 )
 _DETECTION_EXAMPLE = (
-    "# 違反: self を除いた引数が4つで上限3を超えている\n"
+    "# 違反: self を除いた引数が5つで上限4を超えている\n"
     "class UserService:\n"
-    "    def create_user(self, name: str, email: str, age: int, role: str) -> None:\n"
+    "    def create_user(self, name: str, email: str, age: int, role: str, phone: str) -> None:\n"
     "        ...\n\n"
     "# 準拠: バリューオブジェクトに集約して引数を1つに削減\n"
     "class UserService:\n"
@@ -160,7 +160,7 @@ class ParameterLimitDetector:
     """引数数と上限の閾値判定を行う"""
 
     @staticmethod
-    def detect(  # paladin: ignore[max-function-parameter]
+    def detect(
         scope: FunctionScope,
         count: int,
         limit: int,
@@ -195,14 +195,19 @@ class MaxFunctionParameterRule:
             summary="メソッド/関数の引数の数が設定された上限を超えた場合に違反を検出する",
             intent="プリミティブな値の氾濫を検出し、バリューオブジェクト/エンティティへのカプセル化機会として開発者へ提示する",
             guidance="各メソッド/関数の引数数を算出し、self/cls を除いた数が上限を超えていないか検査する",
-            suggestion="ライフサイクルが近い引数を束ねるバリューオブジェクトやエンティティを定義し、それを単一の引数として受け取るよう変更してください",
+            suggestion=(
+                "ライフサイクルが近い引数を束ねるバリューオブジェクトやエンティティを定義し、それを単一の引数として受け取るよう変更してください。"
+                "`@classmethod` または `@staticmethod` として定義されたファクトリメソッドに限り、引数集約が困難なため"
+                " `# paladin: ignore[max-function-parameter]` を付与して違反から除外してよいです。"
+                "それ以外のメソッド/関数では絶対に ignore コメントを使わず、必ず引数の集約で解決してください。"
+            ),
             background=(
                 "引数の数は、関数/メソッドの設計品質を示すシンプルかつ機械的に検出可能な指標です。"
-                "4つ以上の引数が並ぶときは、ライフサイクルが近いプリミティブな値が裸のまま受け渡されている兆候です。"
+                "5つ以上の引数が並ぶときは、ライフサイクルが近いプリミティブな値が裸のまま受け渡されている兆候です。"
                 "このルールは、そうした箇所をバリューオブジェクトやエンティティへ集約する設計機会として開発者に提示します。"
             ),
             steps=(
-                "4つ以上の引数があるシグネチャを抽出する",
+                "5つ以上の引数があるシグネチャを抽出する",
                 "ライフサイクルや責務が近い引数の束を見つける",
                 "バリューオブジェクト/エンティティを定義し、引数を集約する",
             ),
@@ -227,6 +232,8 @@ class MaxFunctionParameterRule:
         ctx = DetectionContext(meta=self._meta, source_file=source_file)
         violations: list[Violation] = []
         for scope in FunctionCollector.collect(source_file.tree):
+            if scope.node.name == "__init__":
+                continue
             if DecoratorAllowChecker.is_allowed(scope.node, self._allow):
                 continue
             count = ParameterCounter.count(scope)

@@ -73,7 +73,7 @@ class ClassLengthDetector:
     """クラス行数の閾値判定を行う"""
 
     @staticmethod
-    def detect(  # paladin: ignore[max-function-parameter]
+    def detect(
         scope: ClassScope,
         length: int,
         limit: int,

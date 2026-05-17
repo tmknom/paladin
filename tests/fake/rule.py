@@ -6,7 +6,6 @@ from paladin.rule import RuleMeta, SourceFile, SourceFiles, Violation
 class FakeRule:
     """Rule Protocol に適合するテスト用 Fake"""
 
-    # paladin: ignore[max-function-parameter]
     def __init__(
         self,
         rule_id: str = "fake-rule",
@@ -48,7 +47,6 @@ class FakeRule:
 class FakePreparableRule:
     """Rule + PreparableRule Protocol に適合するテスト用 Fake"""
 
-    # paladin: ignore[max-function-parameter]
     def __init__(
         self,
         rule_id: str = "fake-preparable-rule",
@@ -95,7 +93,6 @@ class FakePreparableRule:
 class FakeMultiFileRule:
     """MultiFileRule Protocol に適合するテスト用 Fake"""
 
-    # paladin: ignore[max-function-parameter]
     def __init__(
         self,
         rule_id: str = "fake-multi-rule",

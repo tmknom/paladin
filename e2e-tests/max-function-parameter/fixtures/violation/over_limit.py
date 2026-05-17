@@ -1,4 +1,4 @@
-"""4引数メソッドを含む違反フィクスチャ"""
+"""5引数メソッドを含む違反フィクスチャ"""
 
 
 class UserService:
@@ -8,5 +8,6 @@ class UserService:
         email: str,
         age: int,
         role: str,
-    ) -> None:  # 違反: self を除いて 4 引数で上限 3 を超過
+        phone: str,
+    ) -> None:  # 違反: self を除いて 5 引数で上限 4 を超過
         pass
