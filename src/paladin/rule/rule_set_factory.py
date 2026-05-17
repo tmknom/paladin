@@ -142,14 +142,14 @@ class RuleSetFactory:
         class_max_lines, class_max_test_lines = self._extract_length_options(
             rule_options,
             "max-class-length",
-            200,
-            400,  # [tool.paladin.rule.max-class-length].max-lines / max-test-lines
+            300,
+            600,  # [tool.paladin.rule.max-class-length].max-lines / max-test-lines
         )
         file_max_lines, file_max_test_lines = self._extract_length_options(
             rule_options,
             "max-file-length",
-            300,
-            500,  # [tool.paladin.rule.max-file-length].max-lines / max-test-lines
+            400,
+            800,  # [tool.paladin.rule.max-file-length].max-lines / max-test-lines
         )
         return RuleOptions(
             third_party_allow_dirs=third_party_allow_dirs,

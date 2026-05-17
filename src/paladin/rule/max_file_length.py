@@ -2,8 +2,8 @@
 
 from paladin.rule.types import DetectionContext, RuleMeta, SourceFile, Violation
 
-_DEFAULT_MAX_LINES = 300
-_DEFAULT_MAX_TEST_LINES = 500
+_DEFAULT_MAX_LINES = 400
+_DEFAULT_MAX_TEST_LINES = 800
 
 
 class FileLengthCalculator:
@@ -72,13 +72,13 @@ class MaxFileLengthRule:
                 "責務を分割できる場合は、クラスを分け、それに合わせてファイルを分割する",
             ),
             config_example=(
-                "[tool.paladin.rule.max-file-length]\nmax-lines = 300\nmax-test-lines = 500"
+                "[tool.paladin.rule.max-file-length]\nmax-lines = 400\nmax-test-lines = 800"
             ),
             detection_example=(
                 "# 違反: ファイルの行数が上限を超えている\n"
-                "# src/myapp/services/user.py（上限300行に対して301行以上の場合）\n\n"
+                "# src/myapp/services/user.py（上限400行に対して401行以上の場合）\n\n"
                 "# 準拠: ファイルの行数が上限内に収まっている\n"
-                "# src/myapp/services/user.py（300行以内）"
+                "# src/myapp/services/user.py（400行以内）"
             ),
         )
 

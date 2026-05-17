@@ -5,8 +5,8 @@ from dataclasses import dataclass
 
 from paladin.rule.types import DetectionContext, RuleMeta, SourceFile, Violation
 
-_DEFAULT_MAX_LINES = 200
-_DEFAULT_MAX_TEST_LINES = 400
+_DEFAULT_MAX_LINES = 300
+_DEFAULT_MAX_TEST_LINES = 600
 
 
 @dataclass(frozen=True)
@@ -116,14 +116,14 @@ class MaxClassLengthRule:
                 "クラスの分割に合わせてファイルも分割する",
             ),
             config_example=(
-                "[tool.paladin.rule.max-class-length]\nmax-lines = 200\nmax-test-lines = 400"
+                "[tool.paladin.rule.max-class-length]\nmax-lines = 300\nmax-test-lines = 600"
             ),
             detection_example=(
                 "# 違反: クラスの行数が上限を超えている\n"
-                "class UserService:  # 250行のクラス\n"
+                "class UserService:  # 350行のクラス\n"
                 "    ...\n\n"
                 "# 準拠: クラスの行数が上限内に収まっている\n"
-                "class UserService:  # 150行のクラス\n"
+                "class UserService:  # 250行のクラス\n"
                 "    ..."
             ),
         )

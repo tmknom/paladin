@@ -168,7 +168,7 @@ class TestMaxClassLengthRuleCheck:
     def test_check_正常系_違反のフィールド値が正しいこと(self):
         # Arrange
         rule = MaxClassLengthRule()
-        source = ClassSourceBuilder.lines(201, name="LongClass")
+        source = ClassSourceBuilder.lines(301, name="LongClass")
         source_file = SourceFileFactory.make(source)
 
         # Act
@@ -221,12 +221,12 @@ class TestMaxClassLengthRuleCheck:
     @pytest.mark.parametrize(
         "source",
         [
-            pytest.param(ClassSourceBuilder.lines(199), id="上限以下"),
-            pytest.param(ClassSourceBuilder.lines(200), id="上限ちょうど"),
+            pytest.param(ClassSourceBuilder.lines(299), id="上限以下"),
+            pytest.param(ClassSourceBuilder.lines(300), id="上限ちょうど"),
             pytest.param("", id="空ソース"),
             pytest.param("x = 1\ny = 2\n", id="クラス定義なし"),
             pytest.param(
-                ClassSourceBuilder.with_docstring(num_lines=205, docstring_lines=5),
+                ClassSourceBuilder.with_docstring(num_lines=305, docstring_lines=5),
                 id="docstring除外で上限以下",
             ),
         ],
@@ -245,9 +245,9 @@ class TestMaxClassLengthRuleCheck:
     @pytest.mark.parametrize(
         "source",
         [
-            pytest.param(ClassSourceBuilder.lines(201), id="上限超過"),
+            pytest.param(ClassSourceBuilder.lines(301), id="上限超過"),
             pytest.param(
-                ClassSourceBuilder.with_docstring(num_lines=211, docstring_lines=10),
+                ClassSourceBuilder.with_docstring(num_lines=311, docstring_lines=10),
                 id="docstring除外しても上限超過",
             ),
         ],
@@ -264,9 +264,9 @@ class TestMaxClassLengthRuleCheck:
         assert len(result) == 1
 
     def test_check_正常系_テストファイルはmax_test_linesが適用されること(self):
-        # Arrange: テストファイルのデフォルト上限400行に対して401行のクラス
+        # Arrange: テストファイルのデフォルト上限600行に対して601行のクラス
         rule = MaxClassLengthRule()
-        source = ClassSourceBuilder.lines(401)
+        source = ClassSourceBuilder.lines(601)
         source_file = SourceFileFactory.make_test(source)
 
         # Act
@@ -276,9 +276,9 @@ class TestMaxClassLengthRuleCheck:
         assert len(result) == 1
 
     def test_check_正常系_テストファイルでmax_test_lines以下なら違反なしを返すこと(self):
-        # Arrange: テストファイルで400行のクラス
+        # Arrange: テストファイルで600行のクラス
         rule = MaxClassLengthRule()
-        source = ClassSourceBuilder.lines(400)
+        source = ClassSourceBuilder.lines(600)
         source_file = SourceFileFactory.make_test(source)
 
         # Act
@@ -288,9 +288,9 @@ class TestMaxClassLengthRuleCheck:
         assert len(result) == 0
 
     def test_check_正常系_テストファイルでmax_lines超過でも違反なしを返すこと(self):
-        # Arrange: プロダクション上限200行超えだがテスト上限400行以内の201行
+        # Arrange: 上限300行超えだがテスト上限600行以内の301行
         rule = MaxClassLengthRule()
-        source = ClassSourceBuilder.lines(201)
+        source = ClassSourceBuilder.lines(301)
         source_file = SourceFileFactory.make_test(source)
 
         # Act
@@ -380,11 +380,11 @@ class TestMaxClassLengthRuleCheck:
         assert len(result) == 2
 
     def test_check_正常系_先頭文がExprでない場合はdocstring除外なしで行数計算すること(self):
-        # Arrange: 先頭文が代入文（ast.Assign）なので docstring なし → 物理201行がそのまま計上
+        # Arrange: 先頭文が代入文（ast.Assign）なので docstring なし → 物理301行がそのまま計上
         rule = MaxClassLengthRule()
         lines = ["class MyClass:"]
         lines.append("    x = 0")  # ast.Assign（ast.Exprではない）
-        for i in range(199):
+        for i in range(299):
             lines.append(f"    y_{i} = {i}")
         source = "\n".join(lines) + "\n"
         source_file = SourceFileFactory.make(source)
@@ -392,7 +392,7 @@ class TestMaxClassLengthRuleCheck:
         # Act
         result = rule.check(source_file)
 
-        # Assert: docstring除外なし → 物理201行 > 上限200行 → 違反あり
+        # Assert: docstring除外なし → 物理301行 > 上限300行 → 違反あり
         assert len(result) == 1
 
     def test_check_正常系_先頭ExprがConstant_str以外の場合はdocstring除外なしで行数計算すること(
@@ -402,7 +402,7 @@ class TestMaxClassLengthRuleCheck:
         rule = MaxClassLengthRule()
         lines = ["class MyClass:"]
         lines.append("    print('hello')")  # ast.Expr(ast.Call)
-        for i in range(199):
+        for i in range(299):
             lines.append(f"    y_{i} = {i}")
         source = "\n".join(lines) + "\n"
         source_file = SourceFileFactory.make(source)
@@ -410,5 +410,5 @@ class TestMaxClassLengthRuleCheck:
         # Act
         result = rule.check(source_file)
 
-        # Assert: docstring除外なし → 物理201行 > 上限200行 → 違反あり
+        # Assert: docstring除外なし → 物理301行 > 上限300行 → 違反あり
         assert len(result) == 1
