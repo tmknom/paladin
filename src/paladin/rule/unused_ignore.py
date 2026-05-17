@@ -38,7 +38,7 @@ class IgnoreDirectiveCollector:
         return tuple(entries)
 
     @staticmethod
-    def _collect_line(  # paladin: ignore[max-function-parameter] -- source_file / line / line_number / entries は全て独立した情報であり集約不可
+    def _collect_line(
         source_file: SourceFile,
         line: str,
         line_number: int,

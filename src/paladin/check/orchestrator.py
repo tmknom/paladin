@@ -30,7 +30,7 @@ class CheckOrchestrator:
         CheckReport: フォーマット済みレポート文字列と終了コードを含む実行結果
     """
 
-    def __init__(  # paladin: ignore[max-function-parameter]
+    def __init__(
         self,
         collector: FileCollector,
         parser: AstParser,

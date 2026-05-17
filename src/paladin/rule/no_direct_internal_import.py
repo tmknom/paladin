@@ -113,7 +113,7 @@ class InternalImportDetector:
         return name in exports
 
     @staticmethod
-    def _make_violation(  # paladin: ignore[max-function-parameter]
+    def _make_violation(
         ctx: DetectionContext,
         imp: AbsoluteFromImport,
         name: str,
@@ -225,7 +225,7 @@ class NoDirectInternalImportRule:
 
         return violations
 
-    def _check_imported_names(  # paladin: ignore[max-function-parameter]
+    def _check_imported_names(
         self,
         ctx: DetectionContext,
         imp: AbsoluteFromImport,

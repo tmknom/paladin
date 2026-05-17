@@ -274,7 +274,7 @@ class TestMaxFunctionParameterRule:
 
     def test_check_正常系_違反のフィールド値が正しいこと(self):
         # Arrange
-        source = "def foo(a, b, c, d): pass"
+        source = "def foo(a, b, c, d, e): pass"
         source_file = SourceFileFactory.make(source)
         rule = MaxFunctionParameterRule()
 
@@ -288,8 +288,8 @@ class TestMaxFunctionParameterRule:
         assert result[0].rule_id == "max-function-parameter"
 
     def test_check_正常系_self除外で上限以内なら違反なしを返すこと(self):
-        # Arrange: self を除いて3引数 = 上限内
-        source = "class C:\n    def m(self, a, b, c): pass"
+        # Arrange: self を除いて4引数 = 上限内
+        source = "class C:\n    def m(self, a, b, c, d): pass"
         source_file = SourceFileFactory.make(source)
         rule = MaxFunctionParameterRule()
 
@@ -300,8 +300,8 @@ class TestMaxFunctionParameterRule:
         assert result == ()
 
     def test_check_正常系_staticmethodは第1引数を除外しないこと(self):
-        # Arrange: @staticmethod なので除外なし → 4引数で違反
-        source = "class C:\n    @staticmethod\n    def m(a, b, c, d): pass"
+        # Arrange: @staticmethod なので除外なし → 5引数で違反
+        source = "class C:\n    @staticmethod\n    def m(a, b, c, d, e): pass"
         source_file = SourceFileFactory.make(source)
         rule = MaxFunctionParameterRule()
 
@@ -337,7 +337,7 @@ class TestMaxFunctionParameterRule:
 
     def test_check_正常系_AsyncFunctionDefも違反として検出すること(self):
         # Arrange
-        source = "async def f(a, b, c, d): pass"
+        source = "async def f(a, b, c, d, e): pass"
         source_file = SourceFileFactory.make(source)
         rule = MaxFunctionParameterRule()
 
@@ -373,7 +373,7 @@ class TestMaxFunctionParameterRule:
 
     def test_check_正常系_複数の違反を定義順に報告すること(self):
         # Arrange
-        source = "def f1(a, b, c, d): pass\ndef f2(a, b, c, d, e): pass"
+        source = "def f1(a, b, c, d, e): pass\ndef f2(a, b, c, d, e, f): pass"
         source_file = SourceFileFactory.make(source)
         rule = MaxFunctionParameterRule()
 
@@ -385,10 +385,10 @@ class TestMaxFunctionParameterRule:
         assert result[0].line < result[1].line
 
     def test_check_正常系_varargとkwargを加算してカウントすること(self):
-        # Arrange: def f(a, *args, **kwargs) → 3引数で違反なし
-        source_ok = "def f(a, *args, **kwargs): pass"
-        # Arrange: def f(a, b, *args, **kwargs) → 4引数で違反
-        source_ng = "def f(a, b, *args, **kwargs): pass"
+        # Arrange: def f(a, b, *args, **kwargs) → 4引数で違反なし
+        source_ok = "def f(a, b, *args, **kwargs): pass"
+        # Arrange: def f(a, b, c, *args, **kwargs) → 5引数で違反
+        source_ng = "def f(a, b, c, *args, **kwargs): pass"
         rule = MaxFunctionParameterRule()
 
         # Act & Assert
@@ -396,8 +396,8 @@ class TestMaxFunctionParameterRule:
         assert len(rule.check(SourceFileFactory.make(source_ng))) == 1
 
     def test_check_正常系_クラスメソッドのcls引数を除外すること(self):
-        # Arrange: cls を除いて3引数 = 上限内
-        source = "class C:\n    @classmethod\n    def m(cls, a, b, c): pass"
+        # Arrange: cls を除いて4引数 = 上限内
+        source = "class C:\n    @classmethod\n    def m(cls, a, b, c, d): pass"
         source_file = SourceFileFactory.make(source)
         rule = MaxFunctionParameterRule()
 
@@ -441,3 +441,40 @@ class TestMaxFunctionParameterRule:
 
         # Assert
         assert result == ()
+
+    @pytest.mark.parametrize(
+        ("source", "expected_count"),
+        [
+            ("class C:\n    def __init__(self, a, b, c, d, e, f): pass", 0),
+            ("def __init__(a, b, c, d, e, f): pass", 0),
+            ("class C:\n    def __call__(self, a, b, c, d, e): pass", 1),
+        ],
+        ids=["クラスの__init__", "トップレベル__init__", "ダンダーは__init__のみ除外"],
+    )
+    def test_check_正常系___init__は常に違反としないこと(self, source: str, expected_count: int):
+        # Arrange
+        source_file = SourceFileFactory.make(source)
+        rule = MaxFunctionParameterRule()
+
+        # Act
+        result = rule.check(source_file)
+
+        # Assert
+        assert len(result) == expected_count
+
+    def test_check_正常系___init__と通常メソッド混在で__init__のみ除外すること(self):
+        # Arrange: __init__ は除外され、通常メソッドのみ違反検出
+        source = (
+            "class C:\n"
+            "    def __init__(self, a, b, c, d, e, f): pass\n"
+            "    def process(self, a, b, c, d, e): pass\n"
+        )
+        source_file = SourceFileFactory.make(source)
+        rule = MaxFunctionParameterRule()
+
+        # Act
+        result = rule.check(source_file)
+
+        # Assert
+        assert len(result) == 1
+        assert result[0].line == 3

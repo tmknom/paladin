@@ -82,7 +82,7 @@ class RuleSet:
             violations.extend(rule.check(source_file))
         return violations
 
-    def run_unused_ignore(  # paladin: ignore[max-function-parameter] -- run/run_unused_ignore は同一シグネチャを維持する必要があるため引数削減不可
+    def run_unused_ignore(
         self,
         source_files: SourceFiles,
         raw_violations: Violations,
