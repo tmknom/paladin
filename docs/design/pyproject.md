@@ -4,6 +4,8 @@
 
 このドキュメントは `pyproject.toml` の設定における「設計意図の記録」として機能する。
 
+各ライブラリの信頼性プロファイル（メンテナ・バージョン・CVE 傾向）は [依存ライブラリ一覧](dependency.md) を参照。
+
 各ツールの設定項目は公式ドキュメントを読まなければ意図が分からない。特に Ruff の `ignore/unfixable/per-file-ignores` や Pyright の診断レベル設定は「なぜその値なのか」がコードから読み取れない。本ドキュメントはその「なぜ」を補足する。
 
 対象セクションは `[project]` の基本属性（`name`・`version`・`description`・`requires-python`・`dependencies`）を除く、`project.scripts`・ビルドシステム・テスト・Linter・型チェックの各設定とする。
