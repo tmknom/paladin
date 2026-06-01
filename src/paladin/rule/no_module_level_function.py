@@ -1,6 +1,7 @@
 """Rule 層の静的解析ルール。モジュールレベル関数を AST で検出する。"""
 
 import ast
+from pathlib import Path
 
 from paladin.rule.types import RuleMeta, SourceFile, Violation
 
@@ -73,6 +74,19 @@ class DecoratorAllowChecker:
         return False
 
 
+class FileAllowChecker:
+    """ファイルパスが許可リストに完全一致するかを判定する。"""
+
+    @staticmethod
+    def is_allowed(file_path: Path, allow_files: frozenset[str]) -> bool:
+        """ファイルパスを cwd 起点の相対パス文字列に変換し、許可リストと完全一致するか判定する。"""
+        try:
+            rel_str = str(file_path.relative_to(Path.cwd()))
+        except ValueError:
+            rel_str = str(file_path)
+        return rel_str in allow_files
+
+
 class ModuleLevelFunctionDetector:
     """モジュールレベル関数の Violation を生成する。
 
@@ -104,9 +118,14 @@ class NoModuleLevelFunctionRule:
     デフォルト許可デコレータ: ``pytest.fixture``, ``fixture``
     """
 
-    def __init__(self, allow_decorators: tuple[str, ...] = _DEFAULT_ALLOW_DECORATORS) -> None:
+    def __init__(
+        self,
+        allow_decorators: tuple[str, ...] = _DEFAULT_ALLOW_DECORATORS,
+        allow_files: tuple[str, ...] = (),
+    ) -> None:
         """ルールを初期化する"""
         self._allow = frozenset(allow_decorators)
+        self._allow_files = frozenset(allow_files)
         self._meta = RuleMeta(
             rule_id="no-module-level-function",
             rule_name="No Module Level Function",
@@ -139,10 +158,13 @@ class NoModuleLevelFunctionRule:
         """単一ファイルに対する違反判定を行う。
 
         Flow:
-            1. ModuleLevelFunctionCollector でモジュール直下の関数ノードを収集する
-            2. DecoratorAllowChecker で許可デコレータを持つノードをスキップする
-            3. ModuleLevelFunctionDetector で Violation を生成する
+            1. FileAllowChecker でファイル単位の事前判定を行う（許可ファイルなら早期 return）
+            2. ModuleLevelFunctionCollector でモジュール直下の関数ノードを収集する
+            3. DecoratorAllowChecker で許可デコレータを持つノードをスキップする
+            4. ModuleLevelFunctionDetector で Violation を生成する
         """
+        if FileAllowChecker.is_allowed(source_file.file_path, self._allow_files):
+            return ()
         violations: list[Violation] = []
         for node in ModuleLevelFunctionCollector.collect(source_file.tree):
             if DecoratorAllowChecker.is_allowed(node, self._allow):

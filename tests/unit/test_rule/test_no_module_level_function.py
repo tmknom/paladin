@@ -444,3 +444,53 @@ class TestNoModuleLevelFunctionRuleCheck:
 
         # Assert
         assert result == ()
+
+    def test_check_正常系_allow_filesに完全一致するファイルは違反としないこと(self):
+        # Arrange
+        source = "def calc():\n    pass\n"
+        source_file = SourceFileFactory.make(source, "src/paladin/cli.py")
+        rule = NoModuleLevelFunctionRule(allow_files=("src/paladin/cli.py",))
+
+        # Act
+        result = rule.check(source_file)
+
+        # Assert
+        assert result == ()
+
+    def test_check_正常系_allow_filesに一致しないファイルは違反として検出すること(self):
+        # Arrange
+        source = "def calc():\n    pass\n"
+        source_file = SourceFileFactory.make(source, "src/paladin/other.py")
+        rule = NoModuleLevelFunctionRule(allow_files=("src/paladin/cli.py",))
+
+        # Act
+        result = rule.check(source_file)
+
+        # Assert
+        assert len(result) == 1
+
+    def test_check_正常系_allow_files引数なしのデフォルトで違反を検出すること(self):
+        # Arrange
+        source = "def calc():\n    pass\n"
+        source_file = SourceFileFactory.make(source, "src/paladin/cli.py")
+        rule = NoModuleLevelFunctionRule()
+
+        # Act
+        result = rule.check(source_file)
+
+        # Assert
+        assert len(result) == 1
+
+    def test_check_正常系_allow_filesに前方一致するが完全一致しないパスは違反として検出すること(
+        self,
+    ):
+        # Arrange
+        source = "def calc():\n    pass\n"
+        source_file = SourceFileFactory.make(source, "src/paladin/cli.py")
+        rule = NoModuleLevelFunctionRule(allow_files=("src/paladin/cli",))
+
+        # Act
+        result = rule.check(source_file)
+
+        # Assert
+        assert len(result) == 1

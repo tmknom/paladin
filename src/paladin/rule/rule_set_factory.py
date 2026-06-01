@@ -34,12 +34,25 @@ from paladin.rule.unused_ignore import UnusedIgnoreRule
 
 
 @dataclass(frozen=True)
+class LengthOptions:
+    """length 系 3 ルールの max-lines / max-test-lines を集約する。"""
+
+    method_max: int
+    method_test: int
+    class_max: int
+    class_test: int
+    file_max: int
+    file_test: int
+
+
+@dataclass(frozen=True)
 class RuleOptions:
     """各ルールへ渡すオプション値を集約する dataclass。"""
 
     third_party_allow_dirs: tuple[str, ...]
     cross_package_allow_dirs: tuple[str, ...]
     nmlf_allow_decorators: tuple[str, ...]
+    nmlf_allow_files: tuple[str, ...]
     mfp_max: int
     mfp_allow_decorators: tuple[str, ...]
     max_lines: int
@@ -62,6 +75,12 @@ class RuleSetFactory:
         "fixture",
         "app.command",
         "app.callback",
+    )
+
+    _LENGTH_DEFAULTS: tuple[tuple[str, int, int], ...] = (
+        ("max-method-length", 50, 100),
+        ("max-class-length", 300, 600),
+        ("max-file-length", 400, 800),
     )
 
     def create(self, rule_options: dict[str, dict[str, object]] | None = None) -> RuleSet:
@@ -103,7 +122,10 @@ class RuleSetFactory:
                 NoNestedTestClassRule(),
                 NoPrivateAttrInTestRule(),
                 NoTestMethodDocstringRule(),
-                NoModuleLevelFunctionRule(allow_decorators=opts.nmlf_allow_decorators),
+                NoModuleLevelFunctionRule(
+                    allow_decorators=opts.nmlf_allow_decorators,
+                    allow_files=opts.nmlf_allow_files,
+                ),
                 MaxFunctionParameterRule(
                     max_parameters=opts.mfp_max, allow_decorators=opts.mfp_allow_decorators
                 ),
@@ -124,6 +146,10 @@ class RuleSetFactory:
             rule_options,
             "no-module-level-function",  # [tool.paladin.rule.no-module-level-function].allow-decorators
         )
+        nmlf_allow_files = self._extract_allow_files(
+            rule_options,
+            "no-module-level-function",  # [tool.paladin.rule.no-module-level-function].allow-files
+        )
         mfp_max = self._extract_max_parameters(
             rule_options,
             "max-function-parameter",
@@ -133,36 +159,20 @@ class RuleSetFactory:
             rule_options,
             "max-function-parameter",  # [tool.paladin.rule.max-function-parameter].allow-decorators
         )
-        max_lines, max_test_lines = self._extract_length_options(
-            rule_options,
-            "max-method-length",
-            50,
-            100,  # [tool.paladin.rule.max-method-length].max-lines / max-test-lines
-        )
-        class_max_lines, class_max_test_lines = self._extract_length_options(
-            rule_options,
-            "max-class-length",
-            300,
-            600,  # [tool.paladin.rule.max-class-length].max-lines / max-test-lines
-        )
-        file_max_lines, file_max_test_lines = self._extract_length_options(
-            rule_options,
-            "max-file-length",
-            400,
-            800,  # [tool.paladin.rule.max-file-length].max-lines / max-test-lines
-        )
+        length = self._resolve_length_options(rule_options)
         return RuleOptions(
             third_party_allow_dirs=third_party_allow_dirs,
             cross_package_allow_dirs=cross_package_allow_dirs,
             nmlf_allow_decorators=nmlf_allow_decorators,
+            nmlf_allow_files=nmlf_allow_files,
             mfp_max=mfp_max,
             mfp_allow_decorators=mfp_allow_decorators,
-            max_lines=max_lines,
-            max_test_lines=max_test_lines,
-            class_max_lines=class_max_lines,
-            class_max_test_lines=class_max_test_lines,
-            file_max_lines=file_max_lines,
-            file_max_test_lines=file_max_test_lines,
+            max_lines=length.method_max,
+            max_test_lines=length.method_test,
+            class_max_lines=length.class_max,
+            class_max_test_lines=length.class_test,
+            file_max_lines=length.file_max,
+            file_max_test_lines=length.file_test,
         )
 
     def _extract_max_parameters(
@@ -221,6 +231,41 @@ class RuleSetFactory:
         if not isinstance(raw, list):
             return ()
         return tuple(str(item) for item in cast(list[object], raw))
+
+    def _extract_allow_files(
+        self,
+        rule_options: dict[str, dict[str, object]] | None,
+        rule_id: str,
+    ) -> tuple[str, ...]:
+        """指定ルールの allow-files を取り出す。設定が存在しない場合はデフォルト値（空タプル）を使用する。
+
+        Constraints:
+            - `rule_options` が `None`、または `allow-files` の値が `list` 以外の型の場合は空タプルを返す（型安全な無視）。
+              例外を出さずに空タプルにフォールバックすることで、設定値の型不一致を安全に読み飛ばす。
+        """
+        if rule_options is None:
+            return ()
+        opts = rule_options.get(rule_id, {})
+        raw: object = opts.get("allow-files", [])
+        if not isinstance(raw, list):
+            return ()
+        return tuple(str(item) for item in cast(list[object], raw))
+
+    def _resolve_length_options(
+        self, rule_options: dict[str, dict[str, object]] | None
+    ) -> LengthOptions:
+        """Length 系 3 ルールの設定値をまとめて取り出す。"""
+        method = self._extract_length_options(rule_options, *self._LENGTH_DEFAULTS[0])
+        klass = self._extract_length_options(rule_options, *self._LENGTH_DEFAULTS[1])
+        file = self._extract_length_options(rule_options, *self._LENGTH_DEFAULTS[2])
+        return LengthOptions(
+            method_max=method[0],
+            method_test=method[1],
+            class_max=klass[0],
+            class_test=klass[1],
+            file_max=file[0],
+            file_test=file[1],
+        )
 
     def _extract_length_options(
         self,
