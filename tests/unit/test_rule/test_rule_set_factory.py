@@ -227,3 +227,31 @@ class TestRuleSetFactory:
 
         # Assert: ルールが登録されていること
         assert "max-function-parameter" in result.rule_ids
+
+    def test_create_正常系_rule_optionsでno_module_level_functionのallow_filesを指定できること(
+        self,
+    ):
+        # Arrange
+        rule_options: dict[str, dict[str, object]] = {
+            "no-module-level-function": {"allow-files": ["src/paladin/cli.py"]}
+        }
+
+        # Act
+        result = RuleSetFactory().create(rule_options=rule_options)
+
+        # Assert: ルールが登録されていること
+        assert "no-module-level-function" in result.rule_ids
+
+    def test_create_正常系_no_module_level_functionでallow_filesがlist以外でもデフォルトにフォールバックすること(
+        self,
+    ):
+        # Arrange
+        rule_options: dict[str, dict[str, object]] = {
+            "no-module-level-function": {"allow-files": "src/paladin/cli.py"}
+        }
+
+        # Act
+        result = RuleSetFactory().create(rule_options=rule_options)
+
+        # Assert: 不正な型でも例外なく動作する
+        assert "no-module-level-function" in result.rule_ids

@@ -65,6 +65,9 @@ allow-dirs = ["src/paladin/foundation/", "tests/"]
 [tool.paladin.rule.no-cross-package-import]
 allow-dirs = ["src/paladin/foundation/", "src/paladin/protocol/", "src/paladin/rule/", "tests/fake/"]
 
+[tool.paladin.rule.no-module-level-function]
+allow-files = ["src/paladin/cli.py", "src/paladin/foundation/log/decorator.py"]
+
 [tool.ruff]
 line-length = 100
 target-version = "py313"
