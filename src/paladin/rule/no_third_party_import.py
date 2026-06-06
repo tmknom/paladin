@@ -34,6 +34,15 @@ class ThirdPartyChecker:
             rel_str = str(file_path)
         return any(rel_str.startswith(allow_dir) for allow_dir in allow_dirs)
 
+    @staticmethod
+    def is_allow_file(file_path: Path, allow_files: frozenset[str]) -> bool:
+        """ファイルパスが allow_files に完全一致するかを判定する"""
+        try:
+            rel_str = str(file_path.relative_to(Path.cwd()))
+        except ValueError:
+            rel_str = str(file_path)
+        return rel_str in allow_files
+
 
 class ThirdPartyImportDetector:
     """サードパーティインポートの Violation を生成する"""
@@ -75,13 +84,15 @@ class ThirdPartyImportDetector:
 class NoThirdPartyImportRule:
     """許可ディレクトリ以外でのサードパーティライブラリのインポートを検出するルール"""
 
-    def __init__(self, allow_dirs: tuple[str, ...] = ()) -> None:
+    def __init__(self, allow_dirs: tuple[str, ...] = (), allow_files: tuple[str, ...] = ()) -> None:
         """ルールを初期化する
 
         Args:
             allow_dirs: サードパーティインポートを許可するディレクトリのパス
+            allow_files: サードパーティインポート検査を除外するファイルのパス
         """
         self._allow_dirs = tuple(d if d.endswith("/") else d + "/" for d in allow_dirs)
+        self._allow_files = frozenset(allow_files)
         self._resolver = PackageResolver()
         self._root_packages: tuple[str, ...] = ()
         self._stdlib_modules: frozenset[str] = sys.stdlib_module_names
@@ -98,7 +109,7 @@ class NoThirdPartyImportRule:
                 "許可ディレクトリ外でのサードパーティインポートを特定する",
                 "サードパーティの利用を許可ディレクトリ配下のモジュールに移動するか、ラッパーモジュール経由でアクセスするよう修正する",
             ),
-            config_example='[tool.paladin.rule.no-third-party-import]\nallow-dirs = ["src/myapp/foundation/"]',
+            config_example='[tool.paladin.rule.no-third-party-import]\nallow-dirs = ["src/myapp/foundation/"]\nallow-files = ["src/myapp/cli.py"]',
             detection_example="# 違反: 許可ディレクトリ外でサードパーティをインポート\n# src/myapp/services/user.py\nimport pydantic_settings  # 違反\n\n# 準拠: 許可ディレクトリ内でのインポート\n# src/myapp/foundation/model/base.py\nimport pydantic  # 準拠",
         )
 
@@ -113,6 +124,8 @@ class NoThirdPartyImportRule:
 
     def check(self, source_file: SourceFile) -> tuple[Violation, ...]:
         """単一ファイルに対する違反判定を行う"""
+        if ThirdPartyChecker.is_allow_file(source_file.file_path, self._allow_files):
+            return ()
         if ThirdPartyChecker.is_allowed_path(source_file.file_path, self._allow_dirs):
             return ()
 

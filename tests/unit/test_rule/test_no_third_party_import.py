@@ -17,9 +17,11 @@ _ROOT = ("myapp",)
 class RuleFactory:
     @staticmethod
     def with_prepare(
-        source_files: SourceFiles, allow_dirs: tuple[str, ...] = ("src/foundation/",)
+        source_files: SourceFiles,
+        allow_dirs: tuple[str, ...] = ("src/foundation/",),
+        allow_files: tuple[str, ...] = (),
     ) -> NoThirdPartyImportRule:
-        rule = NoThirdPartyImportRule(allow_dirs=allow_dirs)
+        rule = NoThirdPartyImportRule(allow_dirs=allow_dirs, allow_files=allow_files)
         rule.prepare(source_files)
         return rule
 
@@ -178,6 +180,81 @@ class TestNoThirdPartyImportRuleCheck:
         # Assert: src/infra/ が許可されているので違反なし
         assert len(result) == 0
 
+    def test_check_正常系_allow_filesに完全一致するファイルは違反としないこと(self):
+        # Arrange
+        source_files = SourceFileFactory.make_many(
+            ("import requests\n", "src/app/cli.py"),
+        )
+        rule = RuleFactory.with_prepare(
+            source_files, allow_dirs=(), allow_files=("src/app/cli.py",)
+        )
+
+        # Act
+        result = rule.check(source_files.files[0])
+
+        # Assert
+        assert len(result) == 0
+
+    def test_check_正常系_allow_filesに一致しないファイルは違反として検出すること(self):
+        # Arrange
+        source_files = SourceFileFactory.make_many(
+            ("import requests\n", "src/app/service.py"),
+        )
+        rule = RuleFactory.with_prepare(
+            source_files, allow_dirs=(), allow_files=("src/app/cli.py",)
+        )
+
+        # Act
+        result = rule.check(source_files.files[0])
+
+        # Assert
+        assert len(result) == 1
+
+    def test_check_正常系_allow_files引数なしのデフォルトで違反を検出すること(self):
+        # Arrange
+        source_files = SourceFileFactory.make_many(
+            ("import requests\n", "src/app/main.py"),
+        )
+        rule = RuleFactory.with_prepare(source_files, allow_dirs=())
+
+        # Act
+        result = rule.check(source_files.files[0])
+
+        # Assert
+        assert len(result) == 1
+
+    def test_check_正常系_allow_filesに前方一致するが完全一致しないパスは違反として検出すること(
+        self,
+    ):
+        # Arrange: "src/app/cli" は前方一致するが完全一致しない
+        source_files = SourceFileFactory.make_many(
+            ("import requests\n", "src/app/cli.py"),
+        )
+        rule = RuleFactory.with_prepare(source_files, allow_dirs=(), allow_files=("src/app/cli",))
+
+        # Act
+        result = rule.check(source_files.files[0])
+
+        # Assert: 完全一致しないため違反
+        assert len(result) == 1
+
+    def test_check_正常系_allow_filesとallow_dirsの併用でいずれかに該当すればスキップすること(self):
+        # Arrange: allow_files でマッチ、allow_dirs はマッチしない
+        source_files = SourceFileFactory.make_many(
+            ("import requests\n", "src/app/cli.py"),
+        )
+        rule = RuleFactory.with_prepare(
+            source_files,
+            allow_dirs=("src/foundation/",),
+            allow_files=("src/app/cli.py",),
+        )
+
+        # Act
+        result = rule.check(source_files.files[0])
+
+        # Assert: allow_files にヒットするのでスキップ
+        assert len(result) == 0
+
 
 class TestThirdPartyChecker:
     """ThirdPartyChecker のテスト"""
@@ -207,6 +284,27 @@ class TestThirdPartyChecker:
         allow_dirs = ("src/foundation/",)
         # Act / Assert
         assert ThirdPartyChecker.is_allowed_path(path, allow_dirs) is False
+
+    def test_is_allow_file_正常系_完全一致する場合はTrueを返すこと(self):
+        # Arrange
+        path = Path("src/app/cli.py")
+        allow_files = frozenset({"src/app/cli.py"})
+        # Act / Assert
+        assert ThirdPartyChecker.is_allow_file(path, allow_files) is True
+
+    def test_is_allow_file_正常系_前方一致のみではFalseを返すこと(self):
+        # Arrange: "src/app/cli" は前方一致するが完全一致しない
+        path = Path("src/app/cli.py")
+        allow_files = frozenset({"src/app/cli"})
+        # Act / Assert
+        assert ThirdPartyChecker.is_allow_file(path, allow_files) is False
+
+    def test_is_allow_file_正常系_リストに含まれない場合はFalseを返すこと(self):
+        # Arrange
+        path = Path("src/app/service.py")
+        allow_files = frozenset({"src/app/cli.py"})
+        # Act / Assert
+        assert ThirdPartyChecker.is_allow_file(path, allow_files) is False
 
 
 class TestThirdPartyImportDetector:

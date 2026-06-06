@@ -50,6 +50,7 @@ class RuleOptions:
     """各ルールへ渡すオプション値を集約する dataclass。"""
 
     third_party_allow_dirs: tuple[str, ...]
+    third_party_allow_files: tuple[str, ...]
     cross_package_allow_dirs: tuple[str, ...]
     nmlf_allow_decorators: tuple[str, ...]
     nmlf_allow_files: tuple[str, ...]
@@ -105,7 +106,10 @@ class RuleSetFactory:
                 NoCrossPackageReexportRule(),
                 NoMockUsageRule(),
                 NoDeepNestingRule(),
-                NoThirdPartyImportRule(allow_dirs=opts.third_party_allow_dirs),
+                NoThirdPartyImportRule(
+                    allow_dirs=opts.third_party_allow_dirs,
+                    allow_files=opts.third_party_allow_files,
+                ),
                 NoCrossPackageImportRule(allow_dirs=opts.cross_package_allow_dirs),
                 MaxMethodLengthRule(max_lines=opts.max_lines, max_test_lines=opts.max_test_lines),
                 MaxClassLengthRule(
@@ -141,6 +145,10 @@ class RuleSetFactory:
     def _resolve_options(self, rule_options: dict[str, dict[str, object]] | None) -> RuleOptions:
         """設定辞書を解析して `RuleOptions` に集約する。各 `_extract_*` ヘルパーに委譲し、型不一致はデフォルト値へフォールバックする。"""
         third_party_allow_dirs = self._extract_allow_dirs(rule_options, "no-third-party-import")
+        third_party_allow_files = self._extract_allow_files(
+            rule_options,
+            "no-third-party-import",  # [tool.paladin.rule.no-third-party-import].allow-files
+        )
         cross_package_allow_dirs = self._extract_allow_dirs(rule_options, "no-cross-package-import")
         nmlf_allow_decorators = self._extract_allow_decorators(
             rule_options,
@@ -162,6 +170,7 @@ class RuleSetFactory:
         length = self._resolve_length_options(rule_options)
         return RuleOptions(
             third_party_allow_dirs=third_party_allow_dirs,
+            third_party_allow_files=third_party_allow_files,
             cross_package_allow_dirs=cross_package_allow_dirs,
             nmlf_allow_decorators=nmlf_allow_decorators,
             nmlf_allow_files=nmlf_allow_files,
