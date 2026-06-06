@@ -186,6 +186,7 @@ param-name = value
 | ルール ID | パラメータ | 型 | 説明 |
 |-----------|-----------|-----|------|
 | `no-third-party-import` | `allow-dirs` | 文字列の配列 | サードパーティインポートを許可するディレクトリ |
+| `no-third-party-import` | `allow-files` | 文字列の配列 | サードパーティインポート検査を除外するファイル |
 | `no-cross-package-import` | `allow-dirs` | 文字列の配列 | パッケージ間インポートを許可するディレクトリ |
 | `max-method-length` | `max-lines` | 整数 | メソッドの最大行数 |
 | `max-method-length` | `max-test-lines` | 整数 | テストメソッドの最大行数 |
@@ -199,6 +200,7 @@ param-name = value
 ```toml
 [tool.paladin.rule.no-third-party-import]
 allow-dirs = ["src/xxx/foundation/", "tests/"]
+allow-files = ["src/xxx/cli.py"]
 
 [tool.paladin.rule.no-cross-package-import]
 allow-dirs = ["src/xxx/foundation/", "src/xxx/protocol/"]
@@ -358,6 +360,7 @@ require-qualified-third-party = true
 # ルール個別設定
 [tool.paladin.rule.no-third-party-import]
 allow-dirs = ["src/foundation/", "tests/"]
+allow-files = ["src/xxx/cli.py"]
 
 [tool.paladin.rule.max-file-length]
 max-lines = 500
