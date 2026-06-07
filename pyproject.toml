@@ -18,7 +18,7 @@ dev = [
     "pytest-cov==7.1.0",
     "vulture==2.16",
     "ruff==0.15.14",
-    "pyright==1.1.409",
+    "pyright==1.1.410",
 ]
 
 [project.scripts]
